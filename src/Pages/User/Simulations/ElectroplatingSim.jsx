@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Play, RotateCcw, Activity, Info, Zap, Settings, ShieldCheck, CheckCircle2, FlaskConical, Watch } from 'lucide-react';
+import { Play, RotateCcw, Activity, Info, Zap, Settings, ShieldCheck, CheckCircle2, FlaskConical, Watch, BatteryCharging } from 'lucide-react';
 
 const PLATING_CONFIG = {
   metals: {
@@ -169,7 +169,7 @@ export default function ElectroplatingSim({ config, onTelemetry }) {
         <div>
           <h2 className="text-lg font-bold">Mission</h2>
           <p className="text-blue-100 mt-1 max-w-3xl leading-relaxed text-sm">
-            Choose an object and a coating metal. Adjust the current and watch Faraday's First Law in action ($m \propto I \times t$). 
+            Choose an object and a coating metal. Adjust the current and watch Faraday's First Law in action (m ∝ I × t). 
             <br/>Can you produce a smooth, even metal coating and prove that mass is conserved?
           </p>
         </div>

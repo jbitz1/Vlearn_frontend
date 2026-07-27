@@ -10,6 +10,7 @@ export const useSubscriptionContext = () => {
 
 const SubscriptionContextProvider = ({ children }) => {
     const [activeSubscriptions, setActiveSubscriptions] = React.useState([]);
+    const [errors, setErrors] = React.useState(null);
     const userContext = React.useContext(UserContext);
 
     const subscriptionFetecher = useFetcher();
@@ -40,6 +41,7 @@ const SubscriptionContextProvider = ({ children }) => {
             <SubscriptionContext.Provider
                 value={{
                     activeSubscriptions,
+                    errors,
                 }}
             >
                 {children}

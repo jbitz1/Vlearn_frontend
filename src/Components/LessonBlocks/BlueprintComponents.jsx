@@ -560,7 +560,6 @@ export const SuggestedMediaBlock = ({ block }) => {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-2">
             <p className={`text-[10px] font-bold ${iconColor} uppercase tracking-widest font-sans`}>{cfg.label}</p>
-            <span className="text-[10px] text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold font-sans">Coming soon</span>
           </div>
           {block.title && <p className={`font-semibold ${textColor} text-base mb-2 font-sans`}>{block.title}</p>}
           <div className={`${subColor} text-sm leading-relaxed whitespace-pre-wrap font-sans`}>{instruction}</div>

@@ -32,9 +32,14 @@ function Navbar() {
             >
               About us
             </a> */}
-            <Link to="/dashboard"
+            <Link to={
+                !user ? "/login" : 
+                user.role === "teacher" ? "/teacher" : 
+                user.role === "school_admin" ? "/school" : 
+                user.role === "platform_admin" ? "/admin-dashboard" : 
+                "/student"
+              }
               className="px-3 py-2 mx-2 text-sm bg-transparent text-white rounded-3xl hover:text-gray-900 focus:text-gray-900 hover:bg-gray-200 focus:bg-gray-200 focus:outline-none focus:shadow-outline"
-              href="#"
             >
               Dashboard
             </Link>
@@ -46,7 +51,7 @@ function Navbar() {
             </Link> */}
             {user ? (
               <Link
-                to="/dashboard/user"
+                to="/student/user"
                 className="px-4 py-2 mx-2 text-sm md:my-0 my-2 w-fit bg-custom-orange text-white rounded-3xl hover:text-black focus:text-gray-900 hover:bg-gray-200 focus:bg-gray-200 focus:outline-none focus:shadow-outline"
               >
                 Profile
@@ -60,7 +65,7 @@ function Navbar() {
                   Login
                 </Link>
                 <Link
-                  to="/signup"
+                  to="/register"
                   className="px-4 py-2 mx-2 text-sm md:my-0 my-2 w-fit bg-custom-orange text-white rounded-3xl hover:text-black focus:text-gray-900 hover:bg-gray-200 focus:bg-gray-200 focus:outline-none focus:shadow-outline"
                 >
                   Sign Up

@@ -1,270 +1,183 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { BookOpen, Trophy, Clock, Calendar, GraduationCap, BarChart, AlignCenterVertical as Certificate } from 'lucide-react';
-import axios from 'axios';
-import BASE_URL from '../../config';
+import { useEffect, useState, useContext } from 'react';
+import { User as UserIcon, CreditCard, Clock, Settings, Building2 } from 'lucide-react';
 import UserContext from '../../Context/UserContext';
 import { useNavigate } from "react-router";
-import { useSubscriptionContext } from '../../component-library/billing-and-payments/subscriptions/SubscriptionContextProvider';
+import studentCurriculumService from '../../services/studentCurriculumService';
+import apiClient from '../../config/apiClient';
 
-
-// Define your Cloudinary base URL
-function User() {
+export function User() {
   const { user: contextUser, token } = useContext(UserContext);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [schoolContext, setSchoolContext] = useState(null);
+  const [recentModules, setRecentModules] = useState([]);
+  const [activeTab, setActiveTab] = useState('account');
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  const [analytics, setAnalytics] = useState([]);
-  const [quizAttempts, setQuizAttempts] = useState([]);
-  const [quizLoading, setQuizLoading] = useState(true);
-  const [quizError, setQuizError] = useState(null);
-  const [subscription, setSubscription] = useState(false)
-  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchProfileData = async () => {
       if (!token?.access) {
         navigate('/login');
         return;
       }
-
+      setIsLoading(true);
       try {
-        const [profileResponse, subscriptionResponse] = await Promise.all([
-          axios.get(`${BASE_URL}/profile`, {
-            headers: { Authorization: `Bearer ${token.access}` },
-          }),
-          axios.get(`${BASE_URL}/subscriptions`, {
-            headers: { Authorization: `Bearer ${token.access}` },
-          })
+        const [profileRes, school] = await Promise.all([
+          apiClient.get('/profile/'),
+          studentCurriculumService.getSchoolContext(),
         ]);
-        // console.log(profileResponse.data)
-        setUser(profileResponse.data);
-        setSubscription(subscriptionResponse.data.is_active);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        setError('Failed to fetch user data. Please try again.');
+        setProfile(profileRes.data);
+        setSchoolContext(school);
+        setRecentModules(studentCurriculumService.getRecentLearningModules());
+      } catch (err) {
+        console.error('Failed to load profile data:', err);
       } finally {
-        setLoading(false);
-        setSubscriptionLoading(false);
+        setIsLoading(false);
       }
     };
 
-    fetchUser();
+    fetchProfileData();
   }, [token, navigate]);
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      if (!token?.access) return;
-
-      try {
-        const response = await axios.get(`${BASE_URL}/video_interactions`, {
-          headers: { Authorization: `Bearer ${token.access}` },
-        });
-        setAnalytics(response.data.results || response.data);
-      } catch (error) {
-        console.error('Error fetching user analytics', error);
-        setError('Failed to fetch user analytics.');
-      }
-    };
-
-    fetchAnalytics();
-  }, [token]);
-
-  useEffect(() => {
-    const fetchQuizAttempts = async () => {
-      if (!token?.access) return;
-
-      try {
-        const response = await axios.get(`${BASE_URL}/questions/attempts/`, {
-          headers: { Authorization: `Bearer ${token.access}` },
-        });
-        setQuizAttempts(response.data.results || response.data);
-      } catch (err) {
-        setQuizError(err.response?.data?.error || err.message);
-      } finally {
-        setQuizLoading(false);
-      }
-    };
-
-    fetchQuizAttempts();
-  }, [token]);
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
-  }
-
-  if (!user) {
-    return <div className="min-h-screen flex items-center justify-center">No user data available.</div>;
-  }
-
-  // const avatarUrl = `${CLOUDINARY_BASE_URL}${user.profile.avatar}`;
-
-  const handleSubscription = (e) => {
-    e.preventDefault();
-    navigate("/subscription");
-  }
-  const subscriptionContext = useSubscriptionContext();
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-custom-blue h-48"></div>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-32">
-        <div className="bg-white rounded-3xl shadow-2xl">
-          {/* Profile Header */}
-          <div className="p-6 sm:p-8 border-b border-gray-200">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
-              {/* Left: Profile Info */}
-              <div className="flex flex-col sm:flex-row items-center sm:items-start">
-                <div className="mt-4 sm:mt-0 sm:ml-6 text-center sm:text-left">
-                  <h1 className="text-2xl font-bold">{user.username}</h1>
-                  <p className="text-gray-500">{user.email}</p>
-                  <p className="text-gray-500">{user.profile.phone_number}</p>
-
-                  <div className="my-4 flex items-center justify-center sm:justify-start">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
-                      <GraduationCap className="w-4 h-4 mr-1" />
-                      Student
-                    </span>
-                  </div>
-
-                  {subscriptionContext?.activeSubscriptions?.length > 0 ? (
-                    <button className='bg-custom-orange mt-4 py-2 px-4 rounded-3xl text-white hover:bg-custom-blue transition-colors duration-200 hover:cursor-pointer'>
-                      Active subscription
-                    </button>
-                  ) : (
-                    <button
-                      className='bg-custom-orange py-2 px-4 rounded-3xl text-white hover:bg-custom-blue transition-colors duration-200 hover:cursor-pointer'
-                      onClick={handleSubscription}
-                    >
-                      Renew subscription
-                    </button>
-                  )}
-                </div>
+    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
+      {/* Profile Header */}
+        <div className="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-custom-blue text-white flex items-center justify-center font-black text-2xl">
+              {contextUser?.username?.[0]?.toUpperCase() || 'S'}
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-black text-gray-900">{contextUser?.username || 'Student Profile'}</h1>
+                <span className="bg-blue-50 text-custom-blue text-xs font-extrabold px-3 py-1 rounded-full uppercase">
+                  Student
+                </span>
               </div>
-
-              <div className="flex justify-center sm:justify-end">
-                <button
-                  onClick={() => navigate('/subscription')}
-                  className="sm:mt-16 inline-flex items-center gap-2 text-sm font-medium text-custom-blue hover:underline"
-                >
-                  View available plans →
-                </button>
-              </div>
+              <p className="text-gray-500 text-sm font-medium">{contextUser?.email}</p>
             </div>
           </div>
 
-
-          {/* Stats Grid */}
-          {/* <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-6 sm:p-8 border-b border-gray-200">
-            <div className="text-center">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-100 text-indigo-600 mx-auto">
-                <BookOpen className="h-6 w-6" />
-              </div>
-              <p className="mt-2 text-3xl font-semibold text-gray-900">{user.profile.enrolled_courses}</p>
-              <p className="text-sm text-gray-500">Enrolled Courses</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-green-100 text-green-600 mx-auto">
-                <Trophy className="h-6 w-6" />
-              </div>
-              <p className="mt-2 text-3xl font-semibold text-gray-900">{user.profile.completed_courses}</p>
-              <p className="text-sm text-gray-500">Completed</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-yellow-100 text-yellow-600 mx-auto">
-                <BarChart className="h-6 w-6" />
-              </div>
-              <p className="mt-2 text-3xl font-semibold text-gray-900">{user.profile.average_score}</p>
-              <p className="text-sm text-gray-500">Average Score</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-purple-100 text-purple-600 mx-auto">
-                <Clock className="h-6 w-6" />
-              </div>
-              <p className="mt-2 text-3xl font-semibold text-gray-900">{analytics.watched_duration}</p>
-              <p className="text-sm text-gray-500">Learning Hours</p>
-            </div>
-          </div> */}
-
-          {/* Quiz Results Section */}
+          {/* Tabs Navigation */}
+          <div className="flex border-b border-gray-200 mt-8 gap-6 overflow-x-auto">
+            {[
+              { id: 'account', label: 'Account', icon: UserIcon },
+              { id: 'subscription', label: 'Subscription', icon: CreditCard },
+              { id: 'history', label: 'Learning History', icon: Clock },
+              { id: 'settings', label: 'Settings', icon: Settings },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 pb-3 text-sm font-extrabold border-b-2 transition-all whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'border-custom-blue text-custom-blue'
+                    : 'border-transparent text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
+        {/* Tab Content */}
+        {isLoading ? (
+          <div className="h-48 bg-gray-200 rounded-3xl animate-pulse"></div>
+        ) : (
+          <div>
+            {/* TAB 1: ACCOUNT */}
+            {activeTab === 'account' && (
+              <div className="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
+                <h2 className="text-lg font-bold text-gray-900">Account Overview</h2>
 
-
-        <div className="p-6 sm:p-8 border-b border-gray-200 mt-10">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Recent Quiz Results</h2>
-          {quizLoading ? (
-            <div className="text-center py-4">Loading quiz results...</div>
-          ) : quizError ? (
-            <div className="text-center py-4 text-red-500">Error: {quizError}</div>
-          ) : quizAttempts.length === 0 ? (
-            <div className="bg-gray-50 rounded-lg p-6 text-center">
-              <p className="text-gray-500">You haven't completed any quizzes yet.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {quizAttempts
-                .sort((a, b) => new Date(b.end_time) - new Date(a.end_time)) // Sort by most recent first
-                .slice(0, 3).map((attempt) => (
-                  <div key={attempt.id} className="bg-gray-200 rounded-3xl p-4 hover:bg-gray-300 transition-colors hover:cursor-pointer">
-                    <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-2">
-                      <div className="flex items-center">
-                        <BookOpen className="h-5 w-5 text-indigo-600 mr-2" />
-                        <h3 className="font-medium text-gray-900">{attempt.quiz.title}</h3>
-                      </div>
-
-                      <div className={`mt-2 md:mt-0 inline-flex items-center px-3 py-1 rounded-full w-fit text-sm ${attempt.score >= 70 ? 'bg-green-100 text-green-800' :
-                        attempt.score >= 50 ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                        <Trophy className="h-4 w-4 mr-1" />
-                        {attempt.score}%
-                      </div>
-
-                    </div>
-                    <div className='flex items-center'>
-                      <p className=" text-sm text-gray-900">{attempt.quiz.description}</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-600 mt-2">
-                      {/* <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        <span>{new Date(attempt.end_time).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1" />
-                        <span>
-                          {Math.round((new Date(attempt.end_time) - new Date(attempt.start_time)) / 60000)} minutes
-                        </span>
-                      </div> */}
-                      <div className="flex items-center">
-                        <BarChart className="h-4 w-4 mr-1" />
-                        <span>
-                          {attempt.student_answers.filter(a => a.is_correct).length} /{' '}
-                          {attempt.student_answers.length} correct
-                        </span>
-                      </div>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-gray-50 p-4 rounded-2xl">
+                    <span className="text-xs font-bold text-gray-400 uppercase">Username</span>
+                    <p className="text-gray-900 font-bold mt-1">{contextUser?.username}</p>
                   </div>
-                ))}
+                  <div className="bg-gray-50 p-4 rounded-2xl">
+                    <span className="text-xs font-bold text-gray-400 uppercase">Email</span>
+                    <p className="text-gray-900 font-bold mt-1">{contextUser?.email}</p>
+                  </div>
+                  {schoolContext && (
+                    <div className="bg-gray-50 p-4 rounded-2xl md:col-span-2 flex items-center gap-3">
+                      <Building2 className="w-6 h-6 text-custom-blue" />
+                      <div>
+                        <span className="text-xs font-bold text-gray-400 uppercase">Enrolled Institution</span>
+                        <p className="text-gray-900 font-bold">
+                          {schoolContext.school_name} - {schoolContext.class_name} {schoolContext.stream_name || ''}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
-              {quizAttempts.length > 3 && (
-                <button
-                  onClick={() => navigate('/dashboard/results')}
-                  className="text-custom-blue text-sm font-medium hover:underline mt-4"
-                >
-                  View all quiz results →
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </main>
+            {/* TAB 2: SUBSCRIPTION */}
+            {activeTab === 'subscription' && (
+              <div className="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
+                <div className="flex justify-between items-center flex-wrap gap-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">Current Plan</h2>
+                    <p className="text-gray-500 text-sm">Manage your platform subscription.</p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/subscription')}
+                    className="px-5 py-2.5 bg-custom-blue text-white font-bold text-sm rounded-2xl hover:bg-blue-700 transition-colors"
+                  >
+                    View Plans
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: LEARNING HISTORY */}
+            {activeTab === 'history' && (
+              <div className="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
+                <h2 className="text-lg font-bold text-gray-900">Learning History</h2>
+
+                {recentModules.length > 0 ? (
+                  <div className="space-y-3">
+                    {recentModules.map((m) => (
+                      <div key={m.lessonId} className="bg-gray-50 p-4 rounded-2xl flex justify-between items-center">
+                        <div>
+                          <div className="font-bold text-gray-900">{m.lessonTitle}</div>
+                          <div className="text-xs text-gray-500 font-semibold">{m.topicName || 'Curriculum Lesson'}</div>
+                        </div>
+                        <button
+                          onClick={() => navigate(`/lesson-viewer/${m.topicId}`)}
+                          className="px-4 py-1.5 bg-blue-50 text-custom-blue font-extrabold text-xs rounded-xl hover:bg-custom-blue hover:text-white transition-colors"
+                        >
+                          Continue →
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">No learning history recorded yet.</div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 4: SETTINGS */}
+            {activeTab === 'settings' && (
+              <div className="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
+                <h2 className="text-lg font-bold text-gray-900">Settings</h2>
+                <div className="space-y-4">
+                  <button
+                    onClick={() => navigate('/forgot-password')}
+                    className="px-4 py-2 bg-gray-100 text-gray-800 font-bold text-sm rounded-xl hover:bg-gray-200 transition-colors"
+                  >
+                    Reset Password
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
     </div>
   );
 }

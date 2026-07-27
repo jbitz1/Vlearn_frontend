@@ -31,22 +31,41 @@ function Login() {
 
       if (response.status === 200) {
         const token = response.data;
-        login(token);
+        const role = login(token);
 
         Swal.fire({
           title: "Success",
           text: "Login successful",
           icon: "success",
           confirmButtonText: "OK",
+          timer: 1200,
+          showConfirmButton: false,
         });
 
-        navigate("/dashboard/home");
+        if (role === "teacher") {
+          navigate("/teacher");
+        } else if (role === "school_admin") {
+          navigate("/school");
+        } else if (role === "platform_admin") {
+          navigate("/admin-dashboard");
+        } else if (role === "student") {
+          navigate("/student");
+        } else {
+          navigate("/role-selection");
+        }
       }
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.detail ||
-        error.response?.data?.non_field_errors?.[0] ||
-        "Login failed. Please try again.";
+      let errorMessage = "Login failed. Please try again.";
+      if (error.response?.status === 401) {
+        errorMessage = "Invalid credentials";
+      } else if (error.response?.status === 403) {
+        errorMessage = "Your account has been disabled. Contact support.";
+      } else {
+        errorMessage =
+          error.response?.data?.detail ||
+          error.response?.data?.non_field_errors?.[0] ||
+          errorMessage;
+      }
       setError(errorMessage);
       Swal.fire({
         title: "Error",
@@ -115,11 +134,11 @@ function Login() {
               </div>
 
               {/* Forgot password */}
-              {/* <div className="flex justify-end mt-2">
+              <div className="flex justify-end mt-2">
                 <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
                   Forgot password?
                 </Link>
-              </div> */}
+              </div>
 
               {/* Login button */}
               <div className="mt-6">

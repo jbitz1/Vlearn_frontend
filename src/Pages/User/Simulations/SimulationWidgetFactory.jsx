@@ -32,6 +32,14 @@ const simulationRegistry = {
   chem_activity_series_displacement: lazy(() => import('./ActivitySeriesSim')),
   chem_metal_reactivity_series: lazy(() => import('./MetalReactivitySim')),
   metal_reactivity_series: lazy(() => import('./MetalReactivitySim')),
+  chem_soap_micelle_action: lazy(() => import('./SoapMicelleSim')),
+  soap_micelle_action: lazy(() => import('./SoapMicelleSim')),
+  chem_functional_group_tests: lazy(() => import('./FunctionalGroupTestsSim')),
+  functional_group_tests: lazy(() => import('./FunctionalGroupTestsSim')),
+  chem_radioactive_decay_half_life: lazy(() => import('./RadioactiveDecaySim')),
+  radioactive_decay_half_life: lazy(() => import('./RadioactiveDecaySim')),
+  chem_nuclear_fission_chain_reaction: lazy(() => import('./NuclearFissionSim')),
+  nuclear_fission_chain_reaction: lazy(() => import('./NuclearFissionSim')),
 };
 
 export default function SimulationWidgetFactory({ archetype, simulationKey, config = {}, title = '', onTelemetry }) {

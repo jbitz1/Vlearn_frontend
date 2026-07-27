@@ -15,7 +15,7 @@ function Analytics() {
                 const [userRes, videoRes, activeUsersRes] = await Promise.all([
                     axios.get(`${BASE_URL}/users-count/`),
                     axios.get(`${BASE_URL}/video-count/`),
-                    axios.get(`${BASE_URL}/api/subscriptions/api/subscribed-users/count/`)
+                    axios.get(`${BASE_URL}/api/subscriptions/subscribed-users/count/`)
                 ]);
 
                 setEnrolledLearners(userRes.data);

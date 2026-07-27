@@ -1,10 +1,16 @@
 import "/src/index.css";
-import { createBrowserRouter, Outlet, RouterProvider } from "react-router";
+import { createBrowserRouter, Outlet, RouterProvider, Navigate } from "react-router";
+import ForgotPassword from "./Pages/ForgotPassword";
+import ResetPassword from "./Pages/ResetPassword";
+import Unauthorized from "./Pages/Unauthorized";
+import StudentOnboarding from "./Pages/Onboarding/StudentOnboarding";
+import InvitationAccept from "./Pages/Onboarding/InvitationAccept";
 import Home from "../src/Pages/Home";
 import Dashboard from "./Pages/User/Dashboard";
 import ContactUs from "../src/Pages/ContactUs";
 import Login from "./Components/Login";
 import Signup from "./Components/Signup";
+import RoleSelection from "./Pages/Auth/RoleSelection";
 import CourseDetail from "./Pages/User/CourseDetail";
 import User from "./Pages/User/User";
 import Resources from "./Pages/User/Resources";
@@ -26,48 +32,84 @@ import UserManagement from "./Pages/Admin/UserManagement";
 import Analytics from "./Pages/Admin/Analytics";
 import ContentStudio from "./Pages/Admin/ContentStudio/ContentStudio";
 import { LessonViewer } from "./Pages/LessonViewer";
-import { TopicsView } from "./Pages/User/TopicsView";
+import SubjectsView from "./Pages/User/SubjectsView";
+import SubjectWorkspace from "./Pages/User/SubjectWorkspace";
+import TopicWorkspace from "./Pages/User/TopicWorkspace";
 import NotFound from "./Pages/NotFound";
 import CurriculumBuilder from "./Pages/Admin/CurriculumBuilder";
 import IngestionSandbox from "./Pages/Admin/IngestionSandbox";
+import RequireRole from "./component-library/account-management/authentication/RequireRole";
+import TeacherDashboardOutlet from "./Pages/Teacher/TeacherDashboardOutlet";
+import TeacherDashboard from "./Pages/Teacher/TeacherDashboard";
+import TeacherSubjectsView from "./Pages/Teacher/TeacherSubjectsView";
+import TeacherSubjectWorkspace from "./Pages/Teacher/TeacherSubjectWorkspace";
+import TeacherTopicWorkspace from "./Pages/Teacher/TeacherTopicWorkspace";
+import TeacherClassesView from "./Pages/Teacher/TeacherClassesView";
+import TeacherClassDetail from "./Pages/Teacher/TeacherClassDetail";
+import { TeacherProfile } from "./Pages/Teacher/TeacherProfile";
+import SchoolDashboardOutlet from "./Pages/School/SchoolDashboardOutlet";
+import SchoolDashboard from "./Pages/School/SchoolDashboard";
+import AcademicStructurePage from "./Pages/School/AcademicStructurePage";
+import SchoolTeachersPage from "./Pages/School/SchoolTeachersPage";
+import SchoolStudentsPage from "./Pages/School/SchoolStudentsPage";
+import SchoolSubscriptionPage from "./Pages/School/SchoolSubscriptionPage";
+
 
 function App() {
-    const dashboardRoutes = {
-        path: "dashboard",
+    const studentRoutes = {
+        path: "student",
         element: (
-            <ProtectedRoute>
+            <RequireRole allowedRoles={["student", "platform_admin"]}>
                 <DashboardOutlet />
-            </ProtectedRoute>
+            </RequireRole>
         ),
         children: [
             {
                 index: true,
-                element:
-                    <SubscriptionRestricted
-                        allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
-                        <Dashboard />
-                    </SubscriptionRestricted>
-            },
-            {
-                path: "home",
                 element: (
-                    <SubscriptionRestricted
-                        allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}
-                    >
+                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
                         <Dashboard />
                     </SubscriptionRestricted>
                 ),
             },
             {
-                path: "user",
-                element: <User />,
+                path: "home",
+                element: (
+                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                        <Dashboard />
+                    </SubscriptionRestricted>
+                ),
             },
+            {
+                path: "subjects",
+                element: (
+                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                        <SubjectsView />
+                    </SubscriptionRestricted>
+                ),
+            },
+            {
+                path: "subject/:subjectId",
+                element: (
+                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                        <SubjectWorkspace />
+                    </SubscriptionRestricted>
+                ),
+            },
+            {
+                path: "topic/:topicId",
+                element: (
+                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                        <TopicWorkspace />
+                    </SubscriptionRestricted>
+                ),
+            },
+            { path: "profile", element: <User /> },
+            { path: "user", element: <User /> },
             {
                 path: "resources",
                 element: (
-                    <SubscriptionRestricted
-                        allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}
-                    >
+                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
                         <Resources />
                     </SubscriptionRestricted>
                 ),
@@ -83,78 +125,102 @@ function App() {
             {
                 path: "simulations",
                 element: (
-                    <SubscriptionRestricted
-                        allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}
-                    >
+                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
                         <Simulations />
                     </SubscriptionRestricted>
                 ),
             },
-            {
-                path: "quiz/:id",
-                element: <QuizAttempt />,
-            },
+            { path: "quiz/:id", element: <QuizAttempt /> },
             {
                 path: "results",
-                element:
-                    <SubscriptionRestricted
-                        allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}
-                    >
-                        <Results />
-                    </SubscriptionRestricted>,
-            },
-            {
-                path: "subject/:subjectId",
                 element: (
-                    <SubscriptionRestricted
-                        allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}
-                    >
-                        <TopicsView />
+                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                        <Results />
                     </SubscriptionRestricted>
                 ),
             },
         ],
-    }
+    };
+
+    const teacherRoutes = {
+        path: "teacher",
+        element: (
+            <RequireRole allowedRoles={["teacher", "platform_admin"]}>
+                <TeacherDashboardOutlet />
+            </RequireRole>
+        ),
+        children: [
+            { index: true, element: <TeacherDashboard /> },
+            { path: "subjects", element: <TeacherSubjectsView /> },
+            { path: "subject/:subjectId", element: <TeacherSubjectWorkspace /> },
+            { path: "topic/:topicId", element: <TeacherTopicWorkspace /> },
+            { path: "classes", element: <TeacherClassesView /> },
+            { path: "class/:streamId", element: <TeacherClassDetail /> },
+            { path: "profile", element: <TeacherProfile /> },
+            { path: "user", element: <TeacherProfile /> },
+        ],
+    };
+
+    const schoolRoutes = {
+        path: "school",
+        element: (
+            <RequireRole allowedRoles={["school_admin", "platform_admin"]}>
+                <SchoolDashboardOutlet />
+            </RequireRole>
+        ),
+        children: [
+            { index: true, element: <Navigate to="dashboard" replace /> },
+            { path: "dashboard", element: <SchoolDashboard /> },
+            { path: "academic-structure", element: <AcademicStructurePage /> },
+            { path: "teachers", element: <SchoolTeachersPage /> },
+            { path: "students", element: <SchoolStudentsPage /> },
+            { path: "subscription", element: <SchoolSubscriptionPage /> },
+            { path: "classes", element: <Navigate to="/school/academic-structure" replace /> },
+            { path: "analytics", element: <Navigate to="/school/dashboard" replace /> },
+            { path: "school", element: <Navigate to="/school/academic-structure" replace /> },
+        ],
+    };
+
+
+
     const adminDashboardRoutes = {
         path: "admin-dashboard",
         element: (
+            <RequireRole allowedRoles={["platform_admin"]}>
                 <AdminDashboardOutlet />
+            </RequireRole>
         ),
         children: [
             {
                 index: true,
-                element:
-                        <AdminDashboard />
-            },
-             {
-                path:"course-management",
-                element:
-                        <CourseManagement />
-            },
-             {
-                path:"user-management",
-                element:
-                        <UserManagement />
-            },
-             {
-                path:"analytics",
-                element:
-                        <Analytics />
+                element: <AdminDashboard />
             },
             {
-                path:"content-studio/:learningUnitId?",
+                path: "course-management",
+                element: <CourseManagement />
+            },
+            {
+                path: "user-management",
+                element: <UserManagement />
+            },
+            {
+                path: "analytics",
+                element: <Analytics />
+            },
+            {
+                path: "content-studio/:learningUnitId?",
                 element: <ContentStudio />
             },
             {
-                path:"curriculum-builder",
+                path: "curriculum-builder",
                 element: <CurriculumBuilder />
             },
             {
-                path:"ingestion-sandbox",
+                path: "ingestion-sandbox",
                 element: <IngestionSandbox />
             },
         ]
-    }
+    };
 
     const Router = createBrowserRouter([
         {
@@ -193,7 +259,50 @@ function App() {
                     path: "lesson-viewer/:topicId?",
                     element: <LessonViewer paginated={true} />
                 },
-                dashboardRoutes,
+                {
+                    path: "forgot-password",
+                    element: <ForgotPassword />,
+                },
+                {
+                    path: "reset-password/:token",
+                    element: <ResetPassword />,
+                },
+                {
+                    path: "unauthorized",
+                    element: <Unauthorized />,
+                },
+                {
+                    path: "onboarding",
+                    element: (
+                        <ProtectedRoute>
+                            <StudentOnboarding />
+                        </ProtectedRoute>
+                    ),
+                },
+                {
+                    path: "role-selection",
+                    element: (
+                        <ProtectedRoute>
+                            <RoleSelection />
+                        </ProtectedRoute>
+                    ),
+                },
+                {
+                    path: "invitation/:token",
+                    element: <InvitationAccept />,
+                },
+                { path: "dashboard", element: <Navigate to="/student" replace /> },
+                { path: "dashboard/home", element: <Navigate to="/student/home" replace /> },
+                { path: "dashboard/quiz/:id", element: <Navigate to="/student/quiz/:id" replace /> },
+                { path: "dashboard/user", element: <Navigate to="/student/user" replace /> },
+                { path: "dashboard/resources", element: <Navigate to="/student/resources" replace /> },
+                { path: "dashboard/simulations", element: <Navigate to="/student/simulations" replace /> },
+                { path: "dashboard/quizzes", element: <Navigate to="/student/quizzes" replace /> },
+                { path: "dashboard/results", element: <Navigate to="/student/results" replace /> },
+                { path: "dashboard/subject/:subjectId", element: <Navigate to="/student/subject/:subjectId" replace /> },
+                studentRoutes,
+                teacherRoutes,
+                schoolRoutes,
                 adminDashboardRoutes,
                 BillingAndPaymentsRoutes(),
                 {
@@ -203,6 +312,7 @@ function App() {
             ],
         },
     ]);
+
     return (
         <>
             {/* <UserProvider> */}

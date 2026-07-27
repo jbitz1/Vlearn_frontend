@@ -1,0 +1,692 @@
+[
+  {
+    "file": "Pages/Home.jsx",
+    "line": 30,
+    "method": "get",
+    "url": "${BASE_URL}/video-count"
+  },
+  {
+    "file": "Pages/LessonViewer.jsx",
+    "line": 195,
+    "method": "get",
+    "url": "/api/curriculum/topics/${topicId}/"
+  },
+  {
+    "file": "Pages/ResetPassword.jsx",
+    "line": 42,
+    "method": "post",
+    "url": "${BASE_URL}/reset-password/${token}/"
+  },
+  {
+    "file": "Pages/ForgotPassword.jsx",
+    "line": 19,
+    "method": "post",
+    "url": "${BASE_URL}/forgot-password/"
+  },
+  {
+    "file": "Pages/Teacher/TeacherProfile.jsx",
+    "line": 26,
+    "method": "get",
+    "url": "/profile"
+  },
+  {
+    "file": "Pages/Onboarding/StudentOnboarding.jsx",
+    "line": 23,
+    "method": "get",
+    "url": "/api/curriculum/grades/"
+  },
+  {
+    "file": "Pages/Onboarding/StudentOnboarding.jsx",
+    "line": 46,
+    "method": "patch",
+    "url": "/profile/"
+  },
+  {
+    "file": "Pages/Onboarding/InvitationAccept.jsx",
+    "line": 37,
+    "method": "get",
+    "url": "/api/organizations/invitations/accept/"
+  },
+  {
+    "file": "Pages/Onboarding/InvitationAccept.jsx",
+    "line": 97,
+    "method": "post",
+    "url": "${BASE_URL}/register/"
+  },
+  {
+    "file": "Pages/Onboarding/InvitationAccept.jsx",
+    "line": 104,
+    "method": "post",
+    "url": "/api/organizations/invitations/accept/"
+  },
+  {
+    "file": "Pages/Admin/Analytics.jsx",
+    "line": 16,
+    "method": "get",
+    "url": "${BASE_URL}/users-count/"
+  },
+  {
+    "file": "Pages/Admin/Analytics.jsx",
+    "line": 17,
+    "method": "get",
+    "url": "${BASE_URL}/video-count/"
+  },
+  {
+    "file": "Pages/Admin/Analytics.jsx",
+    "line": 18,
+    "method": "get",
+    "url": "${BASE_URL}/api/subscriptions/api/subscribed-users/count/"
+  },
+  {
+    "file": "Pages/Admin/UserManagement.jsx",
+    "line": 38,
+    "method": "patch",
+    "url": "/users/${userId}/role/"
+  },
+  {
+    "file": "Pages/Admin/IngestionSandbox.jsx",
+    "line": 54,
+    "method": "post",
+    "url": "/api/curriculum/knowledge-packs/test-extraction/"
+  },
+  {
+    "file": "Pages/Admin/AdminDashboard.jsx",
+    "line": 19,
+    "method": "get",
+    "url": "/users-count/"
+  },
+  {
+    "file": "Pages/Admin/AdminDashboard.jsx",
+    "line": 20,
+    "method": "get",
+    "url": "/video-count/"
+  },
+  {
+    "file": "Pages/Admin/AdminDashboard.jsx",
+    "line": 21,
+    "method": "get",
+    "url": "/api/subscriptions/api/subscribed-users/count/"
+  },
+  {
+    "file": "Pages/Admin/AdminDashboard.jsx",
+    "line": 34,
+    "method": "get",
+    "url": "/api/curriculum/learning-units/?page_size=5"
+  },
+  {
+    "file": "Pages/Admin/AdminDashboard.jsx",
+    "line": 35,
+    "method": "get",
+    "url": "/api/curriculum/lessons/?status=draft&page_size=5"
+  },
+  {
+    "file": "Pages/Admin/AdminDashboard.jsx",
+    "line": 36,
+    "method": "get",
+    "url": "/api/curriculum/generation-jobs/?page_size=5"
+  },
+  {
+    "file": "Pages/Admin/CurriculumBuilder.jsx",
+    "line": 51,
+    "method": "get",
+    "url": "/api/curriculum/knowledge-packs/${activePack.id}/"
+  },
+  {
+    "file": "Pages/Admin/CurriculumBuilder.jsx",
+    "line": 65,
+    "method": "get",
+    "url": "/api/curriculum/learning-units/${selectedUnit.id}/repository_stats/"
+  },
+  {
+    "file": "Pages/Admin/CurriculumBuilder.jsx",
+    "line": 99,
+    "method": "get",
+    "url": "/api/curriculum/knowledge-packs/?subject=${selectedSubject.id}"
+  },
+  {
+    "file": "Pages/Admin/CurriculumBuilder.jsx",
+    "line": 217,
+    "method": "post",
+    "url": "/api/curriculum/knowledge-packs/upload/"
+  },
+  {
+    "file": "Pages/Admin/CurriculumBuilder.jsx",
+    "line": 232,
+    "method": "post",
+    "url": "/api/curriculum/knowledge-packs/${packId}/reprocess/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 75,
+    "method": "get",
+    "url": "/api/curriculum/lesson-blocks/?lesson=${lessonId}"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 82,
+    "method": "get",
+    "url": "/api/curriculum/lesson-assets/?lesson=${lessonId}"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 92,
+    "method": "get",
+    "url": "/api/curriculum/lessons/?learning_unit=${learningUnitId}"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 124,
+    "method": "post",
+    "url": "/api/curriculum/learning-units/${learningUnitId}/generate_lesson/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 140,
+    "method": "post",
+    "url": "/api/curriculum/lesson-blocks/${blockId}/regenerate/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 168,
+    "method": "get",
+    "url": "/api/curriculum/generation-jobs/${jobId}/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 196,
+    "method": "patch",
+    "url": "/api/curriculum/lesson-blocks/${block.id}/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 208,
+    "method": "delete",
+    "url": "/api/curriculum/lesson-blocks/${blockId}/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 217,
+    "method": "post",
+    "url": "/api/curriculum/lesson-blocks/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 242,
+    "method": "post",
+    "url": "/api/curriculum/lesson-blocks/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 266,
+    "method": "post",
+    "url": "/api/curriculum/lesson-blocks/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 285,
+    "method": "post",
+    "url": "/api/curriculum/lesson-assets/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 288,
+    "method": "post",
+    "url": "/api/curriculum/lesson-assets/${assetRes.data.id}/attach_to_block/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 307,
+    "method": "post",
+    "url": "/api/curriculum/lessons/${lesson.id}/publish/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/ContentStudio.jsx",
+    "line": 349,
+    "method": "post",
+    "url": "/api/curriculum/lesson-blocks/reorder/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/composer/MediaSlot.jsx",
+    "line": 71,
+    "method": "post",
+    "url": "/api/curriculum/lesson-assets/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/composer/MediaSlot.jsx",
+    "line": 73,
+    "method": "patch",
+    "url": "/api/curriculum/lesson-assets/${asset.id}/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/composer/MediaSlot.jsx",
+    "line": 99,
+    "method": "post",
+    "url": "/api/curriculum/lesson-assets/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/composer/MediaSlot.jsx",
+    "line": 100,
+    "method": "post",
+    "url": "/api/curriculum/lesson-assets/${res.data.id}/attach_to_block/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/composer/MediaSlot.jsx",
+    "line": 102,
+    "method": "patch",
+    "url": "/api/curriculum/lesson-assets/${asset.id}/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/composer/MediaSlot.jsx",
+    "line": 115,
+    "method": "post",
+    "url": "/api/curriculum/lesson-assets/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/composer/MediaSlot.jsx",
+    "line": 124,
+    "method": "patch",
+    "url": "/api/curriculum/lesson-assets/${asset.id}/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/composer/MediaSlot.jsx",
+    "line": 162,
+    "method": "post",
+    "url": "/api/curriculum/lesson-assets/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/composer/MediaSlot.jsx",
+    "line": 164,
+    "method": "patch",
+    "url": "/api/curriculum/lesson-assets/${asset.id}/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/composer/MediaSlot.jsx",
+    "line": 322,
+    "method": "patch",
+    "url": "/api/curriculum/lesson-assets/${asset.id}/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/composer/MediaSlot.jsx",
+    "line": 419,
+    "method": "get",
+    "url": "/experiment_videos/"
+  },
+  {
+    "file": "Pages/Admin/ContentStudio/composer/MediaSlot.jsx",
+    "line": 424,
+    "method": "get",
+    "url": "/api/curriculum/knowledge-chunks/?chunk_type=diagram&page_size=20"
+  },
+  {
+    "file": "Pages/User/CourseDetail.jsx",
+    "line": 25,
+    "method": "get",
+    "url": "${BASE_URL}/courses/${id}/"
+  },
+  {
+    "file": "Pages/User/CourseDetail.jsx",
+    "line": 45,
+    "method": "get",
+    "url": "${BASE_URL}/questions/quizzes/"
+  },
+  {
+    "file": "Pages/User/Quizzes.jsx",
+    "line": 20,
+    "method": "get",
+    "url": "${BASE_URL}/questions/quizzes/"
+  },
+  {
+    "file": "Pages/User/Quiz.jsx",
+    "line": 24,
+    "method": "get",
+    "url": "${BASE_URL}/quizzes/${id}"
+  },
+  {
+    "file": "Pages/User/User.jsx",
+    "line": 26,
+    "method": "get",
+    "url": "/profile"
+  },
+  {
+    "file": "Pages/User/Results.jsx",
+    "line": 16,
+    "method": "get",
+    "url": "${BASE_URL}/questions/attempts/"
+  },
+  {
+    "file": "Pages/User/TopicsView.jsx",
+    "line": 46,
+    "method": "get",
+    "url": "/api/curriculum/topics/?subject=${subjectId}"
+  },
+  {
+    "file": "Pages/User/Resources.jsx",
+    "line": 44,
+    "method": "get",
+    "url": "${BASE_URL}/files/"
+  },
+  {
+    "file": "Pages/User/QuizAttempt.jsx",
+    "line": 35,
+    "method": "post",
+    "url": "${BASE_URL}/questions/attempts/start/"
+  },
+  {
+    "file": "Pages/User/QuizAttempt.jsx",
+    "line": 44,
+    "method": "get",
+    "url": "${BASE_URL}/questions/quizzes/${id}/"
+  },
+  {
+    "file": "Pages/User/QuizAttempt.jsx",
+    "line": 103,
+    "method": "post",
+    "url": "${BASE_URL}/questions/answers/"
+  },
+  {
+    "file": "Pages/User/QuizAttempt.jsx",
+    "line": 131,
+    "method": "post",
+    "url": "${BASE_URL}/questions/answers/"
+  },
+  {
+    "file": "Pages/User/QuizAttempt.jsx",
+    "line": 148,
+    "method": "put",
+    "url": "${BASE_URL}/questions/attempts/${attempt.id}/submit/"
+  },
+  {
+    "file": "config/apiClient.js",
+    "line": 71,
+    "method": "post",
+    "url": "${BASE_URL}/api/token/refresh/"
+  },
+  {
+    "file": "Components/SubscriptionPlan.jsx",
+    "line": 18,
+    "method": "get",
+    "url": "${BASE_URL}/plans"
+  },
+  {
+    "file": "Components/Breadcrumb.jsx",
+    "line": 22,
+    "method": "get",
+    "url": "${BASE_URL}/courses/${id}/"
+  },
+  {
+    "file": "Components/Signup.jsx",
+    "line": 56,
+    "method": "post",
+    "url": "${BASE_URL}/register/"
+  },
+  {
+    "file": "Components/Login.jsx",
+    "line": 30,
+    "method": "post",
+    "url": "${BASE_URL}/login/"
+  },
+  {
+    "file": "Components/Admin/KnowledgePackReviewModal.jsx",
+    "line": 55,
+    "method": "post",
+    "url": "/api/curriculum/knowledge-packs/${knowledgePack.id}/approve/"
+  },
+  {
+    "file": "services/teacherCurriculumService.js",
+    "line": 97,
+    "method": "get",
+    "url": "/api/organizations/teacher/my-streams/"
+  },
+  {
+    "file": "services/teacherCurriculumService.js",
+    "line": 187,
+    "method": "get",
+    "url": "/api/curriculum/topics/?subject=${subj.id}"
+  },
+  {
+    "file": "services/teacherCurriculumService.js",
+    "line": 227,
+    "method": "get",
+    "url": "/api/curriculum/subjects/${subjectId}/"
+  },
+  {
+    "file": "services/teacherCurriculumService.js",
+    "line": 238,
+    "method": "get",
+    "url": "/api/curriculum/topics/?subject=${subjectId}"
+  },
+  {
+    "file": "services/teacherCurriculumService.js",
+    "line": 254,
+    "method": "get",
+    "url": "/api/curriculum/topics/${topicId}/"
+  },
+  {
+    "file": "services/teacherCurriculumService.js",
+    "line": 264,
+    "method": "get",
+    "url": "/api/curriculum/lessons/?topic=${topicId}"
+  },
+  {
+    "file": "services/teacherCurriculumService.js",
+    "line": 272,
+    "method": "get",
+    "url": "/api/curriculum/topics/${topicId}/lesson/"
+  },
+  {
+    "file": "services/teacherCurriculumService.js",
+    "line": 311,
+    "method": "get",
+    "url": "/experiment_videos/"
+  },
+  {
+    "file": "services/teacherCurriculumService.js",
+    "line": 329,
+    "method": "get",
+    "url": "/api/curriculum/simulations/"
+  },
+  {
+    "file": "services/teacherCurriculumService.js",
+    "line": 342,
+    "method": "get",
+    "url": "/files/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 6,
+    "method": "get",
+    "url": "/api/organizations/schools/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 11,
+    "method": "post",
+    "url": "/api/organizations/schools/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 16,
+    "method": "patch",
+    "url": "/api/organizations/schools/${schoolId}/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 22,
+    "method": "get",
+    "url": "/api/organizations/subscriptions/?school_id=${schoolId}"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 29,
+    "method": "get",
+    "url": "/api/organizations/academic-years/?school_id=${schoolId}"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 34,
+    "method": "post",
+    "url": "/api/organizations/academic-years/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 40,
+    "method": "get",
+    "url": "/api/organizations/classes/?school_id=${schoolId}"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 45,
+    "method": "post",
+    "url": "/api/organizations/classes/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 50,
+    "method": "delete",
+    "url": "/api/organizations/classes/${classId}/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 55,
+    "method": "get",
+    "url": "/api/organizations/streams/?school_id=${schoolId}"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 60,
+    "method": "post",
+    "url": "/api/organizations/streams/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 65,
+    "method": "delete",
+    "url": "/api/organizations/streams/${streamId}/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 71,
+    "method": "get",
+    "url": "/api/organizations/memberships/?school_id=${schoolId}&role=teacher"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 76,
+    "method": "get",
+    "url": "/api/organizations/invitations/?school_id=${schoolId}&state=PENDING"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 81,
+    "method": "post",
+    "url": "/api/organizations/invitations/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 86,
+    "method": "post",
+    "url": "/api/organizations/invitations/${invitationId}/revoke/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 91,
+    "method": "post",
+    "url": "/api/organizations/memberships/${membershipId}/transition-state/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 99,
+    "method": "get",
+    "url": "/api/organizations/enrollments/?school_id=${schoolId}"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 104,
+    "method": "post",
+    "url": "/api/organizations/enrollments/batch-enroll/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 110,
+    "method": "get",
+    "url": "/api/organizations/teacher-assignments/?school_id=${schoolId}"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 115,
+    "method": "post",
+    "url": "/api/organizations/teacher-assignments/assign-stream/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 120,
+    "method": "post",
+    "url": "/api/organizations/teacher-assignments/unassign-stream/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 128,
+    "method": "get",
+    "url": "/api/curriculum/grades/"
+  },
+  {
+    "file": "services/schoolAdminService.js",
+    "line": 133,
+    "method": "get",
+    "url": "/api/curriculum/subjects/"
+  },
+  {
+    "file": "services/studentCurriculumService.js",
+    "line": 461,
+    "method": "get",
+    "url": "/api/organizations/student/my-school/"
+  },
+  {
+    "file": "services/studentCurriculumService.js",
+    "line": 474,
+    "method": "get",
+    "url": "/api/curriculum/grades/"
+  },
+  {
+    "file": "services/studentCurriculumService.js",
+    "line": 495,
+    "method": "get",
+    "url": "/api/curriculum/subjects/${subjectId}/"
+  },
+  {
+    "file": "services/studentCurriculumService.js",
+    "line": 505,
+    "method": "get",
+    "url": "/api/curriculum/topics/?subject=${subjectId}"
+  },
+  {
+    "file": "services/studentCurriculumService.js",
+    "line": 516,
+    "method": "get",
+    "url": "/api/curriculum/topics/${topicId}/"
+  },
+  {
+    "file": "services/studentCurriculumService.js",
+    "line": 526,
+    "method": "get",
+    "url": "/api/curriculum/topics/${topicId}/lesson/"
+  },
+  {
+    "file": "services/studentCurriculumService.js",
+    "line": 539,
+    "method": "get",
+    "url": "/experiment_videos"
+  },
+  {
+    "file": "services/studentCurriculumService.js",
+    "line": 558,
+    "method": "get",
+    "url": "/api/curriculum/simulations/"
+  },
+  {
+    "file": "services/studentCurriculumService.js",
+    "line": 577,
+    "method": "get",
+    "url": "/questions/attempts/"
+  }
+]

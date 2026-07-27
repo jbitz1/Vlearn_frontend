@@ -416,7 +416,7 @@ function RepositoryBrowser({ onSelect, onCancel, isVideo = false }) {
     React.useEffect(() => {
         setLoading(true);
         if (isVideo) {
-            apiClient.get(`/experiment_videos/`)
+            apiClient.get(`/experiment_videos//`)
                 .then((r) => setItems(r.data.results || r.data || []))
                 .catch(() => setItems([]))
                 .finally(() => setLoading(false));

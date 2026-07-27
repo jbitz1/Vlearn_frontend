@@ -2,7 +2,6 @@ import { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { ChevronLeft, BookOpen } from 'lucide-react';
 import UserContext from '../../Context/UserContext';
-import SideNav from '../../Components/User/SideNav';
 import apiClient from '../../config/apiClient';
 
 export const TopicsView = () => {
@@ -59,10 +58,7 @@ export const TopicsView = () => {
     }, [subjectId, token]);
 
     return (
-        <div className="flex">
-            <SideNav />
-            <main className="w-full bg-gray-50 min-h-screen">
-                <div className="p-6 md:p-12">
+        <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
                     <button 
                         onClick={() => navigate('/dashboard')} 
                         className="text-custom-blue hover:underline font-semibold flex items-center mb-8"
@@ -135,8 +131,6 @@ export const TopicsView = () => {
                             )}
                         </div>
                     )}
-                </div>
-            </main>
         </div>
     );
 };

@@ -97,7 +97,7 @@ export default function PreferentialDischargeSim({ config = {}, onTelemetry }) {
     ? (electrodeType === 'carbon' ? 'cuso4_carbon' : 'cuso4_copper')
     : selectedBaseId;
 
-  const currentData = ELECTRODE_DATA[selectedId];
+  const currentData = ELECTROLYTE_DATA[selectedId];
 
   // Master Check
   useEffect(() => {

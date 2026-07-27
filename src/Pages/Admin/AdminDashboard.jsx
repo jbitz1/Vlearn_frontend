@@ -18,7 +18,7 @@ function AdminDashboard() {
                 const [userRes, videoRes, activeUsersRes] = await Promise.all([
                     apiClient.get('/users-count/'),
                     apiClient.get('/video-count/'),
-                    apiClient.get('/api/subscriptions/api/subscribed-users/count/'),
+                    apiClient.get('/api/subscriptions/subscribed-users/count/'),
                 ]);
                 setEnrolledLearners(userRes.data);
                 setVideoCount(videoRes.data);

@@ -21,7 +21,7 @@
 //   useEffect(() => {
 //     const fetchQuestion = async () => {
 //       try {
-//         const response = await axios.get(`${BASE_URL}/quizzes/${id}`,
+//         const response = await axios.get(`${BASE_URL}/quizzes/${id}/`,
 //           {
 //             headers: { Authorization: `Bearer ${token.access}` },
 //           }

@@ -1,3 +1,8 @@
+/**
+ * @deprecated This authentication context is deprecated and will be removed.
+ * Use UserContext from 'src/Context/UserContext.jsx' instead.
+ * This file has zero active callers and is preserved only for reference.
+ */
 import React from "react";
 import { apiBaseUrl } from "../../../config/constantVariables";
 import { responseFormater } from "../../../util-functions/responseFormater";

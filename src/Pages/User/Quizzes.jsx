@@ -78,7 +78,7 @@ function Quizzes() {
             popup: 'rounded-3xl shadow-2xl p-10 w-fit text-custom-orange'
           },
           willClose: () => {
-            navigate(`/dashboard/quiz/${quizId}`);
+            navigate(`/student/quiz/${quizId}`);
           }
         });
       }

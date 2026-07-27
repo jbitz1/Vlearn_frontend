@@ -27,7 +27,7 @@ function Home() {
   useEffect(() => {
     const fetchVideoCount = async () => {
       try {
-        const response = await axios.get(`${BASE_URL}/video-count`);
+        const response = await axios.get(`${BASE_URL}/video-count/`);
         console.log(response.data)
         setVideoCount(response.data)
       } catch (error) {
