@@ -75,6 +75,46 @@ export function SchoolDashboard() {
         </div>
       </div>
 
+      {/* School Setup Checklist Card */}
+      <div className="bg-gradient-to-r from-blue-900 to-custom-blue text-white rounded-3xl p-6 shadow-md mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-bold">School Setup & Onboarding Hub</h2>
+            <p className="text-xs text-blue-200">Complete institutional setup tasks to unlock full classroom delivery & subscriptions.</p>
+          </div>
+          <span className="text-xs bg-orange-500 font-extrabold px-3 py-1 rounded-full uppercase">
+            {school?.setup_status || 'PROFILE_COMPLETE'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+          <div className="p-3 bg-white/10 rounded-2xl text-center border border-white/20">
+            <span className="text-xs font-semibold block text-blue-200">1. Details</span>
+            <span className="text-sm font-bold text-green-300">✓ Done</span>
+          </div>
+          <div onClick={() => navigate('/school/academic-structure')} className="p-3 bg-white/10 rounded-2xl text-center border border-white/20 cursor-pointer hover:bg-white/20 transition">
+            <span className="text-xs font-semibold block text-blue-200">2. Streams</span>
+            <span className={`text-sm font-bold ${streams.length > 0 ? 'text-green-300' : 'text-yellow-300'}`}>{streams.length > 0 ? '✓ Done' : '+ Add'}</span>
+          </div>
+          <div onClick={() => navigate('/school/teachers')} className="p-3 bg-white/10 rounded-2xl text-center border border-white/20 cursor-pointer hover:bg-white/20 transition">
+            <span className="text-xs font-semibold block text-blue-200">3. Teachers</span>
+            <span className={`text-sm font-bold ${teachers.length > 0 ? 'text-green-300' : 'text-yellow-300'}`}>{teachers.length > 0 ? '✓ Done' : '+ Invite'}</span>
+          </div>
+          <div onClick={() => navigate('/school/teachers')} className="p-3 bg-white/10 rounded-2xl text-center border border-white/20 cursor-pointer hover:bg-white/20 transition">
+            <span className="text-xs font-semibold block text-blue-200">4. Assign</span>
+            <span className="text-sm font-bold text-yellow-300">+ Assign</span>
+          </div>
+          <div onClick={() => navigate('/school/students')} className="p-3 bg-white/10 rounded-2xl text-center border border-white/20 cursor-pointer hover:bg-white/20 transition">
+            <span className="text-xs font-semibold block text-blue-200">5. Students</span>
+            <span className={`text-sm font-bold ${activeStudentCount > 0 ? 'text-green-300' : 'text-yellow-300'}`}>{activeStudentCount > 0 ? '✓ Done' : '+ Import'}</span>
+          </div>
+          <div onClick={() => navigate('/school/subscription')} className="p-3 bg-white/10 rounded-2xl text-center border border-white/20 cursor-pointer hover:bg-white/20 transition">
+            <span className="text-xs font-semibold block text-blue-200">6. Subscriptions</span>
+            <span className="text-sm font-bold text-yellow-300">View Plans</span>
+          </div>
+        </div>
+      </div>
+
       {/* Organizational Facts */}
       <section>
         <h2 className="text-xs font-extrabold text-gray-400 uppercase tracking-wider mb-3">

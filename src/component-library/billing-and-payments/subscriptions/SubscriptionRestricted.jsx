@@ -33,12 +33,24 @@ const SubscriptionRestricted = ({
     const [allowed, setAllowed] = React.useState(false);
 
     React.useEffect(() => {
-        if (userContext?.user?.is_superuser) {
+        if (userContext?.user?.is_superuser || userContext?.user?.is_staff || userContext?.user?.role === 'platform_admin') {
             setAllowed(true);
             return;
         }
 
-        if (subscriptionContext?.activeSubscriptions) {
+        const ent = subscriptionContext?.entitlements;
+        if (ent) {
+            if (ent.platform_wide) {
+                setAllowed(true);
+                return;
+            }
+            if (ent.curriculum_access?.subjects?.length > 0 || ent.features?.length > 0) {
+                setAllowed(true);
+                return;
+            }
+        }
+
+        if (subscriptionContext?.activeSubscriptions?.length > 0) {
             if (allowedSubscriptionPlans?.length > 0) {
                 let isAllowed = false;
                 subscriptionContext.activeSubscriptions.forEach((subscription) => {
@@ -51,12 +63,14 @@ const SubscriptionRestricted = ({
                     }
                 });
                 setAllowed(isAllowed);
+                return;
             } else {
                 setAllowed(true);
+                return;
             }
-        } else {
-            setAllowed(false);
         }
+
+        setAllowed(false);
     }, [subscriptionContext, allowedSubscriptionPlans, userContext]);
 
     return allowed ? children : fallBackComponent;

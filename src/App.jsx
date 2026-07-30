@@ -139,6 +139,14 @@ function App() {
                     </SubscriptionRestricted>
                 ),
             },
+            {
+                path: "lesson-viewer/:topicId?",
+                element: (
+                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                        <LessonViewer paginated={true} />
+                    </SubscriptionRestricted>
+                ),
+            },
         ],
     };
 
@@ -257,7 +265,13 @@ function App() {
                 },
                 {
                     path: "lesson-viewer/:topicId?",
-                    element: <LessonViewer paginated={true} />
+                    element: (
+                        <RequireRole allowedRoles={["student", "teacher", "platform_admin"]}>
+                            <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                                <LessonViewer paginated={true} />
+                            </SubscriptionRestricted>
+                        </RequireRole>
+                    ),
                 },
                 {
                     path: "forgot-password",

@@ -408,9 +408,10 @@ const teacherCurriculumService = {
       const res = await apiClient.get('/experiment_videos/');
       const fetched = res.data?.results || res.data || [];
       if (fetched.length > 0) {
-        if (subjectName) {
+        if (subjectName && subjectName.toLowerCase() !== 'chemistry') {
           const lower = subjectName.toLowerCase();
-          return fetched.filter(e => !e.category || e.category.toLowerCase().includes(lower) || lower.includes(e.category.toLowerCase()));
+          const filtered = fetched.filter(e => !e.category || e.category.toLowerCase().includes(lower) || lower.includes(e.category.toLowerCase()));
+          return filtered.length > 0 ? filtered : fetched;
         }
         return fetched;
       }

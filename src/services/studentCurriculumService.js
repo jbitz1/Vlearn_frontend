@@ -71,11 +71,18 @@ export const studentCurriculumService = {
   async getActiveLesson(topicId) {
     try {
       const response = await apiClient.get(`/api/curriculum/topics/${topicId}/lesson/`);
-      return response.data;
+      if (response.data) return response.data;
     } catch (err) {
-      console.error(`Failed to fetch active lesson for topic ${topicId}:`, err);
-      return null;
+      console.warn(`Failed to fetch active lesson via topic endpoint for topic ${topicId}:`, err.message);
     }
+    try {
+      const listRes = await apiClient.get(`/api/curriculum/lessons/?topic=${topicId}`);
+      const list = listRes.data?.results || listRes.data || [];
+      if (list.length > 0) return list[0];
+    } catch (err) {
+      console.error(`Failed to fetch lessons list fallback for topic ${topicId}:`, err.message);
+    }
+    return null;
   },
 
   /**

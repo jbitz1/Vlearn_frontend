@@ -10,43 +10,61 @@ export const useSubscriptionContext = () => {
 
 const SubscriptionContextProvider = ({ children }) => {
     const [activeSubscriptions, setActiveSubscriptions] = React.useState([]);
+    const [entitlements, setEntitlements] = React.useState({
+        platform_wide: false,
+        curriculum_access: { grades: [], subjects: [] },
+        features: [],
+    });
     const [errors, setErrors] = React.useState(null);
     const userContext = React.useContext(UserContext);
 
-    const subscriptionFetecher = useFetcher();
+    const subscriptionFetcher = useFetcher();
+
     React.useEffect(() => {
         if (userContext?.user) {
-            subscriptionFetecher.load(
+            subscriptionFetcher.load(
                 `/billing-and-payments/subscriptions/active`
             );
+
+            // Fetch semantic entitlements
+            fetch("/api/subscriptions/entitlements/me/", {
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+                },
+            })
+                .then((res) => (res.ok ? res.json() : null))
+                .then((data) => {
+                    if (data) {
+                        setEntitlements(data);
+                    }
+                })
+                .catch((err) => console.error("Error fetching entitlements:", err));
         }
     }, [userContext?.user]);
 
     React.useEffect(() => {
-        if (subscriptionFetecher.data) {
-            if (
-                subscriptionFetecher.data.responseCode === 200
-            ) {
+        if (subscriptionFetcher.data) {
+            if (subscriptionFetcher.data.responseCode === 200) {
                 setActiveSubscriptions(
-                    subscriptionFetecher.data?.responseData?.data
+                    subscriptionFetcher.data?.responseData?.data || []
                 );
             } else {
-                setErrors(subscriptionFetecher.data?.responseData?.errors);
+                setErrors(subscriptionFetcher.data?.responseData?.errors);
             }
         }
-    }, [subscriptionFetecher.data]);
+    }, [subscriptionFetcher.data]);
 
     return (
-        <>
-            <SubscriptionContext.Provider
-                value={{
-                    activeSubscriptions,
-                    errors,
-                }}
-            >
-                {children}
-            </SubscriptionContext.Provider>
-        </>
+        <SubscriptionContext.Provider
+            value={{
+                activeSubscriptions,
+                entitlements,
+                errors,
+            }}
+        >
+            {children}
+        </SubscriptionContext.Provider>
     );
 };
 
