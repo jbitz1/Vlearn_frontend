@@ -1,6 +1,7 @@
 import React from "react";
 import UserContext from "../../../Context/UserContext";
 import { useFetcher } from "react-router";
+import apiClient from "../../../config/apiClient";
 
 const SubscriptionContext = React.createContext(null);
 
@@ -27,19 +28,15 @@ const SubscriptionContextProvider = ({ children }) => {
             );
 
             // Fetch semantic entitlements
-            fetch("/api/subscriptions/entitlements/me/", {
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-                },
-            })
-                .then((res) => (res.ok ? res.json() : null))
-                .then((data) => {
-                    if (data) {
-                        setEntitlements(data);
+            apiClient.get("/api/subscriptions/entitlements/me/")
+                .then((res) => {
+                    if (res.data) {
+                        setEntitlements(res.data);
                     }
                 })
-                .catch((err) => console.error("Error fetching entitlements:", err));
+                .catch((err) => {
+                    console.error("Failed to fetch entitlements:", err);
+                });
         }
     }, [userContext?.user]);
 

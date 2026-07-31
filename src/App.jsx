@@ -163,7 +163,9 @@ function App() {
         path: "teacher",
         element: (
             <RequireRole allowedRoles={["teacher", "platform_admin"]}>
-                <TeacherDashboardOutlet />
+                <SubscriptionRestricted>
+                    <TeacherDashboardOutlet />
+                </SubscriptionRestricted>
             </RequireRole>
         ),
         children: [
@@ -187,10 +189,10 @@ function App() {
         ),
         children: [
             { index: true, element: <Navigate to="dashboard" replace /> },
-            { path: "dashboard", element: <SchoolDashboard /> },
-            { path: "academic-structure", element: <AcademicStructurePage /> },
-            { path: "teachers", element: <SchoolTeachersPage /> },
-            { path: "students", element: <SchoolStudentsPage /> },
+            { path: "dashboard", element: <SubscriptionRestricted><SchoolDashboard /></SubscriptionRestricted> },
+            { path: "academic-structure", element: <SubscriptionRestricted><AcademicStructurePage /></SubscriptionRestricted> },
+            { path: "teachers", element: <SubscriptionRestricted><SchoolTeachersPage /></SubscriptionRestricted> },
+            { path: "students", element: <SubscriptionRestricted><SchoolStudentsPage /></SubscriptionRestricted> },
             { path: "subscription", element: <SchoolSubscriptionPage /> },
             { path: "classes", element: <Navigate to="/school/academic-structure" replace /> },
             { path: "analytics", element: <Navigate to="/school/dashboard" replace /> },

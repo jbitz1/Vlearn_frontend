@@ -1,9 +1,11 @@
-import React from 'react';
-import { CreditCard, Calendar, Users, UserCheck, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { CreditCard, Calendar, Users, UserCheck, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useSchoolContext } from '../../Context/SchoolContext';
 import PageHeader from '../../Components/School/PageHeader';
+import SchoolCheckoutModal from '../../Components/School/SchoolCheckoutModal';
 
 export function SchoolSubscriptionPage() {
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const {
     subscription,
     teachers,
@@ -21,10 +23,18 @@ export function SchoolSubscriptionPage() {
   return (
     <div className="space-y-8">
       {/* Page Header */}
-      <PageHeader
-        title="Subscription"
-        subtitle="Manage plan entitlements and view capacity limits"
-      />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <PageHeader
+          title="Subscription"
+          subtitle="Manage plan entitlements and view capacity limits"
+        />
+        <button
+          onClick={() => setIsCheckoutOpen(true)}
+          className="flex items-center gap-2 bg-custom-blue text-white px-5 py-2.5 rounded-xl font-bold hover:bg-custom-orange transition shadow-sm text-sm"
+        >
+          Upgrade / Renew Plan <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
 
       {isLoading ? (
         <div className="space-y-4">
@@ -118,6 +128,11 @@ export function SchoolSubscriptionPage() {
           </div>
         </div>
       )}
+
+      <SchoolCheckoutModal 
+        isOpen={isCheckoutOpen} 
+        onClose={() => setIsCheckoutOpen(false)} 
+      />
     </div>
   );
 }

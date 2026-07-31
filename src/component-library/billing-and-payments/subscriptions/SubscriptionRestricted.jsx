@@ -9,24 +9,7 @@ import UserContext from "../../../Context/UserContext";
 const SubscriptionRestricted = ({
     requireFeature,
     requireSubjectId,
-    fallBackComponent = (
-        <div className="flex items-center justify-center min-h-screen">
-            <div className="text-center my-10 flex flex-col items-center">
-                <div className="mx-auto flex items-center justify-center h-24 w-24 rounded-full">
-                    <ShieldExclamationIcon strokeWidth={1} className="text-custom-orange" />
-                </div>
-                <h3 className="mt-2 text-lg font-bold text-custom-orange">
-                    Not Allowed! <br /> You do not have an active subscription for this.
-                </h3>
-                <p className="my-1 text-lg text-custom-blue">
-                     Renew your subscription below to gain access
-                </p>
-                <Link to={"/billing-and-payments/subscriptions"}>
-                    <Button variant="text">Go to Subscriptions <ArrowRight strokeWidth={1}/></Button>
-                </Link>
-            </div>
-        </div>
-    ),
+    fallBackComponent,
     children,
 }) => {
     const subscriptionContext = useSubscriptionContext();
@@ -68,7 +51,41 @@ const SubscriptionRestricted = ({
         setAllowed(false);
     }, [subscriptionContext, requireFeature, requireSubjectId, userContext]);
 
-    return allowed ? children : fallBackComponent;
+    const role = userContext?.user?.role;
+    
+    const defaultFallback = (
+        <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center my-10 flex flex-col items-center">
+                <div className="mx-auto flex items-center justify-center h-24 w-24 rounded-full">
+                    <ShieldExclamationIcon strokeWidth={1} className="text-custom-orange" />
+                </div>
+                <h3 className="mt-2 text-lg font-bold text-custom-orange">
+                    Not Allowed! <br /> You do not have an active subscription for this.
+                </h3>
+                {role === "teacher" ? (
+                    <>
+                        <p className="my-1 text-lg text-custom-blue">
+                             Please contact your school administrator to renew your school's subscription.
+                        </p>
+                        <Link to="/login">
+                            <Button variant="text">Return to Sign In <ArrowRight strokeWidth={1}/></Button>
+                        </Link>
+                    </>
+                ) : (
+                    <>
+                        <p className="my-1 text-lg text-custom-blue">
+                             Renew your subscription below to gain access
+                        </p>
+                        <Link to={role === "school_admin" ? "/school/subscription" : "/billing-and-payments/subscriptions"}>
+                            <Button variant="text">Go to Subscriptions <ArrowRight strokeWidth={1}/></Button>
+                        </Link>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+
+    return allowed ? children : (fallBackComponent || defaultFallback);
 };
 
 export default SubscriptionRestricted;
