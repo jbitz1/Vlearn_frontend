@@ -70,7 +70,7 @@ function Home() {
     e.preventDefault();
 
     emailjs
-      .sendForm('Demo_booking', 'template_9hq8xvb', form.current, 'cKnA1NtA8E441cRRU')
+      .sendForm(import.meta.env.VITE_EMAILJS_SERVICE_ID, import.meta.env.VITE_EMAILJS_TEMPLATE_ID, form.current, import.meta.env.VITE_EMAILJS_PUBLIC_KEY)
       .then(
         () => {
           successAlert();
