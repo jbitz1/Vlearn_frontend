@@ -16,6 +16,8 @@ import InvoiceDetails from "../billing/invoices/InvoiceDetails";
 import PaymentForm, { MakePaymentDialog } from "../payments/PaymentForm";
 import DropDownMenu from "../../dropdown-menus/DropDownMenu";
 
+import { useNavigate } from "react-router";
+
 function classNames(...classes) {
     return classes.filter(Boolean).join(" ");
 }
@@ -29,7 +31,7 @@ const AddSubscriptionForm = ({ errors, setErrors, defaultvalues }) => {
         if (subscriptionPlans.length > 0) {
             const options = subscriptionPlans.map((plan) => ({
                 value: plan.id,
-                label: `${plan.name} - ${plan.price}`,
+                label: `${plan.name} - KSh ${plan.price || plan.variants?.[0]?.price || 0}`,
             }));
             setSubscriptionPlanOptions(options);
         }
@@ -41,7 +43,7 @@ const AddSubscriptionForm = ({ errors, setErrors, defaultvalues }) => {
     React.useEffect(() => {
         if (defaultvalues && defaultvalues.plan) {
             let selectedPlan = subscriptionPlans.find(
-                (plan) => plan.id === defaultvalues.plan
+                (plan) => String(plan.id) === String(defaultvalues.plan)
             );
             setSelectedSubscriptionPlan(selectedPlan);
         }
@@ -50,9 +52,9 @@ const AddSubscriptionForm = ({ errors, setErrors, defaultvalues }) => {
     return (
         <>
             <UseFetcherData
-                url={"/billing-and-payments/subscriptions/plans/list"}
+                url={"/api/subscriptions/products/?audience=STUDENT"}
                 setData={(data) => {
-                    let plans = data?.responseData?.data;
+                    let plans = data?.responseData?.results || data?.responseData?.data || data?.responseData;
                     if (plans && !Array.isArray(plans) && plans.results) {
                         plans = plans.results;
                     }
@@ -72,7 +74,7 @@ const AddSubscriptionForm = ({ errors, setErrors, defaultvalues }) => {
                     defaultValue={selectedSubscriptionPlan?.id || ""}
                     onChange={(value) => {
                         let selectedPlan = subscriptionPlans.find(
-                            (plan) => plan.id === parseInt(value)
+                            (plan) => String(plan.id) === String(value)
                         );
                         setSelectedSubscriptionPlan(selectedPlan);
                     }}
@@ -83,6 +85,7 @@ const AddSubscriptionForm = ({ errors, setErrors, defaultvalues }) => {
                 </Card>
             </div>
             <PaymentForm
+
                 errors={errors?.invoice_payment_transaction}
                 setErrors={setErrors}
                 amount={selectedSubscriptionPlan?.price}
@@ -92,58 +95,11 @@ const AddSubscriptionForm = ({ errors, setErrors, defaultvalues }) => {
 };
 
 const AddSubscriptionDialog = () => {
-    const [errors, setErrors] = React.useState({});
-
-    const billingAddresFormDataGroup = createFormDataGroup({
-        name: "billing_address",
-        fields: [
-            "full_name",
-            "phone_number",
-            "email",
-            "city",
-            "street_address",
-        ],
-    });
-
-    const subscriptionDetailsFormDataGroup = createFormDataGroup({
-        name: "subscription_details",
-        fields: ["plan"],
-    });
-    const paymentDetailsFormDataGroup = createFormDataGroup({
-        name: "payment_details",
-        fields: ["mpesa_phone_number"],
-    });
-
-    const invoicePaymentTransactionFormDataGroup = createFormDataGroup({
-        name: "invoice_payment_transaction",
-        fields: ["amount", "payment_method"],
-        options: {
-            nestedGroups: [paymentDetailsFormDataGroup],
-        },
-    });
-
+    const navigate = useNavigate();
     return (
-        <>
-            <FormDialog
-                title="Add Subscription"
-                errors={errors}
-                setErrors={setErrors}
-                component={
-                    <Button>
-                        {" "}
-                        <PlusIcon className="size-4 mr-1" /> Add Subscription
-                    </Button>
-                }
-                actionUrl="/billing-and-payments/subscriptions/list"
-                formDataGroups={[
-                    billingAddresFormDataGroup,
-                    subscriptionDetailsFormDataGroup,
-                    invoicePaymentTransactionFormDataGroup,
-                ]}
-            >
-                <AddSubscriptionForm errors={errors} setErrors={setErrors} />
-            </FormDialog>
-        </>
+        <Button onClick={() => navigate("/subscription")}>
+            <PlusIcon className="size-4 mr-1" /> Add Subscription
+        </Button>
     );
 };
 

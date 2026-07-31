@@ -1,6 +1,15 @@
 import "/src/index.css";
-import { createBrowserRouter, Outlet, RouterProvider, Navigate } from "react-router";
+import { createBrowserRouter, Outlet, RouterProvider, Navigate, useParams } from "react-router";
 import ForgotPassword from "./Pages/ForgotPassword";
+
+function RedirectWithParams({ to }) {
+    const params = useParams();
+    let target = to;
+    Object.keys(params).forEach((key) => {
+        target = target.replace(`:${key}`, params[key]);
+    });
+    return <Navigate to={target} replace />;
+}
 import ResetPassword from "./Pages/ResetPassword";
 import Unauthorized from "./Pages/Unauthorized";
 import StudentOnboarding from "./Pages/Onboarding/StudentOnboarding";
@@ -67,7 +76,7 @@ function App() {
             {
                 index: true,
                 element: (
-                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                    <SubscriptionRestricted>
                         <Dashboard />
                     </SubscriptionRestricted>
                 ),
@@ -75,7 +84,7 @@ function App() {
             {
                 path: "home",
                 element: (
-                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                    <SubscriptionRestricted>
                         <Dashboard />
                     </SubscriptionRestricted>
                 ),
@@ -83,7 +92,7 @@ function App() {
             {
                 path: "subjects",
                 element: (
-                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                    <SubscriptionRestricted>
                         <SubjectsView />
                     </SubscriptionRestricted>
                 ),
@@ -91,7 +100,7 @@ function App() {
             {
                 path: "subject/:subjectId",
                 element: (
-                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                    <SubscriptionRestricted>
                         <SubjectWorkspace />
                     </SubscriptionRestricted>
                 ),
@@ -99,7 +108,7 @@ function App() {
             {
                 path: "topic/:topicId",
                 element: (
-                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                    <SubscriptionRestricted>
                         <TopicWorkspace />
                     </SubscriptionRestricted>
                 ),
@@ -109,7 +118,7 @@ function App() {
             {
                 path: "resources",
                 element: (
-                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                    <SubscriptionRestricted requireFeature="access_downloads">
                         <Resources />
                     </SubscriptionRestricted>
                 ),
@@ -117,7 +126,7 @@ function App() {
             {
                 path: "quizzes",
                 element: (
-                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                    <SubscriptionRestricted requireFeature="access_assessments">
                         <Quizzes />
                     </SubscriptionRestricted>
                 ),
@@ -125,7 +134,7 @@ function App() {
             {
                 path: "simulations",
                 element: (
-                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                    <SubscriptionRestricted requireFeature="access_simulations">
                         <Simulations />
                     </SubscriptionRestricted>
                 ),
@@ -134,7 +143,7 @@ function App() {
             {
                 path: "results",
                 element: (
-                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                    <SubscriptionRestricted>
                         <Results />
                     </SubscriptionRestricted>
                 ),
@@ -142,7 +151,7 @@ function App() {
             {
                 path: "lesson-viewer/:topicId?",
                 element: (
-                    <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                    <SubscriptionRestricted>
                         <LessonViewer paginated={true} />
                     </SubscriptionRestricted>
                 ),
@@ -238,6 +247,7 @@ function App() {
                     <Outlet />
                 </SubscriptionContextProvider>
             ),
+            errorElement: <NotFound />,
             children: [
                 {
                     index: true,
@@ -267,7 +277,7 @@ function App() {
                     path: "lesson-viewer/:topicId?",
                     element: (
                         <RequireRole allowedRoles={["student", "teacher", "platform_admin"]}>
-                            <SubscriptionRestricted allowedSubscriptionPlans={["pro_plan", "free_trial", "explorer_plan", "daily"]}>
+                            <SubscriptionRestricted>
                                 <LessonViewer paginated={true} />
                             </SubscriptionRestricted>
                         </RequireRole>
@@ -307,13 +317,17 @@ function App() {
                 },
                 { path: "dashboard", element: <Navigate to="/student" replace /> },
                 { path: "dashboard/home", element: <Navigate to="/student/home" replace /> },
-                { path: "dashboard/quiz/:id", element: <Navigate to="/student/quiz/:id" replace /> },
+                { path: "dashboard/quiz/:id", element: <RedirectWithParams to="/student/quiz/:id" /> },
                 { path: "dashboard/user", element: <Navigate to="/student/user" replace /> },
                 { path: "dashboard/resources", element: <Navigate to="/student/resources" replace /> },
                 { path: "dashboard/simulations", element: <Navigate to="/student/simulations" replace /> },
                 { path: "dashboard/quizzes", element: <Navigate to="/student/quizzes" replace /> },
                 { path: "dashboard/results", element: <Navigate to="/student/results" replace /> },
-                { path: "dashboard/subject/:subjectId", element: <Navigate to="/student/subject/:subjectId" replace /> },
+                { path: "dashboard/subject/:subjectId", element: <RedirectWithParams to="/student/subject/:subjectId" /> },
+                { path: "plans", element: <Navigate to="/subscription" replace /> },
+                { path: "plans/list", element: <Navigate to="/subscription" replace /> },
+                { path: "admindashboard", element: <Navigate to="/admin-dashboard" replace /> },
+                { path: "admin", element: <Navigate to="/admin-dashboard" replace /> },
                 studentRoutes,
                 teacherRoutes,
                 schoolRoutes,

@@ -7,7 +7,8 @@ import { ArrowRight } from "lucide-react";
 import UserContext from "../../../Context/UserContext";
 
 const SubscriptionRestricted = ({
-    allowedSubscriptionPlans,
+    requireFeature,
+    requireSubjectId,
     fallBackComponent = (
         <div className="flex items-center justify-center min-h-screen">
             <div className="text-center my-10 flex flex-col items-center">
@@ -44,6 +45,15 @@ const SubscriptionRestricted = ({
                 setAllowed(true);
                 return;
             }
+            if (requireFeature) {
+                setAllowed(Boolean(ent.features?.includes(requireFeature)));
+                return;
+            }
+            if (requireSubjectId) {
+                const subIds = ent.curriculum_access?.subjects?.map(s => String(s.id)) || [];
+                setAllowed(subIds.includes(String(requireSubjectId)));
+                return;
+            }
             if (ent.curriculum_access?.subjects?.length > 0 || ent.features?.length > 0) {
                 setAllowed(true);
                 return;
@@ -51,27 +61,12 @@ const SubscriptionRestricted = ({
         }
 
         if (subscriptionContext?.activeSubscriptions?.length > 0) {
-            if (allowedSubscriptionPlans?.length > 0) {
-                let isAllowed = false;
-                subscriptionContext.activeSubscriptions.forEach((subscription) => {
-                    if (
-                        allowedSubscriptionPlans.includes(subscription.plan_id) ||
-                        allowedSubscriptionPlans.includes(subscription.plan_name) ||
-                        allowedSubscriptionPlans.includes(subscription.plan_name?.toLowerCase().replace(/\s+/g, '_'))
-                    ) {
-                        isAllowed = true;
-                    }
-                });
-                setAllowed(isAllowed);
-                return;
-            } else {
-                setAllowed(true);
-                return;
-            }
+            setAllowed(true);
+            return;
         }
 
         setAllowed(false);
-    }, [subscriptionContext, allowedSubscriptionPlans, userContext]);
+    }, [subscriptionContext, requireFeature, requireSubjectId, userContext]);
 
     return allowed ? children : fallBackComponent;
 };

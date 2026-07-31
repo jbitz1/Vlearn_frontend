@@ -186,12 +186,12 @@ export default function StudentOnboarding() {
 
       Swal.fire({
         title: "Learning Profile Ready! 🎉",
-        text: "Your curriculum, grade, and subjects are set. Dive into your personalized dashboard!",
+        text: "Your curriculum, grade, and subjects are set. Select a subscription plan to start learning!",
         icon: "success",
         timer: 2000,
         showConfirmButton: false
       });
-      navigate("/student");
+      navigate("/subscription");
     } catch (err) {
       console.error(err);
       const msg = typeof err.response?.data?.error === 'object' ? JSON.stringify(err.response.data.error) : (err.response?.data?.error || "Failed to complete onboarding.");
