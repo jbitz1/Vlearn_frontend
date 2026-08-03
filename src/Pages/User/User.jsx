@@ -4,6 +4,7 @@ import UserContext from '../../Context/UserContext';
 import { useNavigate } from "react-router";
 import studentCurriculumService from '../../services/studentCurriculumService';
 import apiClient from '../../config/apiClient';
+import SubscriptionList from '../../component-library/billing-and-payments/subscriptions/SubscriptionList';
 
 export function User() {
   const { user: contextUser, token } = useContext(UserContext);
@@ -118,19 +119,23 @@ export function User() {
 
             {/* TAB 2: SUBSCRIPTION */}
             {activeTab === 'subscription' && (
-              <div className="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
-                <div className="flex justify-between items-center flex-wrap gap-4">
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900">Current Plan</h2>
-                    <p className="text-gray-500 text-sm">Manage your platform subscription.</p>
+              <div className="space-y-6">
+                <div className="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm">
+                  <div className="flex justify-between items-center flex-wrap gap-4">
+                    <div>
+                      <h2 className="text-lg font-bold text-gray-900">Current Plan</h2>
+                      <p className="text-gray-500 text-sm">Manage your platform subscription.</p>
+                    </div>
+                    <button
+                      onClick={() => navigate('/subscription')}
+                      className="px-5 py-2.5 bg-custom-blue text-white font-bold text-sm rounded-2xl hover:bg-blue-700 transition-colors"
+                    >
+                      View Plans
+                    </button>
                   </div>
-                  <button
-                    onClick={() => navigate('/subscription')}
-                    className="px-5 py-2.5 bg-custom-blue text-white font-bold text-sm rounded-2xl hover:bg-blue-700 transition-colors"
-                  >
-                    View Plans
-                  </button>
                 </div>
+                
+                <SubscriptionList />
               </div>
             )}
 

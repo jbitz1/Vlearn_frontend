@@ -4,6 +4,7 @@ import UserContext from '../Context/UserContext';
 import { GraduationCap, LockKeyhole, ArrowLeft, CheckCircle2, Phone, X } from 'lucide-react';
 import { useNavigate, Link } from 'react-router';
 import Swal from 'sweetalert2';
+import usePaymentPolling from '../hooks/usePaymentPolling';
 
 const SubscriptionPlan = () => {
     const { token, user } = useContext(UserContext);
@@ -16,6 +17,36 @@ const SubscriptionPlan = () => {
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [phone, setPhone] = useState('');
     const [submittingPayment, setSubmittingPayment] = useState(false);
+
+    const [pollingInvoiceNumber, setPollingInvoiceNumber] = useState(null);
+    const { pollingStatus, secondsRemaining } = usePaymentPolling(
+        pollingInvoiceNumber,
+        () => {
+            // Payment confirmed
+            setPollingInvoiceNumber(null);
+            Swal.fire({
+                title: '\u2705 Payment Confirmed!',
+                text: 'Your subscription is now active. You have full access to VizLearn.',
+                icon: 'success',
+                confirmButtonColor: '#1E40AF'
+            }).then(() => navigate('/billing-and-payments/subscriptions'));
+        },
+        () => {
+            // Explicit failure
+            setPollingInvoiceNumber(null);
+            Swal.fire('Payment Failed', 'Your M-Pesa payment was not completed. Please try again.', 'error');
+        },
+        () => {
+            // Timeout — user might still complete it later
+            setPollingInvoiceNumber(null);
+            Swal.fire({
+                title: 'Awaiting Payment',
+                text: 'We haven\u2019t received confirmation yet. Your subscription will activate automatically once payment is confirmed.',
+                icon: 'info',
+                confirmButtonColor: '#1E40AF'
+            }).then(() => navigate('/billing-and-payments/subscriptions'));
+        }
+    );
 
     useEffect(() => {
         const fetchPlans = async () => {
@@ -130,14 +161,7 @@ const SubscriptionPlan = () => {
             }
 
             setSelectedPlan(null);
-            Swal.fire({
-                title: 'M-Pesa Prompt Sent!',
-                text: `An M-Pesa payment prompt of KSh ${selectedPlan.price.toLocaleString()} has been sent to ${formattedPhone}. Please enter your PIN on your phone to complete activation.`,
-                icon: 'success',
-                confirmButtonColor: '#1E40AF'
-            }).then(() => {
-                navigate('/billing-and-payments/subscriptions');
-            });
+            setPollingInvoiceNumber(invoiceId);
 
         } catch (err) {
             console.error('Payment checkout error:', err);
@@ -263,6 +287,36 @@ const SubscriptionPlan = () => {
                                 )}
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Payment Confirmation Waiting Modal */}
+            {pollingInvoiceNumber && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                    <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
+                        {pollingStatus === 'POLLING' ? (
+                            <>
+                                <div className="animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-custom-blue mx-auto mb-5" />
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">Waiting for Payment</h3>
+                                <p className="text-gray-500 text-sm mb-4">
+                                    Enter your M-Pesa PIN on your phone to complete the payment.
+                                </p>
+                                <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
+                                    <div
+                                        className="bg-custom-blue h-2 rounded-full transition-all duration-500"
+                                        style={{ width: `${(secondsRemaining / 100) * 100}%` }}
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-400">{Math.round(secondsRemaining)}s remaining</p>
+                                <button
+                                    onClick={() => setPollingInvoiceNumber(null)}
+                                    className="mt-5 text-sm text-gray-400 hover:text-gray-600 underline"
+                                >
+                                    Cancel and check later
+                                </button>
+                            </>
+                        ) : null}
                     </div>
                 </div>
             )}

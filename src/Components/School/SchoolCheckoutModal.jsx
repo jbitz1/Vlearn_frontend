@@ -4,6 +4,7 @@ import apiClient from '../../config/apiClient';
 import Swal from 'sweetalert2';
 import { useSchoolContext } from '../../Context/SchoolContext';
 import UserContext from '../../Context/UserContext';
+import usePaymentPolling from '../../hooks/usePaymentPolling';
 
 const SchoolCheckoutModal = ({ isOpen, onClose }) => {
     const { user } = useContext(UserContext);
@@ -19,6 +20,31 @@ const SchoolCheckoutModal = ({ isOpen, onClose }) => {
     
     const [phone, setPhone] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [pollingInvoiceNumber, setPollingInvoiceNumber] = useState(null);
+    const { pollingStatus, secondsRemaining } = usePaymentPolling(
+        pollingInvoiceNumber,
+        () => {
+            setPollingInvoiceNumber(null);
+            Swal.fire({
+                title: '\u2705 Payment Confirmed!',
+                text: 'Your school subscription is now active.',
+                icon: 'success'
+            }).then(() => onClose());
+        },
+        () => {
+            setPollingInvoiceNumber(null);
+            Swal.fire('Payment Failed', 'The M-Pesa payment was not completed. Please try again.', 'error');
+        },
+        () => {
+            setPollingInvoiceNumber(null);
+            Swal.fire({
+                title: 'Awaiting Confirmation',
+                text: 'Your subscription will activate automatically once payment is confirmed.',
+                icon: 'info'
+            }).then(() => onClose());
+        }
+    );
 
     useEffect(() => {
         if (isOpen) {
@@ -139,13 +165,7 @@ const SchoolCheckoutModal = ({ isOpen, onClose }) => {
                 });
             }
 
-            Swal.fire({
-                title: 'Payment Prompt Sent!',
-                text: `An M-Pesa prompt for KSh ${amount.toLocaleString()} has been sent to ${formattedPhone}. Enter your PIN to complete.`,
-                icon: 'success'
-            }).then(() => {
-                onClose();
-            });
+            setPollingInvoiceNumber(invoiceId);
 
         } catch (err) {
             console.error('Checkout error:', err);
@@ -314,6 +334,34 @@ const SchoolCheckoutModal = ({ isOpen, onClose }) => {
                                     </p>
                                 </div>
                             </form>
+                        </div>
+                    )}
+                    
+                    {/* Payment Polling Overlay */}
+                    {pollingInvoiceNumber && (
+                        <div className="absolute inset-0 bg-white rounded-3xl flex flex-col items-center justify-center z-10 p-8 text-center">
+                            {pollingStatus === 'POLLING' && (
+                                <>
+                                    <div className="animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-custom-blue mb-5" />
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">Waiting for M-Pesa Confirmation</h3>
+                                    <p className="text-gray-500 text-sm mb-5">
+                                        Enter your PIN on your phone. This page will update automatically.
+                                    </p>
+                                    <div className="w-full max-w-xs bg-gray-100 rounded-full h-2 mb-2">
+                                        <div
+                                            className="bg-custom-blue h-2 rounded-full transition-all duration-500"
+                                            style={{ width: `${(secondsRemaining / 100) * 100}%` }}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-gray-400 mb-4">{Math.round(secondsRemaining)}s remaining</p>
+                                    <button
+                                        onClick={() => { setPollingInvoiceNumber(null); onClose(); }}
+                                        className="text-sm text-gray-400 hover:text-gray-600 underline"
+                                    >
+                                        Cancel
+                                    </button>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>

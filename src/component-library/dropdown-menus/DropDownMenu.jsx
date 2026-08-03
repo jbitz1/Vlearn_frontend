@@ -40,10 +40,8 @@ const DropDownMenu = ({
             </MenuButton>
 
             <MenuItems
-                className={classNames(
-                    "absolute min-w-min whitespace-nowrap w-full z-10 py-1 mt-2 rounded-xs bg-white shadow-lg ring-1 ring-gray-400 ring-opacity-5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75 data-enter:ease-out data-leave:ease-in",
-                    position
-                )}
+                anchor="bottom end"
+                className="min-w-min whitespace-nowrap z-50 py-1 mt-2 rounded-xs bg-white shadow-lg ring-1 ring-gray-400 ring-opacity-5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75 data-enter:ease-out data-leave:ease-in"
             >
                 {Boolean(menuItems.length) ? (
                     menuItems.map((item, index) =>
