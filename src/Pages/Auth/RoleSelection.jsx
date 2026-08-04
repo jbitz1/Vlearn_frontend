@@ -1,4 +1,23 @@
+/**
+ * @deprecated — LEGACY COMPATIBILITY ROUTE
+ *
+ * This page is no longer part of the normal public self-registration flow.
+ * As of the role-first registration architecture, users choose their account
+ * type *before* account creation (via /register → AccountTypeSelection).
+ * Accounts are now created with the correct role immediately and JWTs are
+ * issued with the correct role claim on first authentication.
+ *
+ * This route is preserved for the following remaining uses:
+ *   - RequireRole.jsx falls back here when an authenticated user has no role.
+ *   - Login.jsx falls back here when a login response contains no role.
+ *   - Any internal admin or tooling flows that may assign roles post-hoc.
+ *
+ * Do NOT remove this file until all remaining callers have been confirmed clear.
+ * Track removal in the auth architecture sprint backlog.
+ */
+
 import React, { useState, useContext, useEffect } from 'react';
+
 import { useNavigate } from 'react-router';
 import axios from 'axios';
 import { BookOpen, Users, GraduationCap, Loader2 } from 'lucide-react';

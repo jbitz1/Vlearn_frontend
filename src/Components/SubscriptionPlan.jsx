@@ -352,9 +352,9 @@ const SubscriptionPlan = () => {
             </div>
 
             <div className="flex text-center mx-auto mt-6">
-                <Link to="/" className="flex items-center bg-custom-blue px-6 py-3 rounded-full mx-auto text-white hover:bg-custom-orange transition-colors">
+                <Link to="/dashboard" className="flex items-center bg-custom-blue px-6 py-3 rounded-full mx-auto text-white hover:bg-custom-orange transition-colors">
                     <ArrowLeft className="h-5 w-5 mr-2" />
-                    <span className="text-sm font-medium">Back to Home</span>
+                    <span className="text-sm font-medium">Back to Dashboard</span>
                 </Link>
             </div>
         </div>

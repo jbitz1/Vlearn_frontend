@@ -76,11 +76,13 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
                 const response = await apiClient.get(url);
                 setLesson(response.data);
             } catch (err) {
-                setError(
-                    err.response?.status === 404
-                        ? 'No published lesson is available for this topic yet.'
-                        : 'Failed to load lesson. Please try again.'
-                );
+                if (err.response?.status === 403) {
+                    setError('You do not have an active subscription for this subject. Please upgrade your plan to unlock this lesson.');
+                } else if (err.response?.status === 404) {
+                    setError('No published lesson is available for this topic yet.');
+                } else {
+                    setError('Failed to load lesson. Please try again.');
+                }
             } finally {
                 setLoading(false);
             }
