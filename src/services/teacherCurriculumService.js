@@ -122,6 +122,17 @@ const COMPREHENSIVE_SIMULATIONS = [
 ];
 
 const teacherCurriculumService = {
+  // Fetch teacher's organization memberships
+  async getMyMemberships() {
+    try {
+      const response = await apiClient.get('/api/organizations/memberships/?user=me');
+      return response.data || [];
+    } catch (error) {
+      console.warn('Failed to fetch teacher memberships:', error.message);
+      return [];
+    }
+  },
+
   // Fetch assigned streams & rosters for teacher
   async getMyStreams() {
     try {

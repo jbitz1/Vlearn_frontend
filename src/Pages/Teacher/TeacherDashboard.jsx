@@ -1,48 +1,22 @@
-import { useState, useEffect, useContext } from 'react';
+import { useContext } from 'react';
 import { BookOpen, ChevronRight, Clock, Play, Building2, Bell, Plus } from 'lucide-react';
 import { useNavigate } from "react-router";
 import UserContext from '../../Context/UserContext';
-import teacherCurriculumService from '../../services/teacherCurriculumService';
+import TeacherContext from '../../Context/TeacherContext';
 import AddSubjectModal from '../../Components/Teacher/AddSubjectModal';
+import { useState } from 'react';
 
 export function TeacherDashboard() {
   const { user } = useContext(UserContext);
   const navigate = useNavigate();
 
-  const [subjects, setSubjects] = useState([]);
-  const [recentlyTaught, setRecentlyTaught] = useState([]);
-  const [schoolContext, setSchoolContext] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { activeSchool, assignedSubjects: subjects, recentActivity: recentlyTaught, refresh, isLoading } = useContext(TeacherContext);
 
   // Add Subject Modal state
   const [isAddSubjectOpen, setIsAddSubjectOpen] = useState(false);
 
-  const loadDashboardData = async () => {
-    setIsLoading(true);
-    const [fetchedSubjects, streams, recent] = await Promise.all([
-      teacherCurriculumService.getTeacherSubjects(),
-      teacherCurriculumService.getMyStreams(),
-      teacherCurriculumService.getRecentlyTaught()
-    ]);
-
-    setSubjects(fetchedSubjects);
-    setRecentlyTaught(recent);
-
-    if (streams && streams.length > 0) {
-      setSchoolContext({
-        school_name: streams[0].school_name || 'School Workspace'
-      });
-    }
-
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
   const handleSubjectAdded = () => {
-    loadDashboardData();
+    refresh();
   };
 
   const teacherDisplayName = user?.first_name && user?.last_name
@@ -60,10 +34,10 @@ export function TeacherDashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {schoolContext && (
+            {activeSchool && (
               <div className="flex items-center gap-2 px-3.5 py-1.5 bg-blue-50 border border-blue-200 text-custom-blue rounded-full text-xs font-semibold">
                 <Building2 className="w-4 h-4 shrink-0 text-custom-blue" />
-                <span className="truncate max-w-[250px]">{schoolContext.school_name}</span>
+                <span className="truncate max-w-[250px]">{activeSchool.name}</span>
               </div>
             )}
 

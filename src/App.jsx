@@ -164,9 +164,7 @@ function App() {
         path: "teacher",
         element: (
             <RequireRole allowedRoles={["teacher", "platform_admin"]}>
-                <SubscriptionRestricted>
-                    <TeacherDashboardOutlet />
-                </SubscriptionRestricted>
+                <TeacherDashboardOutlet />
             </RequireRole>
         ),
         children: [
