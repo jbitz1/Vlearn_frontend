@@ -12,6 +12,16 @@ export const schoolAdminService = {
     return response.data;
   },
 
+  async submitSchoolOnboarding(payload) {
+    const response = await apiClient.post('/api/organizations/schools/register-profile/', payload);
+    return response.data;
+  },
+
+  async fetchSetupState(schoolId) {
+    const response = await apiClient.get(`/api/organizations/schools/${schoolId}/setup-state/`);
+    return response.data;
+  },
+
   async updateSchool(schoolId, data) {
     const response = await apiClient.patch(`/api/organizations/schools/${schoolId}/`, data);
     return response.data;
@@ -124,8 +134,14 @@ export const schoolAdminService = {
   },
 
   // Curriculum reference data
-  async fetchGrades() {
-    const response = await apiClient.get('/api/curriculum/grades/');
+  async fetchCurricula() {
+    const response = await apiClient.get('/api/curriculum/curricula/');
+    return response.data.results || response.data || [];
+  },
+
+  async fetchGrades(curriculumId = null) {
+    const url = curriculumId ? `/api/curriculum/grades/?curriculum=${curriculumId}` : '/api/curriculum/grades/';
+    const response = await apiClient.get(url);
     return response.data.results || response.data || [];
   },
 

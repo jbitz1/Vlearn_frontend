@@ -13,6 +13,7 @@ function RedirectWithParams({ to }) {
 import ResetPassword from "./Pages/ResetPassword";
 import Unauthorized from "./Pages/Unauthorized";
 import StudentOnboarding from "./Pages/Onboarding/StudentOnboarding";
+import SchoolOnboarding from "./Pages/Onboarding/SchoolOnboarding";
 import InvitationAccept from "./Pages/Onboarding/InvitationAccept";
 import Home from "../src/Pages/Home";
 import Dashboard from "./Pages/User/Dashboard";
@@ -302,6 +303,16 @@ function App() {
                     element: (
                         <ProtectedRoute>
                             <StudentOnboarding />
+                        </ProtectedRoute>
+                    ),
+                },
+                {
+                    path: "school-onboarding",
+                    element: (
+                        <ProtectedRoute>
+                            <RequireRole allowedRoles={["school_admin"]}>
+                                <SchoolOnboarding />
+                            </RequireRole>
                         </ProtectedRoute>
                     ),
                 },

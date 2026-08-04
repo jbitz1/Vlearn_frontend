@@ -35,7 +35,7 @@ const ACCOUNT_TYPES = [
   },
   {
     id: "school_admin",
-    title: "School",
+    title: "School Administrator",
     description:
       "Manage your institution, staff, enrolments and subscription from one place.",
     Icon: Building2,

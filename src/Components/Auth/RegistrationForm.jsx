@@ -24,14 +24,14 @@ import BASE_URL from "../../config";
 const ROLE_LABELS = {
   student: "Student",
   teacher: "Teacher",
-  school_admin: "School",
+  school_admin: "School Administrator",
 };
 
 /** Mirror of Login.jsx routing, with one override for new student accounts. */
 function resolvePostRegistrationRoute(role) {
   if (role === "student") return "/onboarding";        // Override: fresh accounts need onboarding first
   if (role === "teacher") return "/teacher";
-  if (role === "school_admin") return "/school";
+  if (role === "school_admin") return "/school-onboarding"; // Override: fresh schools need onboarding first
   if (role === "platform_admin") return "/admin-dashboard";
   return "/role-selection";                             // Legacy fallback (should not be reached)
 }

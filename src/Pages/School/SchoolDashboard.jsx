@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Layers, Users, UserCheck, CreditCard, ChevronRight, Clock, Building2, Calendar } from 'lucide-react';
 import { useSchoolContext } from '../../Context/SchoolContext';
 import PageHeader from '../../Components/School/PageHeader';
+import schoolAdminService from '../../services/schoolAdminService';
 
 export function SchoolDashboard() {
   const navigate = useNavigate();
@@ -15,6 +16,19 @@ export function SchoolDashboard() {
     enrollments,
     isLoading,
   } = useSchoolContext();
+
+  const [setupState, setSetupState] = useState(null);
+  const [isSetupLoading, setIsSetupLoading] = useState(true);
+
+  useEffect(() => {
+    if (school?.id) {
+      setIsSetupLoading(true);
+      schoolAdminService.fetchSetupState(school.id)
+        .then(data => setSetupState(data))
+        .catch(err => console.error("Failed to load setup state", err))
+        .finally(() => setIsSetupLoading(false));
+    }
+  }, [school?.id]);
 
   const activeStudentCount = enrollments.filter((e) => e.status === 'active').length;
 
@@ -83,36 +97,37 @@ export function SchoolDashboard() {
             <p className="text-xs text-blue-200">Complete institutional setup tasks to unlock full classroom delivery & subscriptions.</p>
           </div>
           <span className="text-xs bg-orange-500 font-extrabold px-3 py-1 rounded-full uppercase">
-            {school?.setup_status || 'PROFILE_COMPLETE'}
+            {setupState?.setup_status || school?.setup_status || 'PROFILE_COMPLETE'}
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-          <div className="p-3 bg-white/10 rounded-2xl text-center border border-white/20">
-            <span className="text-xs font-semibold block text-blue-200">1. Details</span>
-            <span className="text-sm font-bold text-green-300">✓ Done</span>
-          </div>
-          <div onClick={() => navigate('/school/academic-structure')} className="p-3 bg-white/10 rounded-2xl text-center border border-white/20 cursor-pointer hover:bg-white/20 transition">
-            <span className="text-xs font-semibold block text-blue-200">2. Streams</span>
-            <span className={`text-sm font-bold ${streams.length > 0 ? 'text-green-300' : 'text-yellow-300'}`}>{streams.length > 0 ? '✓ Done' : '+ Add'}</span>
-          </div>
-          <div onClick={() => navigate('/school/teachers')} className="p-3 bg-white/10 rounded-2xl text-center border border-white/20 cursor-pointer hover:bg-white/20 transition">
-            <span className="text-xs font-semibold block text-blue-200">3. Teachers</span>
-            <span className={`text-sm font-bold ${teachers.length > 0 ? 'text-green-300' : 'text-yellow-300'}`}>{teachers.length > 0 ? '✓ Done' : '+ Invite'}</span>
-          </div>
-          <div onClick={() => navigate('/school/teachers')} className="p-3 bg-white/10 rounded-2xl text-center border border-white/20 cursor-pointer hover:bg-white/20 transition">
-            <span className="text-xs font-semibold block text-blue-200">4. Assign</span>
-            <span className="text-sm font-bold text-yellow-300">+ Assign</span>
-          </div>
-          <div onClick={() => navigate('/school/students')} className="p-3 bg-white/10 rounded-2xl text-center border border-white/20 cursor-pointer hover:bg-white/20 transition">
-            <span className="text-xs font-semibold block text-blue-200">5. Students</span>
-            <span className={`text-sm font-bold ${activeStudentCount > 0 ? 'text-green-300' : 'text-yellow-300'}`}>{activeStudentCount > 0 ? '✓ Done' : '+ Import'}</span>
-          </div>
-          <div onClick={() => navigate('/school/subscription')} className="p-3 bg-white/10 rounded-2xl text-center border border-white/20 cursor-pointer hover:bg-white/20 transition">
-            <span className="text-xs font-semibold block text-blue-200">6. Subscriptions</span>
-            <span className="text-sm font-bold text-yellow-300">View Plans</span>
-          </div>
-        </div>
+        {isSetupLoading ? (
+            <div className="flex items-center justify-center p-6">
+               <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+            </div>
+        ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+              {setupState?.checklist?.map((item, index) => {
+                  let path = '/school/dashboard';
+                  if (item.key === 'STREAMS_CREATED') path = '/school/academic-structure';
+                  if (item.key === 'TEACHERS_INVITED') path = '/school/teachers';
+                  if (item.key === 'SUBJECTS_ASSIGNED') path = '/school/teachers';
+                  if (item.key === 'STUDENTS_IMPORTED') path = '/school/students';
+                  if (item.key === 'BASELINE_UPLOADED') path = '/school/students';
+  
+                  return (
+                      <div key={item.key} onClick={() => navigate(path)} className="p-3 bg-white/10 rounded-2xl text-center border border-white/20 cursor-pointer hover:bg-white/20 transition">
+                          <span className="text-[10px] font-semibold block text-blue-200 truncate" title={item.label}>
+                            {index + 1}. {item.label.split(' ')[0]}
+                          </span>
+                          <span className={`text-sm font-bold ${item.complete ? 'text-green-300' : 'text-yellow-300'}`}>
+                              {item.complete ? '✓ Done' : '+ Add'}
+                          </span>
+                      </div>
+                  )
+              })}
+            </div>
+        )}
       </div>
 
       {/* Organizational Facts */}

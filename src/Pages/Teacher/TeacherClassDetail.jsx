@@ -18,7 +18,7 @@ export const TeacherClassDetail = () => {
       const matched = allStreams.find(s => String(s.stream_id || s.id) === String(streamId)) || {
         stream_name: 'Form 4 North',
         school_class_name: 'Form 4',
-        school_name: 'Alliance High School',
+        school_name: 'Elite High School',
         students: [
           { id: 1, first_name: 'Jason', last_name: 'Bitega' },
           { id: 2, first_name: 'Mary', last_name: 'Wanjiku' },
@@ -75,7 +75,7 @@ export const TeacherClassDetail = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* SECTION 1: STUDENT LIST (Roster only, no analytics) */}
           <div className="lg:col-span-1 space-y-4">
             <div className="flex items-center justify-between">
