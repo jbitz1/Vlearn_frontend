@@ -60,13 +60,13 @@ function Navbar() {
               <>
                 <Link
                   to="/login"
-                  className="px-4 py-2 mx-2 text-sm md:my-0 my-2 w-fit bg-custom-orange text-white rounded-3xl hover:text-black focus:text-gray-900 hover:bg-gray-200 focus:bg-gray-200 focus:outline-none focus:shadow-outline"
+                  className="px-4 py-2 mx-2 text-sm md:my-0 my-2 w-fit bg-transparent text-white border border-white rounded-3xl hover:text-black focus:text-gray-900 hover:bg-gray-200 focus:bg-gray-200 focus:outline-none focus:shadow-outline transition-colors"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 mx-2 text-sm md:my-0 my-2 w-fit bg-custom-orange text-white rounded-3xl hover:text-black focus:text-gray-900 hover:bg-gray-200 focus:bg-gray-200 focus:outline-none focus:shadow-outline"
+                  className="px-4 py-2 mx-2 text-sm md:my-0 my-2 w-fit bg-custom-orange text-white rounded-3xl hover:text-black focus:text-gray-900 hover:bg-gray-200 focus:bg-gray-200 focus:outline-none focus:shadow-outline transition-colors shadow-sm"
                 >
                   Sign Up
                 </Link>

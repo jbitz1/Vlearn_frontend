@@ -132,8 +132,7 @@ export default function RegistrationForm({ selectedRole, onBack }) {
 
   // Shared input class builder
   const inputClass = (fieldName) =>
-    `w-full pl-9 pr-4 py-2 text-black border ${
-      fieldErrors[fieldName] ? "border-red-500" : "border-gray-300"
+    `w-full pl-9 pr-4 py-2 text-black border ${fieldErrors[fieldName] ? "border-red-500" : "border-gray-300"
     } rounded-3xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm`;
 
   return (
@@ -162,32 +161,6 @@ export default function RegistrationForm({ selectedRole, onBack }) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-3" noValidate>
-        {/* Username */}
-        <div>
-          <label htmlFor="reg-username" className="block mb-1 text-sm font-medium text-gray-700">
-            Username
-          </label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" aria-hidden="true" />
-            <input
-              id="reg-username"
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleInputChange}
-              className={inputClass("username")}
-              placeholder="Username"
-              autoComplete="username"
-              required
-            />
-          </div>
-          {fieldErrors.username && (
-            <p className="text-red-500 text-xs mt-1" role="alert">
-              {fieldErrorText(fieldErrors.username)}
-            </p>
-          )}
-        </div>
-
         {/* First name + Last name — side by side */}
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -238,6 +211,33 @@ export default function RegistrationForm({ selectedRole, onBack }) {
               </p>
             )}
           </div>
+        </div>
+
+        {/* Username */}
+        <div>
+          <label htmlFor="reg-username" className="block mb-1 text-sm font-medium text-gray-700">
+            Preferred Nickname
+          </label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" aria-hidden="true" />
+            <input
+              id="reg-username"
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleInputChange}
+              className={inputClass("username")}
+              placeholder="e.g. john_d"
+              autoComplete="username"
+              required
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-1">This is the name other learners will see.</p>
+          {fieldErrors.username && (
+            <p className="text-red-500 text-xs mt-1" role="alert">
+              {fieldErrorText(fieldErrors.username)}
+            </p>
+          )}
         </div>
 
         {/* Email */}

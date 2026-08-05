@@ -57,7 +57,7 @@ function Login() {
     } catch (error) {
       let errorMessage = "Login failed. Please try again.";
       if (error.response?.status === 401) {
-        errorMessage = "Invalid credentials";
+        errorMessage = error.response?.data?.detail || "Invalid credentials";
       } else if (error.response?.status === 403) {
         errorMessage = "Your account has been disabled. Contact support.";
       } else {
@@ -156,11 +156,11 @@ function Login() {
                 </button>
               </div>
               {/* Sign up link */}
-              <div className="mt-6 text-sm text-center">
-                <span className="mr-1">Don&apos;t have an account?</span>
+              <div className="mt-6 text-center border-t border-gray-200 pt-6">
+                <p className="text-sm text-gray-600 mb-3">Don&apos;t have an account?</p>
                 <Link
                   to="/register"
-                  className="text-blue-600 hover:underline transition duration-500 ease-in-out transform hover:-translate-x hover:scale-105"
+                  className="w-fit py-2 px-5 flex justify-center mx-auto rounded-3xl text-blue-600 border border-blue-500 bg-transparent hover:bg-blue-50 transition duration-300 ease-in-out shadow-sm"
                 >
                   Create an account
                 </Link>

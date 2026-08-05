@@ -17,7 +17,6 @@ export default function StudentOnboarding() {
   const [curricula, setCurricula] = useState([]);
   const [grades, setGrades] = useState([]);
   const [subjects, setSubjects] = useState([]);
-  const [verifiedSchools, setVerifiedSchools] = useState([]);
   
   const [fetchingData, setFetchingData] = useState(false);
   const [gradesLoading, setGradesLoading] = useState(false);
@@ -33,22 +32,34 @@ export default function StudentOnboarding() {
   const [selectedCurriculumId, setSelectedCurriculumId] = useState(null);
   const [selectedGradeId, setSelectedGradeId] = useState(null);
   const [schoolOption, setSchoolOption] = useState("NONE");
-  const [selectedSchoolId, setSelectedSchoolId] = useState(null);
   const [unverifiedSchoolName, setUnverifiedSchoolName] = useState("");
   const [selectedSubjectIds, setSelectedSubjectIds] = useState([]);
+  const [isHomeschooled, setIsHomeschooled] = useState(false);
+  
+  // Restored names for Review step bug fix
+  const [restoredCurriculumName, setRestoredCurriculumName] = useState("");
+  const [restoredGradeName, setRestoredGradeName] = useState("");
+
+  // Auto-save Step 1 draft for school section
+  useEffect(() => {
+    if (step === 1) {
+      const step1Draft = {
+        isHomeschooled,
+        unverifiedSchoolName,
+        schoolOption
+      };
+      localStorage.setItem('vlearn_onboarding_step1_draft', JSON.stringify(step1Draft));
+    }
+  }, [isHomeschooled, unverifiedSchoolName, schoolOption, step]);
 
   // 1. Initial Load: Fetch static lists & restore state
   useEffect(() => {
     const initOnboarding = async () => {
       setFetchingData(true);
       try {
-        const [currRes, schoolRes] = await Promise.all([
-          apiClient.get('/api/curriculum/curricula/'),
-          apiClient.get('/api/organizations/schools/')
-        ]);
+        const currRes = await apiClient.get('/api/curriculum/curricula/');
         const loadedCurricula = currRes.data?.results || currRes.data || [];
         setCurricula(loadedCurricula);
-        setVerifiedSchools(schoolRes.data?.results || schoolRes.data || []);
 
         // Restore state from backend
         const state = await studentOnboardingService.getOnboardingState();
@@ -58,10 +69,16 @@ export default function StudentOnboarding() {
         if (state.profile?.curriculum_id) {
           restoredCurriculumId = state.profile.curriculum_id;
           setSelectedCurriculumId(restoredCurriculumId);
+          setRestoredCurriculumName(state.profile.curriculum_name || "");
         }
         if (state.profile?.grade_id) {
           restoredGradeId = state.profile.grade_id;
           setSelectedGradeId(restoredGradeId);
+          setRestoredGradeName(state.profile.grade_name || "");
+        }
+        if (state.profile?.unverified_school_name) {
+          setUnverifiedSchoolName(state.profile.unverified_school_name);
+          setSchoolOption("UNVERIFIED");
         }
 
         // Restore subjects and step from localStorage (draft)
@@ -70,7 +87,7 @@ export default function StudentOnboarding() {
           try {
             const draft = JSON.parse(draftStr);
             // Only restore draft subjects if curriculum and grade haven't changed server-side
-            if (draft.curriculumId === restoredCurriculumId && draft.gradeId === restoredGradeId) {
+            if (String(draft.curriculumId) === String(restoredCurriculumId) && String(draft.gradeId) === String(restoredGradeId)) {
               if (draft.subjects && draft.subjects.length > 0) {
                 setSelectedSubjectIds(draft.subjects);
               }
@@ -80,6 +97,19 @@ export default function StudentOnboarding() {
             }
           } catch (e) {
             console.error("Failed to parse onboarding draft", e);
+          }
+        }
+        
+        // Restore Step 1 draft
+        const step1DraftStr = localStorage.getItem('vlearn_onboarding_step1_draft');
+        if (step1DraftStr) {
+          try {
+            const step1Draft = JSON.parse(step1DraftStr);
+            setIsHomeschooled(step1Draft.isHomeschooled || false);
+            setUnverifiedSchoolName(step1Draft.unverifiedSchoolName || "");
+            setSchoolOption(step1Draft.schoolOption || "NONE");
+          } catch (e) {
+            console.error("Failed to parse step 1 draft", e);
           }
         }
 
@@ -138,18 +168,21 @@ export default function StudentOnboarding() {
 
   // Handle Dependent State Clearing
   const handleCurriculumChange = (id) => {
-    if (id !== selectedCurriculumId) {
+    if (String(id) !== String(selectedCurriculumId)) {
       setSelectedCurriculumId(id);
       setSelectedGradeId(null);
       setSelectedSubjectIds([]);
+      setRestoredCurriculumName("");
+      setRestoredGradeName("");
       localStorage.removeItem('vlearn_onboarding_draft');
     }
   };
 
   const handleGradeChange = (id) => {
-    if (id !== selectedGradeId) {
+    if (String(id) !== String(selectedGradeId)) {
       setSelectedGradeId(id);
       setSelectedSubjectIds([]);
+      setRestoredGradeName("");
       localStorage.removeItem('vlearn_onboarding_draft');
     }
   };
@@ -210,12 +243,13 @@ export default function StudentOnboarding() {
         grade_id: selectedGradeId,
         selected_subject_ids: selectedSubjectIds,
         priority_subject_ids: [], // explicitly empty per new design
-        school_id: schoolOption === "VERIFIED" ? selectedSchoolId : null,
-        unverified_school_name: schoolOption === "UNVERIFIED" ? unverifiedSchoolName : null
+        school_id: null,
+        unverified_school_name: isHomeschooled ? null : (unverifiedSchoolName.trim() || null)
       });
 
       // Clear draft on success
       localStorage.removeItem('vlearn_onboarding_draft');
+      localStorage.removeItem('vlearn_onboarding_step1_draft');
 
       Swal.fire({
         title: "Learning Profile Ready!",
@@ -254,15 +288,19 @@ export default function StudentOnboarding() {
   );
 
   // Computed data for review step
-  const schoolName = schoolOption === 'VERIFIED' 
-    ? verifiedSchools.find(s => s.id === selectedSchoolId)?.name 
-    : schoolOption === 'UNVERIFIED' 
+  const schoolName = isHomeschooled 
+    ? 'Homeschooled / Home Learner'
+    : unverifiedSchoolName.trim() 
       ? unverifiedSchoolName 
       : 'Studying Independently / Not Listed';
   
-  const curriculumName = curricula.find(c => c.id === selectedCurriculumId)?.name || '';
-  const gradeName = grades.find(g => g.id === selectedGradeId)?.name || '';
-  const selectedSubjectsList = selectedSubjectIds.map(id => subjects.find(s => s.id === id)).filter(Boolean);
+  const curriculumName = restoredCurriculumName || 
+    (fetchingData ? 'Loading...' : (curricula.find(c => String(c.id) === String(selectedCurriculumId))?.name || 'Unknown'));
+    
+  const gradeName = restoredGradeName || 
+    (gradesLoading ? 'Loading...' : (grades.find(g => String(g.id) === String(selectedGradeId))?.name || 'Unknown'));
+    
+  const selectedSubjectsList = selectedSubjectIds.map(id => subjects.find(s => String(s.id) === String(id))).filter(Boolean);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex flex-col items-center justify-center p-4">
@@ -285,17 +323,16 @@ export default function StudentOnboarding() {
           <AcademicContextStep 
             curricula={curricula}
             grades={grades}
-            verifiedSchools={verifiedSchools}
             selectedCurriculumId={selectedCurriculumId}
             setSelectedCurriculumId={handleCurriculumChange}
             selectedGradeId={selectedGradeId}
             setSelectedGradeId={handleGradeChange}
             schoolOption={schoolOption}
             setSchoolOption={setSchoolOption}
-            selectedSchoolId={selectedSchoolId}
-            setSelectedSchoolId={setSelectedSchoolId}
             unverifiedSchoolName={unverifiedSchoolName}
             setUnverifiedSchoolName={setUnverifiedSchoolName}
+            isHomeschooled={isHomeschooled}
+            setIsHomeschooled={setIsHomeschooled}
             fetchingData={fetchingData}
             gradesLoading={gradesLoading}
             handleNextStep={handleNextStep1}

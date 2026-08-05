@@ -4,28 +4,21 @@ import { ChevronRight, BookOpen, Loader } from "lucide-react";
 export default function AcademicContextStep({
   curricula,
   grades,
-  verifiedSchools,
   selectedCurriculumId,
   setSelectedCurriculumId,
   selectedGradeId,
   setSelectedGradeId,
   schoolOption,
   setSchoolOption,
-  selectedSchoolId,
-  setSelectedSchoolId,
   unverifiedSchoolName,
   setUnverifiedSchoolName,
+  isHomeschooled,
+  setIsHomeschooled,
   fetchingData,
   gradesLoading,
   handleNextStep,
   isLoading
 }) {
-  const [schoolSearch, setSchoolSearch] = useState("");
-
-  const filteredSchools = verifiedSchools.filter(s => 
-    s.name.toLowerCase().includes(schoolSearch.toLowerCase()) ||
-    (s.code && s.code.toLowerCase().includes(schoolSearch.toLowerCase()))
-  );
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -88,70 +81,45 @@ export default function AcademicContextStep({
 
       <div>
         <label className="block text-xs font-semibold text-gray-700 uppercase mb-2">3. School Context (Optional)</label>
-        <select
-          value={schoolOption}
-          onChange={(e) => {
-            setSchoolOption(e.target.value);
-            if (e.target.value !== "VERIFIED") setSelectedSchoolId(null);
-            if (e.target.value !== "UNVERIFIED") setUnverifiedSchoolName("");
-          }}
-          className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-custom-blue mb-3 outline-none"
-        >
-          <option value="NONE">Studying Independently / Not Listed</option>
-          <option value="VERIFIED">Select Registered School</option>
-          <option value="UNVERIFIED">Propose My School Name</option>
-        </select>
-
-        {schoolOption === "VERIFIED" && (
-          <div className="space-y-2 animate-fade-in">
-            <input 
-              type="text" 
-              placeholder="Search schools..." 
-              value={schoolSearch}
-              onChange={(e) => setSchoolSearch(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-custom-blue text-sm outline-none"
-            />
-            {fetchingData ? (
-               <div className="w-full h-32 rounded-xl border border-gray-100 bg-gray-50 animate-pulse"></div>
-            ) : (
-              <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-xl divide-y">
-                {filteredSchools.length > 0 ? (
-                  filteredSchools.map(sch => (
-                    <div 
-                      key={sch.id}
-                      onClick={() => setSelectedSchoolId(sch.id)}
-                      className={`p-3 cursor-pointer transition-colors ${selectedSchoolId === sch.id ? 'bg-blue-50 border-l-4 border-custom-blue' : 'hover:bg-gray-50 border-l-4 border-transparent'}`}
-                    >
-                      <div className="font-semibold text-sm text-gray-800">{sch.name}</div>
-                      {sch.code && <div className="text-xs text-gray-500">{sch.code}</div>}
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-4 text-center text-sm text-gray-500">No schools match your search.</div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {schoolOption === "UNVERIFIED" && (
-          <div className="animate-fade-in">
+        
+        {!isHomeschooled && (
+          <div className="animate-fade-in mb-3">
             <input
               type="text"
               value={unverifiedSchoolName}
-              onChange={(e) => setUnverifiedSchoolName(e.target.value)}
-              placeholder="Enter School Name"
+              onChange={(e) => {
+                setUnverifiedSchoolName(e.target.value);
+                setSchoolOption(e.target.value.trim() ? "UNVERIFIED" : "NONE");
+              }}
+              placeholder="Enter your school name"
               className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-custom-blue outline-none"
             />
           </div>
         )}
+
+        <label className="flex items-center space-x-2 cursor-pointer w-fit">
+          <input
+            type="checkbox"
+            checked={isHomeschooled}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setIsHomeschooled(checked);
+              setSchoolOption("NONE");
+              if (checked) {
+                setUnverifiedSchoolName("");
+              }
+            }}
+            className="w-4 h-4 text-custom-blue rounded border-gray-300 focus:ring-custom-blue"
+          />
+          <span className="text-sm text-gray-700">I am homeschooled / home learner</span>
+        </label>
       </div>
 
       <div className="flex justify-end pt-4 border-t border-gray-100">
         <button
           onClick={handleNextStep}
-          disabled={!selectedGradeId || isLoading || !selectedCurriculumId || (schoolOption === 'VERIFIED' && !selectedSchoolId) || (schoolOption === 'UNVERIFIED' && !unverifiedSchoolName.trim())}
-          className={`px-8 py-3 rounded-full text-white font-semibold flex items-center transition-all ${(!selectedGradeId || !selectedCurriculumId || (schoolOption === 'VERIFIED' && !selectedSchoolId) || (schoolOption === 'UNVERIFIED' && !unverifiedSchoolName.trim())) ? 'bg-gray-300 cursor-not-allowed' : 'bg-custom-blue hover:bg-custom-orange shadow-md'}`}
+          disabled={!selectedGradeId || isLoading || !selectedCurriculumId}
+          className={`px-8 py-3 rounded-full text-white font-semibold flex items-center transition-all ${(!selectedGradeId || !selectedCurriculumId) ? 'bg-gray-300 cursor-not-allowed' : 'bg-custom-blue hover:bg-custom-orange shadow-md'}`}
         >
           {isLoading ? <Loader className="w-5 h-5 animate-spin" /> : <>Next <ChevronRight className="ml-2 w-5 h-5" /></>}
         </button>
