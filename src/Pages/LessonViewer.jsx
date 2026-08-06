@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router';
+import UserContext from '../Context/UserContext';
 import { BlockRenderer } from '../Components/LessonBlocks/BlockRenderer';
 import { ConceptCompletionCard } from '../Components/LessonBlocks/BlueprintComponents';
 import apiClient from '../config/apiClient';
@@ -52,6 +53,7 @@ function estimateReadingTime(blocks) {
 // ─────────────────────────────────────────────────────────────────────────────
 export const LessonViewer = ({ lessonData, paginated = false }) => {
     const { topicId } = useParams();
+    const { user } = useContext(UserContext);
     const [lesson, setLesson] = useState(lessonData || null);
     const [loading, setLoading] = useState(!lessonData);
     const [error, setError] = useState(null);
@@ -124,7 +126,7 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
     if (paginated && lesson.blocks && lesson.blocks.length > 0) {
         const searchParams = new URLSearchParams(window.location.search);
         const isPreview = searchParams.get('preview') === 'true';
-        return <PaginatedViewer lesson={lesson} topicId={topicId} isPreview={isPreview} />;
+        return <PaginatedViewer lesson={lesson} topicId={topicId} isPreview={isPreview} userId={user?.id} />;
     }
 
     // ── V1 scrolling mode (default, unchanged) ───────────────────────────────
@@ -163,13 +165,13 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Paginated Viewer — one concept at a time
 // ─────────────────────────────────────────────────────────────────────────────
-function PaginatedViewer({ lesson, topicId, isPreview }) {
+function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
     const navigate = useNavigate();
     const presentation = PresentationEngine.composeExperience(lesson, lesson.blocks || [], lesson.assets || []);
     const pages = presentation.pages;
     const totalPages = pages.length;
     
-    const progress = useLessonProgress(lesson.id, totalPages, isPreview);
+    const progress = useLessonProgress(lesson.id, totalPages, isPreview, userId);
     const { 
         savedConceptIndex,
         completedConcepts,

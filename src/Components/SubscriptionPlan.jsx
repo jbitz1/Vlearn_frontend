@@ -75,9 +75,10 @@ const SubscriptionPlan = () => {
                                 displayPrice: `KSh ${effectivePrice.toLocaleString()}`,
                                 displayStandardPrice: `KSh ${standardPrice.toLocaleString()}`,
                                 duration: variant.duration_days === 1 ? 'day' :
-                                    variant.duration_days === 30 ? 'month' :
-                                        variant.duration_days === 365 ? 'year' :
-                                            `${variant.duration_days || 30} days`,
+                                    variant.duration_days === 7 ? 'week' :
+                                        variant.duration_days === 30 ? 'month' :
+                                            variant.duration_days === 365 ? 'year' :
+                                                `${variant.duration_days || 30} days`,
                                 features: variant.access_scopes && variant.access_scopes.length > 0 ?
                                     variant.access_scopes.map(s => s.description || (s.scope_type === 'SUBJECT' ? 'Selected Subject Curriculum Access' : 'Full Platform Access')) : [
                                     'Selected Curriculum & Topic Access',

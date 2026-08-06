@@ -3,12 +3,14 @@ import { User as UserIcon, CreditCard, Clock, Settings, Building2 } from 'lucide
 import UserContext from '../../Context/UserContext';
 import { useNavigate } from "react-router";
 import studentCurriculumService from '../../services/studentCurriculumService';
+import studentOnboardingService from '../../services/studentOnboardingService';
 import apiClient from '../../config/apiClient';
 import SubscriptionList from '../../component-library/billing-and-payments/subscriptions/SubscriptionList';
 
 export function User() {
   const { user: contextUser, token } = useContext(UserContext);
   const [profile, setProfile] = useState(null);
+  const [onboardingData, setOnboardingData] = useState(null);
   const [schoolContext, setSchoolContext] = useState(null);
   const [recentModules, setRecentModules] = useState([]);
   const [activeTab, setActiveTab] = useState('account');
@@ -23,12 +25,14 @@ export function User() {
       }
       setIsLoading(true);
       try {
-        const [profileRes, school] = await Promise.all([
+        const [profileRes, school, onboardingState] = await Promise.all([
           apiClient.get('/profile/'),
           studentCurriculumService.getSchoolContext(),
+          studentOnboardingService.getOnboardingState().catch(() => null),
         ]);
         setProfile(profileRes.data);
         setSchoolContext(school);
+        setOnboardingData(onboardingState);
         setRecentModules(studentCurriculumService.getRecentLearningModules());
       } catch (err) {
         console.error('Failed to load profile data:', err);
@@ -44,25 +48,50 @@ export function User() {
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
       {/* Profile Header */}
         <div className="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-custom-blue text-white flex items-center justify-center font-black text-2xl">
-              {contextUser?.username?.[0]?.toUpperCase() || 'S'}
-            </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-black text-gray-900">{contextUser?.username || 'Student Profile'}</h1>
-                <span className="bg-blue-50 text-custom-blue text-xs font-extrabold px-3 py-1 rounded-full uppercase">
-                  Student
-                </span>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-custom-blue text-white flex items-center justify-center font-black text-2xl shrink-0">
+                {contextUser?.username?.[0]?.toUpperCase() || 'S'}
               </div>
-              <p className="text-gray-500 text-sm font-medium">{contextUser?.email}</p>
+              <div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="text-2xl font-black text-gray-900">
+                    {profile?.first_name || profile?.last_name
+                      ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+                      : contextUser?.username || 'Student Profile'}
+                  </h1>
+                  <span className="bg-blue-50 text-custom-blue text-xs font-extrabold px-3 py-1 rounded-full uppercase">
+                    Student
+                  </span>
+                  {profile?.onboarding_complete !== undefined && (
+                    <span
+                      className={`text-xs font-extrabold px-3 py-1 rounded-full uppercase ${
+                        profile.onboarding_complete
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-orange-50 text-orange-700 border border-orange-200'
+                      }`}
+                    >
+                      {profile.onboarding_complete ? 'Setup Complete' : 'Setup Incomplete'}
+                    </span>
+                  )}
+                </div>
+                <p className="text-gray-500 text-sm font-medium mt-0.5">
+                  @{contextUser?.username} • {contextUser?.email}
+                </p>
+              </div>
             </div>
+
+            {profile?.date_joined && (
+              <div className="text-xs text-gray-400 font-semibold sm:text-right">
+                Member since {new Date(profile.date_joined).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+              </div>
+            )}
           </div>
 
           {/* Tabs Navigation */}
           <div className="flex border-b border-gray-200 mt-8 gap-6 overflow-x-auto">
             {[
-              { id: 'account', label: 'Account', icon: UserIcon },
+              { id: 'account', label: 'Account Overview', icon: UserIcon },
               { id: 'subscription', label: 'Subscription', icon: CreditCard },
               { id: 'history', label: 'Learning History', icon: Clock },
               { id: 'settings', label: 'Settings', icon: Settings },
@@ -91,22 +120,66 @@ export function User() {
             {/* TAB 1: ACCOUNT */}
             {activeTab === 'account' && (
               <div className="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
-                <h2 className="text-lg font-bold text-gray-900">Account Overview</h2>
+                <h2 className="text-lg font-bold text-gray-900">Account & Academic Profile</h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div className="bg-gray-50 p-4 rounded-2xl">
-                    <span className="text-xs font-bold text-gray-400 uppercase">Username</span>
-                    <p className="text-gray-900 font-bold mt-1">{contextUser?.username}</p>
+                    <span className="text-xs font-bold text-gray-400 uppercase">Preferred Username</span>
+                    <p className="text-gray-900 font-bold mt-1">@{contextUser?.username}</p>
                   </div>
+
                   <div className="bg-gray-50 p-4 rounded-2xl">
-                    <span className="text-xs font-bold text-gray-400 uppercase">Email</span>
+                    <span className="text-xs font-bold text-gray-400 uppercase">Email Address</span>
                     <p className="text-gray-900 font-bold mt-1">{contextUser?.email}</p>
                   </div>
+
+                  {(profile?.first_name || profile?.last_name) && (
+                    <div className="bg-gray-50 p-4 rounded-2xl">
+                      <span className="text-xs font-bold text-gray-400 uppercase">Full Name</span>
+                      <p className="text-gray-900 font-bold mt-1">
+                        {`${profile.first_name || ''} ${profile.last_name || ''}`.trim()}
+                      </p>
+                    </div>
+                  )}
+
+                  {onboardingData?.profile?.curriculum_name && (
+                    <div className="bg-gray-50 p-4 rounded-2xl">
+                      <span className="text-xs font-bold text-gray-400 uppercase">Curriculum</span>
+                      <p className="text-gray-900 font-bold mt-1">{onboardingData.profile.curriculum_name}</p>
+                    </div>
+                  )}
+
+                  {onboardingData?.profile?.grade_name && (
+                    <div className="bg-gray-50 p-4 rounded-2xl">
+                      <span className="text-xs font-bold text-gray-400 uppercase">Grade / Level</span>
+                      <p className="text-gray-900 font-bold mt-1">{onboardingData.profile.grade_name}</p>
+                    </div>
+                  )}
+
+                  {(onboardingData?.profile?.verified_school_name || onboardingData?.profile?.unverified_school_name || schoolContext?.school_name) && (
+                    <div className="bg-gray-50 p-4 rounded-2xl">
+                      <span className="text-xs font-bold text-gray-400 uppercase">School / Institution</span>
+                      <p className="text-gray-900 font-bold mt-1">
+                        {onboardingData?.profile?.verified_school_name ||
+                          onboardingData?.profile?.unverified_school_name ||
+                          schoolContext?.school_name ||
+                          'Independent Learner'}
+                      </p>
+                    </div>
+                  )}
+
+                  {onboardingData?.profile?.career_aspiration && (
+                    <div className="bg-gray-50 p-4 rounded-2xl">
+                      <span className="text-xs font-bold text-gray-400 uppercase">Career Aspiration</span>
+                      <p className="text-gray-900 font-bold mt-1">{onboardingData.profile.career_aspiration}</p>
+                    </div>
+                  )}
+
                   {schoolContext && (
-                    <div className="bg-gray-50 p-4 rounded-2xl md:col-span-2 flex items-center gap-3">
-                      <Building2 className="w-6 h-6 text-custom-blue" />
+                    <div className="bg-gray-50 p-4 rounded-2xl md:col-span-2 lg:col-span-3 flex items-center gap-3">
+                      <Building2 className="w-6 h-6 text-custom-blue shrink-0" />
                       <div>
-                        <span className="text-xs font-bold text-gray-400 uppercase">Enrolled Institution</span>
+                        <span className="text-xs font-bold text-gray-400 uppercase">Enrolled Class / Stream</span>
                         <p className="text-gray-900 font-bold">
                           {schoolContext.school_name} - {schoolContext.class_name} {schoolContext.stream_name || ''}
                         </p>

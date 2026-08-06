@@ -16,7 +16,9 @@ export const TopicsView = () => {
 
     useEffect(() => {
         const fetchProgress = () => {
-            const keys = Object.keys(localStorage).filter(k => k.startsWith('vlearn_lesson_progress_'));
+            if (!user?.id) return;
+            const prefix = `vlearn_lesson_progress_${user.id}_`;
+            const keys = Object.keys(localStorage).filter(k => k.startsWith(prefix));
             const progressMap = {};
             keys.forEach(k => {
                 try {
@@ -33,7 +35,7 @@ export const TopicsView = () => {
             setTopicProgress(progressMap);
         };
         fetchProgress();
-    }, []);
+    }, [user?.id]);
 
     useEffect(() => {
         const fetchTopics = async () => {

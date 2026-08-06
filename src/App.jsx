@@ -76,19 +76,11 @@ function App() {
         children: [
             {
                 index: true,
-                element: (
-                    <SubscriptionRestricted>
-                        <Dashboard />
-                    </SubscriptionRestricted>
-                ),
+                element: <Dashboard />,
             },
             {
                 path: "home",
-                element: (
-                    <SubscriptionRestricted>
-                        <Dashboard />
-                    </SubscriptionRestricted>
-                ),
+                element: <Dashboard />,
             },
             {
                 path: "subjects",
@@ -140,7 +132,14 @@ function App() {
                     </SubscriptionRestricted>
                 ),
             },
-            { path: "quiz/:id", element: <QuizAttempt /> },
+            {
+                path: "quiz/:id",
+                element: (
+                    <SubscriptionRestricted requireFeature="access_assessments">
+                        <QuizAttempt />
+                    </SubscriptionRestricted>
+                ),
+            },
             {
                 path: "results",
                 element: (

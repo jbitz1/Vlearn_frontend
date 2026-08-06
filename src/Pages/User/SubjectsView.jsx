@@ -109,10 +109,10 @@ export const SubjectsView = () => {
                 <div className="mt-6 pt-4 border-t border-gray-100">
                   <div className="flex justify-between items-center text-xs font-bold">
                     <span className="text-gray-500">Subject Progress</span>
-                    <span className="text-custom-blue font-extrabold">0% Complete</span>
+                    <span className="text-gray-400 font-semibold">Not started</span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-1.5 mt-2">
-                    <div className="bg-custom-blue h-1.5 rounded-full w-1/12"></div>
+                    <div className="bg-transparent h-1.5 rounded-full w-0"></div>
                   </div>
                 </div>
               </div>

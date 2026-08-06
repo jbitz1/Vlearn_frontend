@@ -26,9 +26,12 @@ export const studentCurriculumService = {
     }
   },
 
-  async getSubjects(gradeId = null) {
+  async getSubjects(gradeId = null, enrolled = true) {
     try {
-      const url = gradeId ? `/api/curriculum/subjects/?grade=${gradeId}` : '/api/curriculum/subjects/';
+      let url = gradeId ? `/api/curriculum/subjects/?grade=${gradeId}` : '/api/curriculum/subjects/';
+      if (enrolled) {
+        url += url.includes('?') ? '&enrolled=true' : '?enrolled=true';
+      }
       const response = await apiClient.get(url);
       return response.data.results || response.data || [];
     } catch (err) {
@@ -118,12 +121,13 @@ export const studentCurriculumService = {
     }
   },
 
-  getRecentLearningModules() {
-    const keys = Object.keys(localStorage).filter(k => k.startsWith('vlearn_lesson_progress_'));
+  getRecentLearningModules(userId = 'anonymous') {
+    const prefix = `vlearn_lesson_progress_${userId}_`;
+    const keys = Object.keys(localStorage).filter(k => k.startsWith(prefix));
     const modules = keys.map(k => {
       try {
         const data = JSON.parse(localStorage.getItem(k));
-        const lessonId = k.replace('vlearn_lesson_progress_', '');
+        const lessonId = k.replace(prefix, '').replace('_preview', '');
         return { ...data, lessonId, storageKey: k };
       } catch {
         return null;
@@ -133,16 +137,17 @@ export const studentCurriculumService = {
     return modules.sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0));
   },
 
-  getRecentlyStudied() {
-    return this.getRecentLearningModules();
+  getRecentlyStudied(userId = 'anonymous') {
+    return this.getRecentLearningModules(userId);
   },
 
-  getRecentLessons() {
-    return this.getRecentLearningModules();
+  getRecentLessons(userId = 'anonymous') {
+    return this.getRecentLearningModules(userId);
   },
 
-  getTopicProgress(topicId) {
-    const key = `vlearn_lesson_progress_${topicId}`;
+  getTopicProgress(topicId, userId = 'anonymous') {
+    // Note: getTopicProgress might be checking by lessonId if topic progress is stored per lesson
+    const key = `vlearn_lesson_progress_${userId}_${topicId}`;
     try {
       const item = localStorage.getItem(key);
       if (!item) return { isCompleted: false, pct: 0 };

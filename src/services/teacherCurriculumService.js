@@ -477,7 +477,7 @@ const teacherCurriculumService = {
   },
 
   // Read recently taught lessons with Class, Stream, and Badge context
-  async getRecentlyTaught() {
+  async getRecentlyTaught(userId = 'anonymous') {
     const streams = await this.getMyStreams();
     const defaultStream = streams[0] || { school_class_name: '', stream_name: '' };
     const defaultClassName = defaultStream.school_class_name || '';
@@ -487,8 +487,9 @@ const teacherCurriculumService = {
     try {
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('vlearn_lesson_progress_')) {
-          const topicId = key.replace('vlearn_lesson_progress_', '');
+        const prefix = `vlearn_lesson_progress_${userId}_`;
+        if (key && key.startsWith(prefix)) {
+          const topicId = key.replace(prefix, '').replace('_preview', '');
           const data = JSON.parse(localStorage.getItem(key));
           if (data && data.lessonTitle) {
             recent.push({

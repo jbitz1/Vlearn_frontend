@@ -1,11 +1,13 @@
 import { useState, useEffect, useContext } from 'react';
-import { Clock, BookOpen, ChevronRight, Building2, Play, Bell } from 'lucide-react';
+import { Clock, BookOpen, ChevronRight, Building2, Play, Bell, Unlock } from 'lucide-react';
 import { Link, useNavigate } from "react-router";
 import UserContext from '../../Context/UserContext';
 import studentCurriculumService from '../../services/studentCurriculumService';
+import { useSubscriptionContext } from '../../component-library/billing-and-payments/subscriptions/SubscriptionContextProvider';
 
 export function Dashboard() {
   const { user } = useContext(UserContext);
+  const subscriptionContext = useSubscriptionContext();
   const navigate = useNavigate();
 
   const [schoolContext, setSchoolContext] = useState(null);
@@ -18,22 +20,53 @@ export function Dashboard() {
       setIsLoading(true);
       const [school, fetchedSubjects] = await Promise.all([
         studentCurriculumService.getSchoolContext(),
-        studentCurriculumService.getSubjects()
+        studentCurriculumService.getSubjects(null, true)
       ]);
 
       setSchoolContext(school);
       setSubjects(fetchedSubjects);
 
-      const recent = studentCurriculumService.getRecentLearningModules();
+      const recent = studentCurriculumService.getRecentLearningModules(user?.id);
       setRecentModules(recent);
 
       setIsLoading(false);
     };
 
-    loadDashboardData();
-  }, []);
+    if (user?.id) {
+        loadDashboardData();
+    }
+  }, [user?.id]);
 
   const activeModule = recentModules.length > 0 ? recentModules[0] : null;
+
+  const dismissKey = `vlearn_onboarding_reminder_dismissed_${user?.id}`;
+  const [bannerDismissed, setBannerDismissed] = useState(
+    () => localStorage.getItem(dismissKey) === 'true'
+  );
+
+  const entitlements = subscriptionContext?.entitlements;
+  const activeSubscriptions = subscriptionContext?.activeSubscriptions || [];
+
+  const hasAccess =
+    entitlements?.platform_wide === true ||
+    activeSubscriptions.length > 0;
+
+  const showOnboardingBanner =
+    !isLoading &&
+    user?.role === 'student' &&
+    user?.profile?.onboarding_complete === false &&
+    !bannerDismissed;
+
+  const showSubscriptionCard =
+    !isLoading &&
+    user?.role === 'student' &&
+    user?.profile?.onboarding_complete === true &&
+    !hasAccess;
+
+  const handleDismissBanner = () => {
+    localStorage.setItem(dismissKey, 'true');
+    setBannerDismissed(true);
+  };
 
   return (
     <div>
@@ -71,6 +104,61 @@ export function Dashboard() {
         {/* Dashboard Content */}
         <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-12">
           
+          {/* ONBOARDING REMINDER BANNER (State 1: Incomplete Onboarding) */}
+          {showOnboardingBanner && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-3xl border border-orange-200 bg-orange-50/80 p-6 shadow-sm">
+              <div className="flex items-center gap-4">
+                <BookOpen className="w-8 h-8 text-custom-orange shrink-0" strokeWidth={1.5} />
+                <div>
+                  <h3 className="font-bold text-orange-950 text-base">Your profile setup is incomplete</h3>
+                  <p className="text-sm text-orange-800 mt-0.5">
+                    Complete your curriculum and subject selection to unlock your personalized learning experience.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                <Link
+                  to="/onboarding"
+                  className="rounded-2xl bg-custom-orange px-5 py-2.5 text-sm font-bold text-white hover:bg-orange-600 transition-colors shadow-sm"
+                >
+                  Continue Setup →
+                </Link>
+                <button
+                  onClick={handleDismissBanner}
+                  className="p-2 text-orange-400 hover:text-orange-700 text-lg leading-none transition-colors cursor-pointer"
+                  aria-label="Dismiss"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* SUBSCRIPTION CARD (State 2: Onboarding Complete, No Access) */}
+          {showSubscriptionCard && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-3xl border border-blue-100 bg-white p-6 md:p-8 shadow-sm">
+              <div className="flex items-center gap-4">
+                <Unlock className="w-8 h-8 text-custom-blue shrink-0" strokeWidth={1.5} />
+                <div>
+                  <h3 className="font-bold text-gray-900 text-base">
+                    Your profile is ready. Choose a subscription to start learning.
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Everything is set up. The last step is choosing a plan that gives you access to lessons, quizzes, and simulations.
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0 self-end sm:self-center">
+                <Link
+                  to="/subscription"
+                  className="inline-block rounded-2xl bg-custom-blue px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap"
+                >
+                  View Subscription Plans →
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* SECTION 1: CONTINUE LEARNING (Highest Priority) */}
           <section>
             <div className="flex items-center justify-between mb-4">
@@ -178,10 +266,10 @@ export function Dashboard() {
                       <div className="mt-4 pt-3 border-t border-gray-100">
                         <div className="flex justify-between items-center text-xs font-bold text-gray-500">
                           <span>Progress</span>
-                          <span className="text-custom-blue font-extrabold">0%</span>
+                          <span className="text-gray-400 font-semibold">Not started</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1.5">
-                          <div className="bg-custom-blue h-1.5 rounded-full w-1/12"></div>
+                          <div className="bg-transparent h-1.5 rounded-full w-0"></div>
                         </div>
                       </div>
                     </div>

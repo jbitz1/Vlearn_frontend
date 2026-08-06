@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
-export function useLessonProgress(lessonId, totalPages, isPreview = false) {
-    const storageKey = `vlearn_lesson_progress_${lessonId}${isPreview ? '_preview' : ''}`;
+export function useLessonProgress(lessonId, totalPages, isPreview = false, userId = 'anonymous') {
+    const storageKey = `vlearn_lesson_progress_${userId}_${lessonId}${isPreview ? '_preview' : ''}`;
 
     const [state, setState] = useState(() => {
         const stored = localStorage.getItem(storageKey);
