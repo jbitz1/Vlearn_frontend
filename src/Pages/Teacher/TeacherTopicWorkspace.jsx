@@ -40,11 +40,11 @@ export const TeacherTopicWorkspace = () => {
   }, [topicId]);
 
   const handleOpenLesson = (lessonId) => {
-    navigate(`/lesson-viewer/${topicId}`);
+    navigate(`/lesson-viewer/${topicId}?lessonId=${lessonId}`);
   };
 
   const handleViewAsStudent = (lessonId) => {
-    navigate(`/lesson-viewer/${topicId}?mode=preview`);
+    navigate(`/lesson-viewer/${topicId}?lessonId=${lessonId}&mode=preview`);
   };
 
   const toggleNotesPanel = (lessonId) => {

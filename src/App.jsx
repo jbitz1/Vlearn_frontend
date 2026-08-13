@@ -276,7 +276,7 @@ function App() {
                 {
                     path: "lesson-viewer/:topicId?",
                     element: (
-                        <RequireRole allowedRoles={["student", "teacher", "platform_admin"]}>
+                        <RequireRole allowedRoles={["student", "teacher", "platform_admin", "school_admin", "user", "learner"]}>
                             <SubscriptionRestricted>
                                 <LessonViewer paginated={true} />
                             </SubscriptionRestricted>

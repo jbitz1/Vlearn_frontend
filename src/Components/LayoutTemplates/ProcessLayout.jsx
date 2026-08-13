@@ -11,21 +11,6 @@ export const ProcessLayout = ({ page, renderBlock, context }) => {
 
   return (
     <div className="layout-strategy process-layout max-w-4xl mx-auto space-y-8">
-      {/* Concept Header */}
-      <div className="bg-custom-forest/5 border border-custom-forest/20 rounded-2xl p-6 mb-8 flex items-center justify-between">
-        <div>
-          <span className="text-[10px] font-bold text-custom-forest uppercase tracking-widest block mb-1">
-            Sequential Mechanism Flow
-          </span>
-          <h3 className="text-xl font-bold text-gray-900 font-serif">
-            {context?.conceptGroup || page?.pageTitle || 'Process Overview'}
-          </h3>
-        </div>
-        <span className="px-3 py-1 bg-custom-forest text-white text-xs font-bold rounded-full uppercase tracking-wider">
-          Process Strategy
-        </span>
-      </div>
-
       {/* Sequential Blocks with Flow Connectors */}
       <div className="relative space-y-6">
         {blocks.map((block, idx) => {

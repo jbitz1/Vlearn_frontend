@@ -1,5 +1,4 @@
 import React from 'react';
-import { CheckCircle2 } from 'lucide-react';
 
 /**
  * ProceduralLayout (Presentation Strategy)
@@ -11,19 +10,6 @@ export const ProceduralLayout = ({ page, renderBlock, context }) => {
 
   return (
     <div className="layout-strategy procedural-layout max-w-4xl mx-auto space-y-8">
-      {/* Strategy Banner */}
-      <div className="bg-custom-navy/5 border-l-4 border-custom-navy p-6 rounded-r-2xl flex items-center justify-between">
-        <div>
-          <span className="text-[10px] font-bold text-custom-navy uppercase tracking-widest block mb-1">
-            Procedural / Problem-Solving Strategy
-          </span>
-          <h3 className="text-xl font-bold text-gray-900 font-serif">
-            {context?.conceptGroup || page?.pageTitle || 'Step-by-Step Procedure'}
-          </h3>
-        </div>
-        <CheckCircle2 className="w-8 h-8 text-custom-navy opacity-80" />
-      </div>
-
       {/* Procedural Moments */}
       <div className="space-y-8">
         {blocks.map((block, idx) => (

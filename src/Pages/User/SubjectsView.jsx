@@ -1,45 +1,91 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router';
 import { BookOpen, ChevronRight, Layers } from 'lucide-react';
 import studentCurriculumService from '../../services/studentCurriculumService';
+import UserContext from '../../Context/UserContext';
+import ProgressCircle from '../../Components/Common/ProgressCircle';
 
 export const SubjectsView = () => {
+  const { user } = useContext(UserContext);
   const [grades, setGrades] = useState([]);
   const [selectedGrade, setSelectedGrade] = useState(null);
   const [subjects, setSubjects] = useState([]);
+  const [subjectProgressMap, setSubjectProgressMap] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+
+  const computeAllSubjectsProgress = async (subjectsList) => {
+    if (!subjectsList || subjectsList.length === 0) return;
+    const progressMap = {};
+    await Promise.all(
+      subjectsList.map(async (subj) => {
+        const topics = await studentCurriculumService.getTopicsForSubject(subj.id);
+        const prog = studentCurriculumService.getSubjectProgress(subj.id, topics, user?.id);
+        progressMap[subj.id] = prog;
+      })
+    );
+    setSubjectProgressMap(progressMap);
+  };
+
+  const [allEnrolledSubjects, setAllEnrolledSubjects] = useState([]);
 
   useEffect(() => {
     const loadCurriculum = async () => {
       setIsLoading(true);
-      const fetchedGrades = await studentCurriculumService.getGrades();
-      setGrades(fetchedGrades);
+      const [fetchedGrades, fetchedSubjects] = await Promise.all([
+        studentCurriculumService.getGrades(),
+        studentCurriculumService.getSubjects(null, true)
+      ]);
 
-      if (fetchedGrades.length > 0) {
-        const defaultGrade = fetchedGrades[0];
+      setAllEnrolledSubjects(fetchedSubjects);
+
+      // Determine which grade IDs actually have enrolled subjects
+      const enrolledGradeIds = new Set(
+        fetchedSubjects.map(s => s.grade || s.grade_id || s.grade?.id).filter(Boolean)
+      );
+
+      // Only include grades the student is actively subscribed/enrolled to
+      const userGrades = fetchedGrades.filter(g => enrolledGradeIds.has(g.id));
+      const activeGradesList = userGrades.length > 0 ? userGrades : fetchedGrades;
+      setGrades(activeGradesList);
+
+      let displayedSubjects = [];
+      if (activeGradesList.length > 0) {
+        const defaultGrade = activeGradesList[0];
         setSelectedGrade(defaultGrade);
-        const fetchedSubjects = await studentCurriculumService.getSubjects(defaultGrade.id);
-        setSubjects(fetchedSubjects);
+        displayedSubjects = activeGradesList.length > 1
+          ? fetchedSubjects.filter(s => (s.grade || s.grade_id || s.grade?.id) === defaultGrade.id)
+          : fetchedSubjects;
       } else {
-        const allSubjects = await studentCurriculumService.getSubjects();
-        setSubjects(allSubjects);
+        displayedSubjects = fetchedSubjects;
       }
+
+      const ordered = studentCurriculumService.orderSubjectsByLastOpened(displayedSubjects, user?.id);
+      setSubjects(ordered);
+      await computeAllSubjectsProgress(ordered);
       setIsLoading(false);
     };
 
     loadCurriculum();
-  }, []);
+  }, [user?.id]);
 
   const handleGradeChange = async (grade) => {
     setSelectedGrade(grade);
     setIsLoading(true);
-    const fetchedSubjects = await studentCurriculumService.getSubjects(grade.id);
-    setSubjects(fetchedSubjects);
+    let gradeSubjects = allEnrolledSubjects.filter(
+      s => (s.grade || s.grade_id || s.grade?.id) === grade.id
+    );
+    if (gradeSubjects.length === 0) {
+      gradeSubjects = await studentCurriculumService.getSubjects(grade.id, true);
+    }
+    const ordered = studentCurriculumService.orderSubjectsByLastOpened(gradeSubjects, user?.id);
+    setSubjects(ordered);
+    await computeAllSubjectsProgress(ordered);
     setIsLoading(false);
   };
 
   const handleSelectSubject = (subjectId) => {
+    studentCurriculumService.recordSubjectAccess(subjectId, user?.id);
     navigate(`/student/subject/${subjectId}`);
   };
 
@@ -75,13 +121,14 @@ export const SubjectsView = () => {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-44 bg-gray-200 rounded-3xl animate-pulse"></div>
+            <div key={i} className="h-48 bg-gray-200 rounded-3xl animate-pulse"></div>
           ))}
         </div>
       ) : subjects.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {subjects.map((subject) => {
             const gradeSubtitle = selectedGrade?.name || subject.grade_name || '';
+            const progress = subjectProgressMap[subject.id] || { pct: 0, isStarted: false, isCompleted: false };
 
             return (
               <div
@@ -94,7 +141,11 @@ export const SubjectsView = () => {
                     <div className="p-3 bg-blue-50 text-custom-blue rounded-2xl group-hover:bg-custom-blue group-hover:text-white transition-colors">
                       <BookOpen className="w-6 h-6" />
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-custom-blue group-hover:translate-x-1 transition-all" />
+                    <ProgressCircle
+                      percentage={progress.pct}
+                      size={44}
+                      strokeWidth={4}
+                    />
                   </div>
                   <h2 className="text-xl font-bold text-gray-900 group-hover:text-custom-blue transition-colors">
                     {subject.name}
@@ -106,13 +157,20 @@ export const SubjectsView = () => {
                   )}
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-gray-100">
-                  <div className="flex justify-between items-center text-xs font-bold">
-                    <span className="text-gray-500">Subject Progress</span>
-                    <span className="text-gray-400 font-semibold">Not started</span>
+                <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                  <div className="text-xs font-bold">
+                    <span className="text-gray-500 block">Subject Progress</span>
+                    <span className={progress.pct > 0 ? 'text-custom-blue font-extrabold' : 'text-gray-400 font-semibold'}>
+                      {progress.isCompleted
+                        ? '100% Completed'
+                        : progress.pct > 0
+                        ? `${progress.pct}% in progress`
+                        : 'Not started'}
+                    </span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5 mt-2">
-                    <div className="bg-transparent h-1.5 rounded-full w-0"></div>
+                  <div className="flex items-center text-xs font-bold text-custom-blue group-hover:translate-x-1 transition-transform">
+                    <span>Explore</span>
+                    <ChevronRight className="w-4 h-4 ml-0.5" />
                   </div>
                 </div>
               </div>

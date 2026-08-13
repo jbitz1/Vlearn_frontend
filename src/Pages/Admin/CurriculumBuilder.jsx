@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { ChevronRight, Plus, FolderTree, BookOpen, Layers, Target, Library, UploadCloud, Loader2, AlertCircle, Image as ImageIcon, PenTool, Trash2 } from 'lucide-react';
+import { ChevronRight, Plus, FolderTree, BookOpen, Layers, Target, Library, UploadCloud, Loader2, AlertCircle, Image as ImageIcon, PenTool, Trash2, Sparkles } from 'lucide-react';
 import apiClient from '../../config/apiClient';
 import KnowledgePackReviewModal from '../../Components/Admin/KnowledgePackReviewModal';
 
@@ -27,9 +27,12 @@ export default function CurriculumBuilder() {
     useEffect(() => localStorage.setItem('vlearn_cb_topic', JSON.stringify(selectedTopic)), [selectedTopic]);
     useEffect(() => localStorage.setItem('vlearn_cb_unit', JSON.stringify(selectedUnit)), [selectedUnit]);
     
-    // Repository Stats State
+    // Repository Stats & Lesson State
     const [repoStats, setRepoStats] = useState(null);
     const [loadingStats, setLoadingStats] = useState(false);
+    const [unitLesson, setUnitLesson] = useState(null);
+    const [loadingLesson, setLoadingLesson] = useState(false);
+    const [creatingManual, setCreatingManual] = useState(false);
 
     // Form states
     const [newNames, setNewNames] = useState({
@@ -58,18 +61,42 @@ export default function CurriculumBuilder() {
         return () => clearInterval(interval);
     }, [activePack]);
 
-    // Fetch repository stats
+    // Fetch repository stats and lesson status
     useEffect(() => {
         if (selectedUnit) {
             setLoadingStats(true);
+            setLoadingLesson(true);
             apiClient.get(`/api/curriculum/learning-units/${selectedUnit.id}/repository_stats/`)
                 .then(res => setRepoStats(res.data))
                 .catch(err => console.error(err))
                 .finally(() => setLoadingStats(false));
+
+            apiClient.get(`/api/curriculum/lessons/?learning_unit=${selectedUnit.id}`)
+                .then(res => {
+                    const lessons = res.data.results || res.data || [];
+                    setUnitLesson(lessons.length > 0 ? lessons[0] : null);
+                })
+                .catch(err => console.error(err))
+                .finally(() => setLoadingLesson(false));
         } else {
             setRepoStats(null);
+            setUnitLesson(null);
         }
     }, [selectedUnit]);
+
+    const handleCreateManualInCurriculumBuilder = async () => {
+        if (!selectedUnit) return;
+        try {
+            setCreatingManual(true);
+            await apiClient.post(`/api/curriculum/learning-units/${selectedUnit.id}/create_manual_lesson/`);
+            navigate(`/admin-dashboard/content-studio/${selectedUnit.id}`);
+        } catch (err) {
+            console.error("Failed to create manual lesson:", err);
+            alert("Failed to create manual lesson.");
+        } finally {
+            setCreatingManual(false);
+        }
+    };
 
     // Initial load
     useEffect(() => {
@@ -105,7 +132,7 @@ export default function CurriculumBuilder() {
 
     useEffect(() => {
         if (selectedTopic) {
-            fetchData('/api/curriculum/learning-units/', (data) => {
+            fetchData(`/api/curriculum/learning-units/?topic=${selectedTopic.id}&page_size=100`, (data) => {
                 setLearningUnits(data.filter(lu => lu.topic === selectedTopic.id || (lu.topic && lu.topic.id === selectedTopic.id)));
             });
         } else {
@@ -144,7 +171,7 @@ export default function CurriculumBuilder() {
             if (type === 'subject') fetchData(`/api/curriculum/subjects/?grade=${selectedGrade.id}`, setSubjects);
             if (type === 'topic') fetchData(`/api/curriculum/topics/?subject=${selectedSubject.id}`, setTopics);
             if (type === 'unit') {
-                fetchData('/api/curriculum/learning-units/', (data) => {
+                fetchData(`/api/curriculum/learning-units/?topic=${selectedTopic.id}&page_size=100`, (data) => {
                     setLearningUnits(data.filter(lu => lu.topic === selectedTopic.id || (lu.topic && lu.topic.id === selectedTopic.id)));
                 });
             }
@@ -546,13 +573,43 @@ export default function CurriculumBuilder() {
                                         )}
                                     </div>
                                     
-                                    <button 
-                                        onClick={() => navigate(`/admin-dashboard/content-studio/${selectedUnit.id}`)}
-                                        className="w-full mt-6 flex items-center justify-center gap-2 bg-custom-blue text-white py-2.5 rounded shadow hover:bg-blue-700 transition-all font-medium"
-                                    >
-                                        <PenTool className="w-4 h-4" />
-                                        Open Content Studio
-                                    </button>
+                                    {loadingLesson ? (
+                                        <div className="mt-6 text-center text-xs text-gray-500 flex items-center justify-center gap-2 py-2">
+                                            <Loader2 className="w-4 h-4 animate-spin text-custom-blue" />
+                                            Checking lesson status...
+                                        </div>
+                                    ) : unitLesson ? (
+                                        <button 
+                                            onClick={() => navigate(`/admin-dashboard/content-studio/${selectedUnit.id}`)}
+                                            className="w-full mt-6 flex items-center justify-center gap-2 bg-custom-blue text-white py-2.5 rounded shadow hover:bg-blue-700 transition-all font-medium text-sm"
+                                        >
+                                            <PenTool className="w-4 h-4" />
+                                            Open Content Studio
+                                        </button>
+                                    ) : (
+                                        <div className="mt-6 pt-4 border-t border-gray-200 space-y-2">
+                                            <div className="text-xs font-semibold text-gray-700 mb-2">Lesson Actions:</div>
+                                            <button 
+                                                onClick={() => navigate(`/admin-dashboard/content-studio/${selectedUnit.id}`)}
+                                                className="w-full flex items-center justify-center gap-2 bg-custom-blue text-white py-2.5 rounded shadow hover:bg-blue-700 transition-all font-medium text-sm"
+                                            >
+                                                <Sparkles className="w-4 h-4" />
+                                                Generate with AI
+                                            </button>
+                                            <button 
+                                                onClick={handleCreateManualInCurriculumBuilder}
+                                                disabled={creatingManual}
+                                                className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 border border-gray-300 py-2.5 rounded shadow-sm hover:bg-gray-50 transition-all font-medium text-sm disabled:opacity-50"
+                                            >
+                                                {creatingManual ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+                                                ) : (
+                                                    <PenTool className="w-4 h-4 text-custom-orange" />
+                                                )}
+                                                Create Manually
+                                            </button>
+                                        </div>
+                                    )}
                                 </>
                             ) : null}
                         </div>

@@ -9,7 +9,7 @@ import PublishGate from './composer/PublishGate';
 import AIReviewPanel from './composer/AIReviewPanel';
 import {
     ArrowLeft, Eye, Edit, CheckCircle, AlertCircle, X,
-    Loader2, Sparkles, RotateCcw
+    Loader2, Sparkles, RotateCcw, PenTool
 } from 'lucide-react';
 
 export default function ContentStudio() {
@@ -25,6 +25,7 @@ export default function ContentStudio() {
     // ── UI state ──────────────────────────────────────────────────────────────
     const [isPreview, setIsPreview] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isCreatingManual, setIsCreatingManual] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [jobStep, setJobStep] = useState(null);
     const [showPublishGate, setShowPublishGate] = useState(false);
@@ -130,6 +131,18 @@ export default function ContentStudio() {
             showNotification('error', 'Failed to start lesson generation.');
             setIsGenerating(false);
             setJobStep(null);
+        }
+    };
+
+    const handleCreateManualLesson = async () => {
+        setIsCreatingManual(true);
+        try {
+            await apiClient.post(`/api/curriculum/learning-units/${learningUnitId}/create_manual_lesson/`);
+            await fetchAll();
+        } catch {
+            showNotification('error', 'Failed to create manual lesson.');
+        } finally {
+            setIsCreatingManual(false);
         }
     };
 
@@ -381,20 +394,32 @@ export default function ContentStudio() {
     if (!lesson && !isGenerating) {
         return (
             <div className="flex flex-col h-screen items-center justify-center bg-gray-50">
-                <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-200 text-center max-w-sm">
+                <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-200 text-center max-w-md w-full">
                     <div className="text-5xl mb-4">✨</div>
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">No lesson has been generated.</h2>
+                    <h2 className="text-xl font-bold text-gray-800 mb-2">Create Lesson</h2>
                     <p className="text-gray-500 text-sm mb-6">
-                        This learning unit already has repository content available.
-                        <br/><br/>
-                        Generate an AI lesson to begin.
+                        No lesson exists for this learning unit yet. Select how you would like to create it.
                     </p>
-                    <button
-                        onClick={handleGenerateFullLesson}
-                        className="w-full py-3 bg-custom-blue text-white rounded-xl font-bold hover:opacity-90 transition flex items-center justify-center gap-2"
-                    >
-                        <Sparkles size={18} /> Generate Draft Lesson
-                    </button>
+                    <div className="space-y-3">
+                        <button
+                            onClick={handleGenerateFullLesson}
+                            className="w-full py-3 bg-custom-blue text-white rounded-xl font-bold hover:opacity-90 transition flex items-center justify-center gap-2 text-sm shadow-sm"
+                        >
+                            <Sparkles size={18} /> Generate with AI
+                        </button>
+                        <button
+                            onClick={handleCreateManualLesson}
+                            disabled={isCreatingManual}
+                            className="w-full py-3 bg-white text-gray-800 border border-gray-300 rounded-xl font-bold hover:bg-gray-50 transition flex items-center justify-center gap-2 text-sm shadow-sm disabled:opacity-50"
+                        >
+                            {isCreatingManual ? (
+                                <Loader2 className="animate-spin text-gray-500" size={18} />
+                            ) : (
+                                <PenTool className="text-custom-orange" size={18} />
+                            )}
+                            Create Manually
+                        </button>
+                    </div>
                 </div>
             </div>
         );

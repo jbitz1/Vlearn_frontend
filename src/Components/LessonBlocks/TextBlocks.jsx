@@ -1,6 +1,45 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { Target, Book, PenTool, AlertTriangle, PlayCircle, FlaskConical, Sparkles, HelpCircle, CheckCircle2 } from 'lucide-react';
+
+const ensureMathDelimiters = (str) => {
+  if (typeof str !== 'string') return str;
+  let text = str.replace(/\\+\$/g, '$');
+  const parts = text.split(/(\$\$.*?\$\$|\$.*?\$)/g);
+  return parts.map((part, idx) => {
+    if (idx % 2 === 0) {
+      let p = part;
+      p = p.replace(/(?<![a-zA-Z0-9\\])\\(alpha|beta|gamma|lambda|Delta|sigma|mu|Omega|theta|pi|rho|tau|phi|omega)(?![a-zA-Z])/g, '$\\$1$');
+      p = p.replace(/(\^\{[^\}]+\}_\{[^\}]+\}(?:\\text\{[^\}]+\})?)/g, '$$1$');
+      p = p.replace(/\$\$+/g, '$');
+      return p;
+    }
+    return part;
+  }).join('');
+};
+
+const MD = ({ children, className = '' }) => {
+  const rawContent = Array.isArray(children)
+    ? children.map(child => (typeof child === 'string' ? child : String(child ?? ''))).join('')
+    : (typeof children === 'string' ? children : String(children ?? ''));
+
+  const content = ensureMathDelimiters(rawContent);
+
+  return (
+    <div className={`prose max-w-none text-gray-800 font-sans ${className}`}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+};
 
 const getMarkdownText = (content) => {
     if (typeof content === 'string') return content;
@@ -17,7 +56,7 @@ export const OverviewBlock = ({ block }) => (
             <h2 className="text-2xl font-extrabold text-indigo-900 m-0">{block.title || 'Learning Goal'}</h2>
         </div>
         <div className="prose prose-lg text-indigo-800 leading-relaxed max-w-none">
-            <ReactMarkdown>{getMarkdownText(block.content)}</ReactMarkdown>
+            <MD>{getMarkdownText(block.content)}</MD>
         </div>
     </div>
 );
@@ -29,7 +68,7 @@ export const ObjectiveBlock = ({ block }) => (
             <h2 className="text-2xl font-extrabold text-emerald-900 m-0">{block.title || 'Learning Objectives'}</h2>
         </div>
         <div className="prose prose-lg text-emerald-800 leading-relaxed max-w-none">
-            <ReactMarkdown>{getMarkdownText(block.content)}</ReactMarkdown>
+            <MD>{getMarkdownText(block.content)}</MD>
         </div>
     </div>
 );
@@ -40,7 +79,7 @@ export const DefinitionBlock = ({ block }) => (
         <div className="flex-1">
             <h3 className="text-lg font-bold text-amber-900 mb-2">{block.title || 'Definition'}</h3>
             <div className="prose text-amber-800 max-w-none">
-                <ReactMarkdown>{getMarkdownText(block.content)}</ReactMarkdown>
+                <MD>{getMarkdownText(block.content)}</MD>
             </div>
         </div>
     </div>
@@ -74,7 +113,7 @@ export const CoreExplanationBlock = ({ block }) => {
                     <h2 className="text-lg font-bold text-gray-800 m-0">{block.title}</h2>
                 </div>
                 <div className="p-6 prose prose-lg max-w-none text-gray-700">
-                    <ReactMarkdown>{text}</ReactMarkdown>
+                    <MD>{text}</MD>
                 </div>
             </div>
         );
@@ -88,7 +127,7 @@ export const CoreExplanationBlock = ({ block }) => {
                 <div className="flex-1">
                     <h3 className="text-lg font-bold text-rose-900 mb-2">{block.title}</h3>
                     <div className="prose text-rose-800 max-w-none">
-                        <ReactMarkdown>{text}</ReactMarkdown>
+                        <MD>{text}</MD>
                     </div>
                 </div>
             </div>
@@ -99,7 +138,7 @@ export const CoreExplanationBlock = ({ block }) => {
         <div className="my-10">
             {block.title && <h2 className="text-2xl font-bold text-gray-900 mb-6">{block.title}</h2>}
             <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed">
-                <ReactMarkdown>{text}</ReactMarkdown>
+                <MD>{text}</MD>
             </div>
             {resourceUrl && (
                 <div className="mt-8 border border-gray-200 rounded-2xl overflow-hidden shadow-sm bg-gray-900">
@@ -139,7 +178,7 @@ export const ExperimentBlock = ({ block }) => {
                 <div>
                     <h3 className="font-bold text-purple-800 mb-2 uppercase text-xs tracking-wider">Procedure</h3>
                     <div className="prose prose-sm max-w-none text-purple-900 bg-white/60 p-4 rounded-xl border border-purple-100">
-                        <ReactMarkdown>{getMarkdownText(content.procedure)}</ReactMarkdown>
+                        <MD>{getMarkdownText(content.procedure)}</MD>
                     </div>
                 </div>
             </div>
@@ -154,7 +193,7 @@ export const SummaryBlock = ({ block }) => (
             <h2 className="text-xl font-bold text-gray-800 m-0">{block.title || 'Key Takeaways'}</h2>
         </div>
         <div className="prose prose-lg text-gray-700 max-w-none">
-            <ReactMarkdown>{getMarkdownText(block.content)}</ReactMarkdown>
+            <MD>{getMarkdownText(block.content)}</MD>
         </div>
     </div>
 );
@@ -162,7 +201,11 @@ export const SummaryBlock = ({ block }) => (
 export const RevisionQuestionsBlock = ({ block, onInteract }) => {
     const [interacted, setInteracted] = React.useState(false);
     
-    const handleInteract = () => {
+    const handleInteract = (e) => {
+        if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        }
         setInteracted(true);
         if (onInteract) onInteract(block.id);
     };
@@ -178,7 +221,7 @@ export const RevisionQuestionsBlock = ({ block, onInteract }) => {
             {!interacted ? (
                 <div className="space-y-6">
                     <div className="prose prose-lg text-gray-800 max-w-none">
-                        <ReactMarkdown>{getMarkdownText(block.content)}</ReactMarkdown>
+                        <MD>{getMarkdownText(block.content)}</MD>
                     </div>
                     <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
                         <label className="block text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Your Answer</label>
@@ -189,8 +232,9 @@ export const RevisionQuestionsBlock = ({ block, onInteract }) => {
                         ></textarea>
                     </div>
                     <button 
+                        type="button"
                         onClick={handleInteract}
-                        className="px-8 py-3.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-md w-full sm:w-auto"
+                        className="px-8 py-3.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-md w-full sm:w-auto cursor-pointer"
                     >
                         Submit & Check Answer
                     </button>
@@ -198,7 +242,7 @@ export const RevisionQuestionsBlock = ({ block, onInteract }) => {
             ) : (
                 <div className="space-y-6 animate-slide-up-fade">
                     <div className="prose prose-lg text-gray-800 max-w-none">
-                        <ReactMarkdown>{getMarkdownText(block.content)}</ReactMarkdown>
+                        <MD>{getMarkdownText(block.content)}</MD>
                     </div>
                     <div className="p-5 bg-emerald-50 rounded-xl border border-emerald-200">
                         <p className="text-emerald-800 font-semibold flex items-center gap-3">

@@ -26,6 +26,7 @@ import {
   ComparisonTableBlock,
   StepProcessBlock,
 } from './BlueprintComponents';
+import { ContentNormalizer } from '../../utils/ContentNormalizer';
 
 // Legacy V1 blocks — kept intact for backward compatibility
 import {
@@ -77,6 +78,8 @@ export const BlockRenderer = ({ block, onInteract }) => {
     case 'short_answer':         return <KnowledgeCheckBlock      block={block} onInteract={onInteract} />;
 
     // Suggested media (pending or resolved)
+    case 'diagram':
+    case 'image':
     case 'suggested_diagram':
     case 'suggested_illustration':
     case 'suggested_infographic':
@@ -114,8 +117,27 @@ export const BlockRenderer = ({ block, onInteract }) => {
     case 'revision_questions':
       return <RevisionQuestionsBlock block={block} onInteract={onInteract} />;
 
-    // ── Graceful fallback — never shown to students ───────────────────────
-    default:
+    // ── Text fallback with component_type resolution ─────────────────────
+    case 'text':
+    default: {
+      const compType = block.component_type || block.metadata?.component_type;
+      if (compType === 'learning_goal') return <LearningGoalBlock block={block} />;
+      if (compType === 'definition_card' || compType === 'definition') return <DefinitionCardBlock block={block} />;
+      if (compType === 'worked_example') return <WorkedExampleBlock block={block} />;
+      if (compType === 'summary_card' || compType === 'summary') return <SummaryBlock block={block} />;
+      if (compType === 'comparison_table') return <ComparisonTableBlock block={block} />;
+      if (compType === 'step_process') return <StepProcessBlock block={block} />;
+      if (compType === 'suggested_image' || compType === 'photo_view') return <SuggestedMediaBlock block={block} />;
+      if (compType === 'suggested_diagram' || compType === 'svg_viewer') return <SuggestedMediaBlock block={block} />;
+      if (compType === 'knowledge_check' || compType === 'mcq_interactive') return <KnowledgeCheckBlock block={block} onInteract={onInteract} />;
+      if (compType === 'concept_card' || compType === 'concept_explanation') return <ConceptExplanationBlock block={block} />;
+
+      // If block contains renderable content, render it via ConceptExplanationBlock fallback
+      const rawText = ContentNormalizer.extractText(block.content);
+      if (rawText && rawText.trim()) {
+        return <ConceptExplanationBlock block={block} />;
+      }
       return null;
+    }
   }
 };

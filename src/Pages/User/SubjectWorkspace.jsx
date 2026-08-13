@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { 
   ChevronLeft, BookOpen, Video, Cpu, Play, 
@@ -7,10 +7,13 @@ import {
 import ReactPlayer from 'react-player';
 import SimulationViewerContainer from './Simulations/SimulationViewerContainer';
 import studentCurriculumService from '../../services/studentCurriculumService';
+import UserContext from '../../Context/UserContext';
+import ProgressCircle from '../../Components/Common/ProgressCircle';
 
 export const SubjectWorkspace = () => {
   const { subjectId } = useParams();
   const navigate = useNavigate();
+  const { user } = useContext(UserContext);
 
   const [subject, setSubject] = useState(null);
   const [topics, setTopics] = useState([]);
@@ -27,6 +30,7 @@ export const SubjectWorkspace = () => {
   useEffect(() => {
     const loadSubjectData = async () => {
       setIsLoading(true);
+      studentCurriculumService.recordSubjectAccess(subjectId, user?.id);
       const subjectData = await studentCurriculumService.getSubjectById(subjectId);
       setSubject(subjectData);
 
@@ -47,7 +51,7 @@ export const SubjectWorkspace = () => {
     };
 
     loadSubjectData();
-  }, [subjectId]);
+  }, [subjectId, user?.id]);
 
   const handleOpenTopic = (topicId) => {
     navigate(`/student/topic/${topicId}`);
@@ -74,6 +78,8 @@ export const SubjectWorkspace = () => {
     acc[topicName].push(sim);
     return acc;
   }, {});
+
+  const subjectProgress = studentCurriculumService.getSubjectProgress(subjectId, topics, user?.id);
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 min-h-screen">
@@ -103,8 +109,8 @@ export const SubjectWorkspace = () => {
         <>
           {/* Subject Header */}
           <div className="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm">
-            <div className="flex items-start justify-between flex-wrap gap-4">
-              <div>
+            <div className="flex items-start justify-between flex-wrap gap-6">
+              <div className="flex-1 min-w-[240px]">
                 <h1 className="text-3xl md:text-4xl font-black text-gray-900">
                   {subject?.name || 'Subject'}
                 </h1>
@@ -112,16 +118,34 @@ export const SubjectWorkspace = () => {
                   {subject?.description || 'Explore topics, recorded practical experiments, simulations, and practice.'}
                 </p>
               </div>
+
+              <div className="flex items-center gap-4 bg-gray-50 border border-gray-100 px-5 py-3 rounded-2xl shrink-0">
+                <ProgressCircle
+                  percentage={subjectProgress.pct}
+                  size={52}
+                  strokeWidth={5}
+                />
+                <div>
+                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Subject Progress</div>
+                  <div className="text-sm font-black text-gray-900">
+                    {subjectProgress.isCompleted
+                      ? '100% Completed'
+                      : subjectProgress.pct > 0
+                      ? `${subjectProgress.pct}% Completed`
+                      : 'Not Started'}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Tab Navigation */}
             <div className="flex border-b border-gray-200 mt-8 gap-6 overflow-x-auto">
               {[
-                { id: 'topics', label: 'Topics', icon: BookOpen, count: topics.length },
-                { id: 'experiments', label: 'Experiments', icon: Video, count: experiments.length },
-                { id: 'simulations', label: 'Simulations', icon: Cpu, count: simulations.length },
-                { id: 'practice', label: 'Practice', icon: HelpCircle, count: quizAttempts.length },
-              ].map((tab) => (
+                { id: 'topics', label: 'Topics', icon: BookOpen, count: topics.length, show: true },
+                { id: 'experiments', label: 'Experiments', icon: Video, count: experiments.length, show: experiments.length > 0 },
+                { id: 'simulations', label: 'Simulations', icon: Cpu, count: simulations.length, show: simulations.length > 0 },
+                { id: 'practice', label: 'Practice', icon: HelpCircle, count: quizAttempts.length, show: true },
+              ].filter(tab => tab.show).map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
@@ -157,36 +181,37 @@ export const SubjectWorkspace = () => {
                 <div className="space-y-4">
                   {topics.length > 0 ? (
                     topics.map((topic) => {
-                      const progress = studentCurriculumService.getTopicProgress(topic.id);
+                      const progress = studentCurriculumService.getTopicProgress(topic.id, user?.id, topic.lesson_count || 0);
                       return (
                         <div
                           key={topic.id}
                           onClick={() => handleOpenTopic(topic.id)}
-                          className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-between flex-wrap gap-4 group"
+                          className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-between gap-6 group"
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="p-3.5 bg-blue-50 text-custom-blue rounded-2xl group-hover:bg-custom-blue group-hover:text-white transition-colors">
+                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                            <div className="p-3.5 bg-blue-50 text-custom-blue rounded-2xl group-hover:bg-custom-blue group-hover:text-white transition-colors shrink-0">
                               <BookOpen className="w-6 h-6" />
                             </div>
-                            <div>
+                            <div className="flex-1 min-w-0">
                               <h3 className="text-xl font-bold text-gray-900 group-hover:text-custom-blue transition-colors">
                                 {topic.name}
                               </h3>
-                              <p className="text-gray-500 text-sm">{topic.description || 'Curriculum Topic'}</p>
+                              <p className="text-gray-500 text-sm mt-0.5">{topic.description || 'Curriculum Topic'}</p>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-6">
-                            <div className="text-right">
+                          <div className="flex items-center gap-5 shrink-0">
+                            <div className="text-right hidden sm:block">
                               <div className="text-xs font-extrabold text-gray-500">Progress</div>
-                              <div className="text-sm font-black text-custom-blue">{progress.pct}%</div>
+                              <div className="text-xs font-semibold text-gray-400">
+                                {progress.isCompleted ? 'Completed' : progress.pct > 0 ? 'In Progress' : 'Not Started'}
+                              </div>
                             </div>
-                            <div className="w-24 bg-gray-100 rounded-full h-2">
-                              <div
-                                className="bg-custom-blue h-2 rounded-full transition-all"
-                                style={{ width: `${progress.pct}%` }}
-                              ></div>
-                            </div>
+                            <ProgressCircle
+                              percentage={progress.pct}
+                              size={46}
+                              strokeWidth={4}
+                            />
                             <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-custom-blue group-hover:translate-x-1 transition-all" />
                           </div>
                         </div>

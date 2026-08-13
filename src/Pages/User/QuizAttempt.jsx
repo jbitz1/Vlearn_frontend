@@ -5,6 +5,7 @@ import BASE_URL from '../../config';
 import Swal from 'sweetalert2';
 import { Clock, CheckCircle2, XCircle, RotateCcw, ChevronRight } from 'lucide-react';
 import UserContext from '../../Context/UserContext';
+import ProgressCircle from '../../Components/Common/ProgressCircle';
 
 function QuizAttempt() {
   const { id } = useParams();
@@ -188,20 +189,28 @@ function QuizAttempt() {
   if (!quiz || !quiz.questions) return <div className="min-h-screen flex items-center justify-center">Quiz not found</div>;
 
   if (showResult) {
+    const finalPct = quiz.questions.length > 0 ? Math.round((score / quiz.questions.length) * 100) : 0;
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full">
-          <h2 className="text-3xl font-bold text-center mb-6 text-custom-orange">Quiz Complete!</h2>
+        <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full text-center">
+          <h2 className="text-3xl font-bold mb-6 text-custom-orange">Quiz Complete!</h2>
+          <div className="flex justify-center mb-6">
+            <ProgressCircle
+              percentage={finalPct}
+              size={110}
+              strokeWidth={8}
+            />
+          </div>
           <div className="text-center mb-8">
-            <p className="text-xl mb-2">Your Score:</p>
-            <p className="text-4xl font-bold text-custom-blue">{score} / {quiz.questions.length}</p>
-            <p className="mt-2">
-              ({Math.round((score / quiz.questions.length) * 100)}% correct)
+            <p className="text-xl mb-1 text-gray-700 font-semibold">Your Score</p>
+            <p className="text-3xl font-bold text-custom-blue">{score} / {quiz.questions.length}</p>
+            <p className="text-sm text-gray-500 mt-2">
+              {finalPct >= 70 ? '🎉 Excellent job! You mastered this quiz.' : 'Keep practicing to improve your score!'}
             </p>
           </div>
           <button
             onClick={() => navigate('/dashboard/results')}
-            className="w-full py-3 px-6 bg-custom-blue text-white rounded-3xl hover:bg-custom-orange transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 px-6 bg-custom-blue text-white font-bold rounded-3xl hover:bg-custom-orange transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
           >
             View Results
           </button>

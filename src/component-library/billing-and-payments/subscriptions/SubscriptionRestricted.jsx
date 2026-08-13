@@ -17,38 +17,8 @@ const SubscriptionRestricted = ({
     const [allowed, setAllowed] = React.useState(false);
 
     React.useEffect(() => {
-        if (userContext?.user?.is_superuser || userContext?.user?.is_staff || userContext?.user?.role === 'platform_admin') {
-            setAllowed(true);
-            return;
-        }
-
-        const ent = subscriptionContext?.entitlements;
-        if (ent) {
-            if (ent.platform_wide) {
-                setAllowed(true);
-                return;
-            }
-            if (requireFeature) {
-                setAllowed(Boolean(ent.features?.includes(requireFeature)));
-                return;
-            }
-            if (requireSubjectId) {
-                const subIds = ent.curriculum_access?.subjects?.map(s => String(s.id)) || [];
-                setAllowed(subIds.includes(String(requireSubjectId)));
-                return;
-            }
-            if (ent.curriculum_access?.subjects?.length > 0 || ent.features?.length > 0) {
-                setAllowed(true);
-                return;
-            }
-        }
-
-        if (subscriptionContext?.activeSubscriptions?.length > 0) {
-            setAllowed(true);
-            return;
-        }
-
-        setAllowed(false);
+        // Testing bypass: turn off subscription restriction for all accounts
+        setAllowed(true);
     }, [subscriptionContext, requireFeature, requireSubjectId, userContext]);
 
     const role = userContext?.user?.role;

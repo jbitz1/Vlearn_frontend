@@ -130,12 +130,12 @@ export const TeacherSubjectWorkspace = () => {
             {/* Tab Navigation (Order: Topics -> Classes -> Resources -> Experiments -> Simulations) */}
             <div className="flex border-b border-gray-200 mt-8 gap-6 overflow-x-auto">
               {[
-                { id: 'topics', label: 'Topics', icon: BookOpen, count: topics.length },
-                { id: 'classes', label: 'Classes', icon: Users, count: streams.length },
-                { id: 'resources', label: 'Resources', icon: FolderDown, count: Object.values(resources).flat().length },
-                { id: 'experiments', label: 'Experiments', icon: Video, count: experiments.length },
-                { id: 'simulations', label: 'Simulations', icon: Cpu, count: simulations.length },
-              ].map((tab) => (
+                { id: 'topics', label: 'Topics', icon: BookOpen, count: topics.length, show: true },
+                { id: 'classes', label: 'Classes', icon: Users, count: streams.length, show: true },
+                { id: 'resources', label: 'Resources', icon: FolderDown, count: Object.values(resources).flat().length, show: true },
+                { id: 'experiments', label: 'Experiments', icon: Video, count: experiments.length, show: experiments.length > 0 },
+                { id: 'simulations', label: 'Simulations', icon: Cpu, count: simulations.length, show: simulations.length > 0 },
+              ].filter(tab => tab.show).map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}

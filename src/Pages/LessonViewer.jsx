@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import UserContext from '../Context/UserContext';
 import { BlockRenderer } from '../Components/LessonBlocks/BlockRenderer';
 import { ConceptCompletionCard } from '../Components/LessonBlocks/BlueprintComponents';
@@ -13,10 +13,53 @@ import { useLessonProgress } from '../Hooks/useLessonProgress';
 import { LessonTimeline, LessonCompletionCard } from '../Components/LessonBlocks/LessonProgressComponents';
 import { PresentationEngine } from '../services/presentation/PresentationEngine';
 import { LayoutSelectionService } from '../services/presentation/LayoutSelectionService';
+import studentCurriculumService from '../services/studentCurriculumService';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Estimated reading time (rough: 200 wpm)
+// Error Boundary to prevent any child render failure from triggering Router 404
 // ─────────────────────────────────────────────────────────────────────────────
+class LessonErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+    static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+    }
+    componentDidCatch(error, errorInfo) {
+        console.error('[LessonViewer ErrorBoundary]:', error, errorInfo);
+    }
+    componentDidUpdate(prevProps) {
+        if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+            this.setState({ hasError: false, error: null });
+        }
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="p-8 my-8 max-w-2xl mx-auto bg-amber-50 border border-amber-200 rounded-3xl text-center space-y-4">
+                    <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto text-xl font-bold">!</div>
+                    <h3 className="text-xl font-bold text-amber-900">Unable to display this concept</h3>
+                    <p className="text-sm text-amber-700 max-w-md mx-auto">
+                        An error occurred while rendering this concept's interactive elements.
+                    </p>
+                    {this.state.error?.message && (
+                        <p className="text-xs font-mono text-amber-800 bg-amber-100/60 p-3 rounded-xl max-w-lg mx-auto overflow-x-auto text-left whitespace-pre-wrap">
+                            {this.state.error.message}
+                        </p>
+                    )}
+                    <button
+                        onClick={() => this.setState({ hasError: false, error: null })}
+                        className="px-6 py-2.5 bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
 function estimateReadingTime(blocks) {
     let seconds = 0;
     blocks.forEach((b) => {
@@ -53,6 +96,7 @@ function estimateReadingTime(blocks) {
 // ─────────────────────────────────────────────────────────────────────────────
 export const LessonViewer = ({ lessonData, paginated = false }) => {
     const { topicId } = useParams();
+    const location = useLocation();
     const { user } = useContext(UserContext);
     const [lesson, setLesson] = useState(lessonData || null);
     const [loading, setLoading] = useState(!lessonData);
@@ -64,16 +108,26 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
             setLoading(false);
             return;
         }
-        if (!topicId) {
-            setError('No topic specified.');
+        
+        const searchParams = new URLSearchParams(location.search);
+        const lessonIdParam = searchParams.get('lessonId');
+        const isPreview = searchParams.get('preview') === 'true';
+
+        const validTopicId = topicId && topicId !== 'undefined' ? topicId : null;
+
+        if (!validTopicId && !lessonIdParam) {
+            setError('No topic or lesson specified.');
             setLoading(false);
             return;
         }
         const fetchLesson = async () => {
             try {
-                const searchParams = new URLSearchParams(window.location.search);
-                const isPreview = searchParams.get('preview') === 'true';
-                const url = `/api/curriculum/topics/${topicId}/lesson/${isPreview ? '?preview=true' : ''}`;
+                let url = '';
+                if (lessonIdParam) {
+                    url = `/api/curriculum/lessons/${lessonIdParam}/?v=2`;
+                } else if (validTopicId) {
+                    url = `/api/curriculum/topics/${validTopicId}/lesson/${isPreview ? '?preview=true' : ''}`;
+                }
                 
                 const response = await apiClient.get(url);
                 setLesson(response.data);
@@ -90,7 +144,7 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
             }
         };
         fetchLesson();
-    }, [topicId, lessonData]);
+    }, [topicId, lessonData, location.search]);
 
     if (loading) {
         return (
@@ -124,7 +178,7 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
 
     // ── Render ──────────────────────────────────────────────────────────────
     if (paginated && lesson.blocks && lesson.blocks.length > 0) {
-        const searchParams = new URLSearchParams(window.location.search);
+        const searchParams = new URLSearchParams(location.search);
         const isPreview = searchParams.get('preview') === 'true';
         return <PaginatedViewer lesson={lesson} topicId={topicId} isPreview={isPreview} userId={user?.id} />;
     }
@@ -167,6 +221,8 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
     const navigate = useNavigate();
+    const { user } = useContext(UserContext);
+    const effectiveTopicId = (topicId && topicId !== 'undefined') ? topicId : lesson?.topic;
     const presentation = PresentationEngine.composeExperience(lesson, lesson.blocks || [], lesson.assets || []);
     const pages = presentation.pages;
     const totalPages = pages.length;
@@ -183,22 +239,33 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
         updateMetadata
     } = progress;
 
-    useEffect(() => {
-        if (lesson?.title) {
-            updateMetadata(lesson.title, topicId, totalPages);
-        }
-    }, [lesson?.title, topicId, totalPages, updateMetadata]);
-
     const [pageIndex, setPageIndex] = useState(savedConceptIndex || 0);
     const [showContents, setShowContents] = useState(false);
     const [interactedBlocks, setInteractedBlocks] = useState(new Set());
     const [topicData, setTopicData] = useState(null);
 
     useEffect(() => {
-        if (topicId) {
-            apiClient.get(`/api/curriculum/topics/${topicId}/`).then(res => setTopicData(res.data)).catch(console.error);
+        if (effectiveTopicId && effectiveTopicId !== 'undefined') {
+            apiClient.get(`/api/curriculum/topics/${effectiveTopicId}/`).then(res => {
+                setTopicData(res.data);
+                if (res.data?.subject) {
+                    studentCurriculumService.recordSubjectAccess(res.data.subject, userId);
+                }
+            }).catch(console.error);
         }
-    }, [topicId]);
+    }, [effectiveTopicId, userId]);
+
+    useEffect(() => {
+        if (lesson?.title && effectiveTopicId) {
+            updateMetadata(
+                lesson.title, 
+                effectiveTopicId, 
+                totalPages, 
+                topicData?.subject || null, 
+                topicData?.subject_name || ''
+            );
+        }
+    }, [lesson?.title, effectiveTopicId, totalPages, topicData, updateMetadata]);
 
     const currentPage = pages[pageIndex];
     const readingTime = estimateReadingTime(currentPage?.blocks || []);
@@ -242,7 +309,22 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                     lessonTitle={lesson.title}
                     completedConceptsCount={totalPages}
                     estimatedStudyTime={totalReadingTime}
-                    onBackToTopic={() => navigate(-1)}
+                    onBackToTopic={() => {
+                        const targetTopicId = effectiveTopicId || lesson?.topic;
+                        if (targetTopicId && targetTopicId !== 'undefined') {
+                            if (user?.role === 'teacher') {
+                                navigate(`/teacher/topic/${targetTopicId}`);
+                            } else {
+                                navigate(`/student/topic/${targetTopicId}`);
+                            }
+                        } else {
+                            if (user?.role === 'teacher') {
+                                navigate('/teacher/subjects');
+                            } else {
+                                navigate('/student/subjects');
+                            }
+                        }
+                    }}
                     onReview={() => {
                         progress.resetProgress();
                         setPageIndex(0);
@@ -253,13 +335,13 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
     }
 
     return (
-        <div className="min-h-screen bg-custom-cream font-sans flex flex-col">
+        <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
             {/* ── Top bar ──────────────────────────────────────────────── */}
             <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-gray-200/60 shadow-sm">
                 {/* Progress bar */}
                 <div className="h-1 bg-gray-100">
                     <div
-                        className="h-1 bg-custom-terracotta transition-all duration-500"
+                        className="h-1 bg-custom-blue transition-all duration-500"
                         style={{ width: `${completionPercentage}%` }}
                     />
                 </div>
@@ -269,11 +351,11 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                     <div className="flex-1 min-w-0">
                         {topicData && (
                             <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
-                                <button onClick={() => navigate('/dashboard')} className="hover:text-custom-blue transition-colors">Dashboard</button>
+                                <button onClick={() => navigate(user?.role === 'teacher' ? '/teacher' : '/student/home')} className="hover:text-custom-blue transition-colors">Dashboard</button>
                                 <ChevronRight size={12} className="text-gray-300" />
-                                <span className="hover:text-custom-blue cursor-pointer transition-colors" onClick={() => navigate(`/dashboard/subject/${topicData.subject}`)}>{topicData.subject_name}</span>
+                                <span className="hover:text-custom-blue cursor-pointer transition-colors" onClick={() => navigate(user?.role === 'teacher' ? `/teacher/subject/${topicData.subject}` : `/student/subject/${topicData.subject}`)}>{topicData.subject_name}</span>
                                 <ChevronRight size={12} className="text-gray-300" />
-                                <span>{topicData.name}</span>
+                                <span className="hover:text-custom-blue cursor-pointer transition-colors" onClick={() => navigate(user?.role === 'teacher' ? `/teacher/topic/${effectiveTopicId}` : `/student/topic/${effectiveTopicId}`)}>{topicData.name}</span>
                             </div>
                         )}
                         <h1 className="text-sm font-bold text-gray-800 truncate">{lesson.title}</h1>
@@ -358,42 +440,47 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                     const presentationContext = presentation.getPresentationContext(pageIndex);
                     const layoutKey = currentPage?.resolvedLayoutKey || currentPage?.layoutTemplate || 'DiscoveryLayout';
                     const StrategyComponent = LayoutSelectionService.getStrategyComponent(layoutKey);
+                    const rawTitle = currentPage?.pageTitle || currentPage?.title || lesson.title;
+                    const formatCleanTitle = (str, fallback) => {
+                        if (!str || str === '---' || str.startsWith('---')) return fallback;
+                        let text = str
+                            .replace(/^#+\s*/, '')
+                            .replace(/\*\*/g, '')
+                            .replace(/^-\s*/, '')
+                            .replace(/^Module\s*\d+(\.\d+)?:\s*/i, '')
+                            .trim();
+                        return text || fallback;
+                    };
+                    const cleanTitle = formatCleanTitle(rawTitle, lesson.title);
 
                     return (
                         <div className="max-w-6xl mx-auto w-full px-4 py-10 lg:py-16">
                             <div className="mb-8 border-b border-gray-200/60 pb-6">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <span className="text-[11px] font-bold text-custom-terracotta bg-red-50/50 px-3 py-1 rounded-full uppercase tracking-widest border border-red-100/50">
+                                    <span className="text-[11px] font-bold text-custom-blue bg-blue-50 px-3 py-1 rounded-full uppercase tracking-widest border border-blue-200/60">
                                         Concept {pageIndex + 1} of {totalPages}
                                     </span>
                                     <span className="text-xs text-gray-400 flex items-center gap-1.5 font-medium">
                                         <Clock size={12} /> ~{readingTime} min read
                                     </span>
                                 </div>
-                                <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 leading-tight">
-                                    {currentPage?.pageTitle || currentPage?.title || lesson.title}
+                                <h2 className="text-4xl md:text-5xl font-sans font-bold text-gray-900 leading-tight">
+                                    {cleanTitle}
                                 </h2>
                             </div>
 
-                            <StrategyComponent
-                                page={currentPage}
-                                context={presentationContext}
-                                renderBlock={(block) => (
-                                    <BlockRenderer key={block.id} block={block} onInteract={handleInteract} />
-                                )}
-                            />
+                            <LessonErrorBoundary resetKey={pageIndex}>
+                                <StrategyComponent
+                                    page={currentPage}
+                                    context={presentationContext}
+                                    renderBlock={(block) => (
+                                        <BlockRenderer key={block.id} block={block} onInteract={handleInteract} />
+                                    )}
+                                />
+                            </LessonErrorBoundary>
                         </div>
                     );
                 })()}
-
-                {/* Concept completion card */}
-                <div className="max-w-4xl mx-auto px-4">
-                    <ConceptCompletionCard
-                        page={currentPage}
-                        nextPageTitle={pageIndex < totalPages - 1 ? (pages[pageIndex + 1]?.pageTitle || pages[pageIndex + 1]?.title) : null}
-                        isLast={pageIndex === totalPages - 1}
-                    />
-                </div>
 
                 <div className="max-w-4xl mx-auto px-4 pb-12">
                     <LessonTimeline 
@@ -436,7 +523,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                             onClick={goNext}
                             disabled={isGated}
                             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm ${
-                                isGated ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-custom-terracotta text-white hover:bg-custom-terracotta-dark'
+                                isGated ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-custom-blue text-white hover:bg-blue-700'
                             }`}
                         >
                             Next Concept <ChevronRight size={18} />

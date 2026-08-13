@@ -3,12 +3,10 @@ import { CheckCircle, AlertTriangle, XCircle, X, Send } from 'lucide-react';
 
 export default function PublishGate({ blocks, assets, concepts, qualityReport, onConfirm, onCancel }) {
     const checks = computeChecks(blocks, assets, concepts, qualityReport);
-    const blockingIssues = checks.filter((c) => c.severity === 'error');
-    const warnings = checks.filter((c) => c.severity === 'warning');
-    const passing = checks.filter((c) => c.severity === 'ok');
+    const nonOkCount = checks.filter((c) => c.severity !== 'ok').length;
     const score = qualityReport?.quality?.score;
 
-    const canPublish = blockingIssues.length === 0;
+    const hasNotices = nonOkCount > 0;
 
     return (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
@@ -41,12 +39,12 @@ export default function PublishGate({ blocks, assets, concepts, qualityReport, o
 
                 {/* Summary bar */}
                 <div className={`px-6 py-3 border-t border-gray-100 text-sm font-semibold flex items-center gap-2 ${
-                    canPublish ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                    !hasNotices ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
                 }`}>
-                    {canPublish ? (
-                        <><CheckCircle size={16} /> Lesson is educationally ready to publish.</>
+                    {!hasNotices ? (
+                        <><CheckCircle size={16} /> Lesson is ready to publish.</>
                     ) : (
-                        <><AlertTriangle size={16} /> {blockingIssues.length} educational issue{blockingIssues.length > 1 ? 's' : ''} must be resolved.</>
+                        <><AlertTriangle size={16} /> {nonOkCount} notice{nonOkCount > 1 ? 's' : ''} detected. You can publish directly.</>
                     )}
                 </div>
 
@@ -56,24 +54,18 @@ export default function PublishGate({ blocks, assets, concepts, qualityReport, o
                         onClick={onCancel}
                         className="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
                     >
-                        {canPublish ? 'Cancel' : 'Go Back and Fix'}
+                        Cancel
                     </button>
-                    {canPublish && (
-                        <button
-                            onClick={onConfirm}
-                            className="px-5 py-2 text-sm font-bold rounded-xl bg-custom-blue text-white hover:opacity-90 transition-all flex items-center gap-2 shadow-sm"
-                        >
-                            <Send size={15} /> Publish Now
-                        </button>
-                    )}
-                    {!canPublish && warnings.length > 0 && blockingIssues.length === 0 && (
-                        <button
-                            onClick={onConfirm}
-                            className="px-5 py-2 text-sm font-bold rounded-xl bg-amber-500 text-white hover:bg-amber-600 transition-all flex items-center gap-2"
-                        >
-                            <Send size={15} /> Publish Anyway
-                        </button>
-                    )}
+                    <button
+                        onClick={onConfirm}
+                        className={`px-5 py-2 text-sm font-bold rounded-xl text-white transition-all flex items-center gap-2 shadow-sm ${
+                            !hasNotices
+                                ? 'bg-custom-blue hover:opacity-90'
+                                : 'bg-amber-600 hover:bg-amber-700'
+                        }`}
+                    >
+                        <Send size={15} /> {!hasNotices ? 'Publish Now' : 'Publish Anyway'}
+                    </button>
                 </div>
             </div>
         </div>

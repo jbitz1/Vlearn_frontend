@@ -377,7 +377,7 @@ const teacherCurriculumService = {
   // Get lessons for topic
   async getLessonsForTopic(topicId) {
     try {
-      const res = await apiClient.get(`/api/curriculum/lessons/?topic=${topicId}`);
+      const res = await apiClient.get(`/api/curriculum/lessons/?topic=${topicId}&page_size=100`);
       const fetched = res.data?.results || res.data || [];
       if (fetched.length > 0) return fetched;
     } catch (e) {
@@ -413,31 +413,73 @@ const teacherCurriculumService = {
     }
   },
 
-  // Get experiments
-  async getExperiments(subjectName = '') {
-    try {
-      const res = await apiClient.get('/experiment_videos/');
-      const fetched = res.data?.results || res.data || [];
-      if (fetched.length > 0) {
-        if (subjectName && subjectName.toLowerCase() !== 'chemistry') {
-          const lower = subjectName.toLowerCase();
-          const filtered = fetched.filter(e => !e.category || e.category.toLowerCase().includes(lower) || lower.includes(e.category.toLowerCase()));
-          return filtered.length > 0 ? filtered : fetched;
-        }
-        return fetched;
-      }
+  // Get experiments (Only applicable to Chemistry)
+  async getExperiments(subjectName = '', topicName = '') {
+    if (subjectName && !subjectName.toLowerCase().includes('chem')) {
       return [];
+    }
+    try {
+      const params = {};
+      if (subjectName) params.subject = subjectName;
+      if (topicName) params.topic = topicName;
+      const res = await apiClient.get('/experiment_videos/', { params });
+      let fetched = res.data?.results || res.data || [];
+      
+      if (topicName && fetched.length > 0) {
+        const tLower = topicName.toLowerCase();
+        fetched = fetched.filter(v => {
+          const cat = (v.category || '').toLowerCase();
+          const title = (v.title || '').toLowerCase();
+          if (tLower.includes('gas law')) return cat.includes('gas') || title.includes('gas') || title.includes('charles') || title.includes('diffusion');
+          if (tLower.includes('mole') || tLower.includes('formula') || tLower.includes('equation')) return cat.includes('mole') || title.includes('titration') || title.includes('molar') || title.includes('empirical');
+          if (tLower.includes('organic')) return cat.includes('organic') || title.includes('organic') || title.includes('ethene') || title.includes('hydrocarbon');
+          if (tLower.includes('nitrogen')) return cat.includes('nitrogen') || title.includes('nitrogen') || title.includes('ammonia') || title.includes('nitrate');
+          if (tLower.includes('sulphur') || tLower.includes('sulfur')) return cat.includes('sulphur') || cat.includes('sulfur') || title.includes('sulphur') || title.includes('sulfur');
+          if (tLower.includes('chlorine')) return cat.includes('chlorine') || title.includes('chlorine') || title.includes('chloride');
+          return cat.includes(tLower) || tLower.includes(cat) || title.includes(tLower);
+        });
+      }
+      return fetched;
     } catch (e) {
       console.warn('Failed to fetch experiments:', e.message);
       return [];
     }
   },
 
-  // Get simulations
-  async getSimulations(subjectName = '') {
+  // Get simulations (Only applicable to Chemistry and Physics)
+  async getSimulations(subjectName = '', topicName = '') {
+    if (subjectName) {
+      const sLower = subjectName.toLowerCase();
+      const isChem = sLower.includes('chem');
+      const isPhys = sLower.includes('phys');
+      if (!isChem && !isPhys) {
+        return [];
+      }
+    }
     try {
-      const res = await apiClient.get('/api/curriculum/simulations/');
-      const fetched = res.data?.results || res.data || [];
+      const params = {};
+      if (subjectName) params.subject = subjectName;
+      if (topicName) params.topic = topicName;
+      const res = await apiClient.get('/api/curriculum/simulations/', { params });
+      let fetched = res.data?.results || res.data || [];
+      
+      if (topicName && fetched.length > 0) {
+        const tLower = topicName.toLowerCase();
+        fetched = fetched.filter(s => {
+          const simTopic = (s.topic || '').toLowerCase();
+          const simTitle = (s.title || '').toLowerCase();
+          if (tLower.includes('acid') || tLower.includes('base') || tLower.includes('salt')) return simTopic.includes('acid') || simTitle.includes('acid') || simTitle.includes('solubility');
+          if (tLower.includes('gas law')) return simTopic.includes('gas') || simTitle.includes('charles');
+          if (tLower.includes('energy') || tLower.includes('heat') || tLower.includes('therm')) return simTopic.includes('energy') || simTitle.includes('hess') || simTitle.includes('heat');
+          if (tLower.includes('rate') || tLower.includes('reversible') || tLower.includes('equilibrium')) return simTopic.includes('rate') || simTitle.includes('rate') || simTitle.includes('collision') || simTitle.includes('haber') || simTitle.includes('equilibrium');
+          if (tLower.includes('electro') || tLower.includes('redox')) return simTopic.includes('electro') || simTitle.includes('electrolysis') || simTitle.includes('plating') || simTitle.includes('discharge') || simTitle.includes('voltaic') || simTitle.includes('electrode');
+          if (tLower.includes('metal')) return simTopic.includes('metal') || simTitle.includes('reactivity');
+          if (tLower.includes('circuit') || tLower.includes('electric')) return simTopic.includes('circuit') || simTitle.includes('circuit');
+          if (tLower.includes('kinematic') || tLower.includes('motion') || tLower.includes('gravity')) return simTopic.includes('kinematic') || simTitle.includes('freefall');
+          if (tLower.includes('lens') || tLower.includes('optics') || tLower.includes('light')) return simTopic.includes('optic') || simTitle.includes('optic') || simTitle.includes('lens');
+          return simTopic.includes(tLower) || tLower.includes(simTopic) || simTitle.includes(tLower);
+        });
+      }
       return fetched;
     } catch (e) {
       console.warn('Failed to fetch simulations:', e.message);

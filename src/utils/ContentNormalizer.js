@@ -7,15 +7,54 @@ export const ContentNormalizer = {
         if (typeof content === 'string') {
             try { 
                 const p = JSON.parse(content); 
-                return p.text || p.content || p.procedure || content; 
+                return this.extractFromObject(p); 
             } catch { 
                 return content; 
             }
         }
         if (typeof content === 'object') {
-            return content.text || content.content || content.procedure || '';
+            return this.extractFromObject(content);
         }
         return String(content);
+    },
+
+    extractFromObject(obj) {
+        if (!obj || typeof obj !== 'object') return '';
+        if (Array.isArray(obj)) {
+            return obj
+                .map(item => (typeof item === 'string' ? item : this.extractFromObject(item)))
+                .filter(Boolean)
+                .join('\n\n');
+        }
+        if (obj.goals && Array.isArray(obj.goals)) {
+            const prefix = obj.title ? `### ${obj.title}\n\n` : '';
+            return prefix + obj.goals.map(g => `- ${g}`).join('\n');
+        }
+        if (obj.items && Array.isArray(obj.items)) {
+            const prefix = obj.title ? `### ${obj.title}\n\n` : '';
+            return prefix + obj.items.map(it => `- ${it}`).join('\n');
+        }
+        if (obj.body) return typeof obj.body === 'string' ? obj.body : this.extractFromObject(obj.body);
+        if (obj.text) return typeof obj.text === 'string' ? obj.text : this.extractFromObject(obj.text);
+        if (obj.content) return typeof obj.content === 'string' ? obj.content : this.extractFromObject(obj.content);
+        if (obj.definition) return typeof obj.definition === 'string' ? obj.definition : this.extractFromObject(obj.definition);
+        if (obj.explanation) return typeof obj.explanation === 'string' ? obj.explanation : this.extractFromObject(obj.explanation);
+        if (obj.summary) return typeof obj.summary === 'string' ? obj.summary : this.extractFromObject(obj.summary);
+        if (obj.instruction) return typeof obj.instruction === 'string' ? obj.instruction : this.extractFromObject(obj.instruction);
+        if (obj.procedure) return typeof obj.procedure === 'string' ? obj.procedure : this.extractFromObject(obj.procedure);
+        if (obj.purpose) return typeof obj.purpose === 'string' ? obj.purpose : this.extractFromObject(obj.purpose);
+        if (obj.breakdown) return typeof obj.breakdown === 'string' ? obj.breakdown : this.extractFromObject(obj.breakdown);
+        if (obj.description) return typeof obj.description === 'string' ? obj.description : this.extractFromObject(obj.description);
+        if (obj.formula) return typeof obj.formula === 'string' ? obj.formula : this.extractFromObject(obj.formula);
+
+        // Fallback: concatenate all non-metadata string/array values
+        const parts = [];
+        for (const [k, v] of Object.entries(obj)) {
+            if (['id', 'order', 'page_number', 'block_type', 'component_type', 'archetype', 'status', 'version'].includes(k)) continue;
+            if (typeof v === 'string' && v.trim()) parts.push(v);
+            else if (Array.isArray(v)) parts.push(this.extractFromObject(v));
+        }
+        return parts.join('\n\n');
     },
 
     parseContent(content) {
@@ -38,8 +77,8 @@ export const ContentNormalizer = {
             text = text.slice(1, -1);
         }
 
-        // Unescape escaped quotes and newlines
-        text = text.replace(/\\"/g, '"').replace(/\\n/g, '\n');
+        // Unescape escaped quotes and standalone newlines (preserving LaTeX commands like \neq, \not, \nu, \nabla)
+        text = text.replace(/\\"/g, '"').replace(/\\n(?![a-zA-Z])/g, '\n');
 
         // Clean raw JSON artifacts that might have leaked
         text = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
@@ -56,16 +95,30 @@ export const ContentNormalizer = {
         text = text.replace(/ {2,}/g, ' ');
         text = text.replace(/\n{3,}/g, '\n\n');
 
+        // Strip research citation markers like [95], [88, 89], [91, 95, 96]
+        text = text.replace(/\s*\[\s*\d+(?:\s*,\s*\d+)*\s*\]/g, '');
+
         return text.trim();
     },
 
     // 3. Remove duplicate heading if it matches the block title
     removeDuplicateHeading(text, title) {
-        if (!text || !title) return text;
-        const cleanTitle = title.trim();
-        const escapedTitle = this.escapeRegExp(cleanTitle);
-        const headingRegex = new RegExp(`^(?:#+\\s+|\\*\\*|__)?${escapedTitle}(?:\\*\\*|__)?\\s*\\n+`, 'i');
-        return text.replace(headingRegex, '').trim();
+        if (!text) return '';
+        let cleaned = text.trim();
+        if (title) {
+            const cleanTitle = title.replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/^-\s*/, '').replace(/^Module\s*\d+(\.\d+)?:\s*/i, '').trim();
+            const escapedTitle = this.escapeRegExp(cleanTitle);
+            const headingRegex = new RegExp(`^(?:#+\\s+|\\*\\*|__)?(?:Module\\s*\\d+(\\.\\d+)?:\\s*)?${escapedTitle}(?:\\*\\*|__)?\\s*\\n+`, 'i');
+            cleaned = cleaned.replace(headingRegex, '').trim();
+        }
+        // Also strip any top-of-block raw markdown heading if it duplicates the first line
+        cleaned = cleaned.replace(/^(?:#+\s*|\*\*\s*)([^\n]+?)(?:\s*\*+|\s*#+)?\n+/, (match, h1) => {
+            if (title && (h1.toLowerCase().includes(title.toLowerCase().slice(0, 12)) || title.toLowerCase().includes(h1.toLowerCase().slice(0, 12)))) {
+                return '';
+            }
+            return match;
+        });
+        return cleaned.trim();
     },
 
     escapeRegExp(string) {
@@ -112,12 +165,26 @@ export const ContentNormalizer = {
                 .map(o => typeof o === 'string' ? o.replace(/^[A-D][.):-]\s*/i, '').trim() : String(o))
                 .filter(Boolean);
         }
+        if (typeof optionsRaw === 'object' && optionsRaw !== null) {
+            const keys = Object.keys(optionsRaw).sort();
+            return keys
+                .map(k => {
+                    const val = optionsRaw[k];
+                    return typeof val === 'string' ? val.replace(/^[A-D][.):-]\s*/i, '').trim() : String(val);
+                })
+                .filter(Boolean);
+        }
         if (typeof optionsRaw === 'string') {
-            if (optionsRaw.includes('\n')) {
-                return optionsRaw.split('\n').map(o => o.replace(/^[A-D][.):-]\s*/i, '').trim()).filter(Boolean);
-            }
-            if (optionsRaw.includes(',')) {
-                return optionsRaw.split(',').map(o => o.trim()).filter(Boolean);
+            try {
+                const parsed = JSON.parse(optionsRaw);
+                return this.parseOptions(parsed);
+            } catch {
+                if (optionsRaw.includes('\n')) {
+                    return optionsRaw.split('\n').map(o => o.replace(/^[A-D][.):-]\s*/i, '').trim()).filter(Boolean);
+                }
+                if (optionsRaw.includes(',')) {
+                    return optionsRaw.split(',').map(o => o.trim()).filter(Boolean);
+                }
             }
         }
         return [];

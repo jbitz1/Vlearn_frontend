@@ -5,6 +5,10 @@ import {
     AlertCircle, Info, Zap, Globe, Edit3, Eye,
     ChevronDown, ChevronUp
 } from 'lucide-react';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 // ──────────────────────────────────────────────────────────
 // Shared text editor: split markdown/preview pane
@@ -52,7 +56,12 @@ function MarkdownEditor({ value, onChange, onBlur, placeholder, minHeight = 200 
                     style={{ minHeight }}
                 >
                     {value ? (
-                        <ReactMarkdown>{value}</ReactMarkdown>
+                        <ReactMarkdown
+                            remarkPlugins={[remarkGfm, remarkMath]}
+                            rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
+                        >
+                            {value}
+                        </ReactMarkdown>
                     ) : (
                         <p className="text-gray-400 italic">Nothing to preview yet.</p>
                     )}

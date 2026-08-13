@@ -19,6 +19,8 @@ export function useLessonProgress(lessonId, totalPages, isPreview = false, userI
             savedConceptIndex: 0,
             lessonTitle: '',
             topicId: null,
+            subjectId: null,
+            subjectName: '',
             lastAccessed: Date.now(),
             totalPages: totalPages || 0
         };
@@ -34,7 +36,7 @@ export function useLessonProgress(lessonId, totalPages, isPreview = false, userI
         setState(prev => {
             const completed = new Set(prev.completedConcepts);
             completed.add(index);
-            return { ...prev, completedConcepts: Array.from(completed) };
+            return { ...prev, completedConcepts: Array.from(completed), lastAccessed: Date.now() };
         });
     };
 
@@ -45,7 +47,8 @@ export function useLessonProgress(lessonId, totalPages, isPreview = false, userI
             return {
                 ...prev,
                 savedConceptIndex: index,
-                visitedConcepts: Array.from(visited)
+                visitedConcepts: Array.from(visited),
+                lastAccessed: Date.now()
             };
         });
     };
@@ -54,10 +57,21 @@ export function useLessonProgress(lessonId, totalPages, isPreview = false, userI
         setState(prev => ({ ...prev, isCompleted: true, lastAccessed: Date.now() }));
     };
 
-    const updateMetadata = (title, topicId, tPages) => {
+    const updateMetadata = (title, topicId, tPages, subjectId = null, subjectName = '') => {
         setState(prev => {
-            if (prev.lessonTitle === title && prev.topicId === topicId && prev.totalPages === tPages) return prev;
-            return { ...prev, lessonTitle: title, topicId: topicId, totalPages: tPages, lastAccessed: Date.now() };
+            const sameSubject = (subjectId === null || prev.subjectId === subjectId);
+            if (prev.lessonTitle === title && prev.topicId === topicId && prev.totalPages === tPages && sameSubject) {
+                return prev;
+            }
+            return {
+                ...prev,
+                lessonTitle: title,
+                topicId: topicId,
+                totalPages: tPages,
+                subjectId: subjectId || prev.subjectId,
+                subjectName: subjectName || prev.subjectName,
+                lastAccessed: Date.now()
+            };
         });
     };
 

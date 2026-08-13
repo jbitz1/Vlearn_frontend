@@ -10,14 +10,6 @@ export const DiscoveryLayout = ({ page, renderBlock, context }) => {
 
   return (
     <div className="layout-strategy discovery-layout max-w-4xl mx-auto space-y-8">
-      {/* Optional Concept Badge */}
-      {context?.conceptGroup && (
-        <div className="flex items-center gap-2 text-xs font-bold text-custom-terracotta uppercase tracking-widest border-b border-gray-100 pb-3 mb-6">
-          <span className="w-2 h-2 rounded-full bg-custom-terracotta inline-block" />
-          <span>Discovery Strategy — {context.conceptGroup}</span>
-        </div>
-      )}
-
       {/* Render blocks in exact pedagogical sequence */}
       <div className="space-y-8">
         {blocks.map((block, idx) => (
