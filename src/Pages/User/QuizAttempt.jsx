@@ -222,48 +222,48 @@ function QuizAttempt() {
   const currentQuestion = quiz.questions[currentQuestionIndex];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-4xl w-full">
-        <div className="flex justify-between items-center mb-6">
-          <div className="text-sm font-medium text-gray-600">
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center p-3 sm:p-6">
+      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl p-4 sm:p-8 max-w-4xl w-full">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <div className="text-xs sm:text-sm font-bold text-gray-600">
             Question {currentQuestionIndex + 1}/{quiz.questions.length}
           </div>
           <div className="flex items-center gap-2 text-custom-blue">
-            <Clock size={20} />
-            <span className="font-mono">{formatTime(timeLeft)}</span>
+            <Clock size={18} />
+            <span className="font-mono text-sm sm:text-base font-bold">{formatTime(timeLeft)}</span>
           </div>
         </div>
 
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6 leading-snug">
             {currentQuestion.text}
           </h2>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {currentQuestion.answers.map((answer) => (
               <button
                 key={answer.id}
                 onClick={() => handleAnswerSelect(answer.id)}
                 disabled={isAnswered}
-                className={`w-full p-4 text-left rounded-full transition-all ${selectedAnswerId === answer.id
+                className={`w-full p-3.5 sm:p-4 text-left rounded-xl sm:rounded-2xl transition-all min-h-[44px] sm:min-h-[3.5rem] flex items-center ${selectedAnswerId === answer.id
                   ? isAnswered
                     ? answer.is_correct
-                      ? 'bg-green-100 border-green-500'
-                      : 'bg-red-100 border-red-600'
-                    : 'bg-indigo-100 border-indigo-500'
-                  : 'bg-gray-50 hover:bg-gray-100'
+                      ? 'bg-green-100 border-green-500 text-green-900'
+                      : 'bg-red-100 border-red-600 text-red-900'
+                    : 'bg-indigo-100 border-indigo-500 text-indigo-950'
+                  : 'bg-gray-50 hover:bg-gray-100 text-gray-900'
                   } ${isAnswered && answer.is_correct
-                    ? 'bg-green-100 border-green-500'
+                    ? 'bg-green-100 border-green-500 text-green-900'
                     : ''
                   } border border-gray-200 ${isAnswered ? 'cursor-not-allowed' : 'cursor-pointer'
                   }`}
               >
-                <div className="flex items-center justify-between">
-                  <span>{answer.text}</span>
+                <div className="flex items-center justify-between w-full gap-3">
+                  <span className="text-sm sm:text-base font-medium leading-snug">{answer.text}</span>
                   {isAnswered && selectedAnswerId === answer.id && (
                     answer.is_correct
-                      ? <CheckCircle2 className="text-green-500" size={20} />
-                      : <XCircle className="text-red-600" size={20} />
+                      ? <CheckCircle2 className="text-green-600 shrink-0" size={20} />
+                      : <XCircle className="text-red-600 shrink-0" size={20} />
                   )}
                 </div>
               </button>
@@ -271,20 +271,20 @@ function QuizAttempt() {
           </div>
         </div>
 
-        <div className="flex justify-between items-center">
-          <div className="text-lg font-medium">
+        <div className="flex items-center justify-between gap-3 pt-3 border-t border-gray-100">
+          <div className="text-xs sm:text-lg font-bold text-gray-700">
             Score: {score}/{currentQuestionIndex + 1}
           </div>
           <button
             onClick={handleNextQuestion}
             disabled={!isAnswered}
-            className={`py-3 px-6 rounded-3xl flex items-center gap-2 ${isAnswered
-              ? 'bg-custom-blue text-white hover:bg-custom-orange'
+            className={`py-2.5 px-5 sm:py-3 sm:px-6 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 min-h-[44px] ${isAnswered
+              ? 'bg-custom-blue text-white hover:bg-blue-700 shadow-xs cursor-pointer'
               : 'bg-gray-200 text-gray-500 cursor-not-allowed'
               } transition-colors`}
           >
             {currentQuestionIndex === quiz.questions.length - 1 ? 'Finish' : 'Next'}
-            <ChevronRight size={20} />
+            <ChevronRight size={18} />
           </button>
         </div>
       </div>

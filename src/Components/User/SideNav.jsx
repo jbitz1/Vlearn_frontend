@@ -51,10 +51,19 @@ const SideNav = () => {
 
   return (
     <>
+      {/* Mobile Backdrop Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-20 md:hidden backdrop-blur-xs transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Mobile toggle button */}
       <button
-        className="fixed top-4 left-4 z-30 md:hidden bg-custom-blue text-white p-2 rounded-full shadow-md"
+        className="fixed top-3 left-3 z-40 md:hidden bg-custom-blue text-white p-2.5 rounded-full shadow-lg min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        aria-label="Toggle Navigation Menu"
       >
         {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
       </button>
@@ -62,13 +71,13 @@ const SideNav = () => {
       {/* Sidebar */}
       <aside
         ref={sidebarRef}
-        className={`fixed left-0 top-0 z-20 h-screen w-64 bg-white border-r border-gray-200 p-5 transition-transform duration-300 flex flex-col justify-between
+        className={`fixed left-0 top-0 z-30 h-screen w-64 bg-white border-r border-gray-200 p-5 transition-transform duration-300 flex flex-col justify-between
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
       >
         <div>
-          <div className="flex items-center gap-3 mb-10 pl-2">
-            <GraduationCap className="h-9 w-9 text-custom-blue" />
-            <Link to="/student">
+          <div className="flex items-center gap-3 mb-8 pl-2">
+            <GraduationCap className="h-9 w-9 text-custom-blue shrink-0" />
+            <Link to="/student" onClick={() => setIsSidebarOpen(false)}>
               <h1 className="text-2xl font-black text-gray-900 tracking-tight">VizLearn</h1>
             </Link>
           </div>
@@ -79,10 +88,11 @@ const SideNav = () => {
                 to={item.path}
                 end={item.path === '/student'}
                 key={index}
+                onClick={() => setIsSidebarOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 w-full px-4 py-3 font-semibold text-sm rounded-2xl transition-all duration-200 ${
+                  `flex items-center gap-3 w-full px-4 py-3 font-semibold text-sm rounded-2xl transition-all duration-200 min-h-[44px] ${
                     isActive
-                      ? 'bg-blue-50 text-custom-blue shadow-sm'
+                      ? 'bg-blue-50 text-custom-blue shadow-xs font-bold'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`
                 }
@@ -97,8 +107,11 @@ const SideNav = () => {
         {/* Logout button */}
         <div className="pt-4 border-t border-gray-100">
           <button
-            onClick={handleLogout}
-            className="w-full px-4 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 font-semibold rounded-2xl text-sm transition-colors duration-200 flex items-center justify-center gap-2"
+            onClick={() => {
+              setIsSidebarOpen(false);
+              handleLogout();
+            }}
+            className="w-full px-4 py-3 bg-red-50 text-red-600 hover:bg-red-100 font-semibold rounded-2xl text-sm transition-colors duration-200 flex items-center justify-center gap-2 min-h-[44px] cursor-pointer"
           >
             Logout
           </button>

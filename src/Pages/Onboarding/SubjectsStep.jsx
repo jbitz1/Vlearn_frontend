@@ -51,30 +51,30 @@ export default function SubjectsStep({
                       handleSubjectToggle(sub.id);
                    }
                 }}
-                className={`p-3 rounded-xl border-2 flex items-center justify-between transition-all cursor-pointer ${isSelected ? 'border-custom-blue bg-blue-50/50' : 'border-gray-200 hover:border-gray-300'}`}
+                className={`p-3 rounded-xl border-2 flex items-center justify-between transition-all cursor-pointer min-h-[44px] ${isSelected ? 'border-custom-blue bg-blue-50/50' : 'border-gray-200 hover:border-gray-300'}`}
               >
                 <div className="flex items-center space-x-3 flex-1">
-                  <div className={`w-5 h-5 rounded flex items-center justify-center border ${isSelected ? 'bg-custom-blue border-custom-blue text-white' : 'border-gray-300'}`}>
+                  <div className={`w-5 h-5 rounded flex items-center justify-center border shrink-0 ${isSelected ? 'bg-custom-blue border-custom-blue text-white' : 'border-gray-300'}`}>
                     {isSelected && <Check className="w-3.5 h-3.5" />}
                   </div>
-                  <span className="text-sm font-semibold text-gray-800">{sub.name}</span>
+                  <span className="text-xs sm:text-sm font-semibold text-gray-800">{sub.name}</span>
                 </div>
               </div>
             );
           })
         ) : (
-          <p className="text-center col-span-2 text-gray-500 py-6">No subjects found for this grade.</p>
+          <p className="text-center col-span-2 text-gray-500 py-6 text-xs sm:text-sm">No subjects found for this grade.</p>
         )}
       </div>
 
-      <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-        <button onClick={() => setStep(1)} className="px-6 py-2 border border-gray-300 rounded-full text-gray-600 hover:bg-gray-50 transition-colors">Back</button>
+      <div className="flex justify-between items-center gap-3 pt-4 border-t border-gray-100">
+        <button onClick={() => setStep(1)} className="px-5 py-2.5 border border-gray-300 rounded-full text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors min-h-[44px] cursor-pointer">Back</button>
         <button
           onClick={handleNextStep}
           disabled={selectedSubjectIds.length === 0 || isLoading}
-          className={`px-8 py-3 rounded-full text-white font-semibold flex items-center transition-all ${selectedSubjectIds.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-custom-blue hover:bg-custom-orange shadow-md'}`}
+          className={`px-6 py-2.5 sm:px-8 sm:py-3 rounded-full text-white font-semibold text-xs sm:text-sm flex items-center justify-center transition-all min-h-[44px] ${selectedSubjectIds.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-custom-blue hover:bg-custom-orange shadow-md cursor-pointer'}`}
         >
-          {isLoading ? <Loader className="w-5 h-5 animate-spin" /> : <>Review <ChevronRight className="ml-2 w-5 h-5" /></>}
+          {isLoading ? <Loader className="w-5 h-5 animate-spin" /> : <>Review <ChevronRight className="ml-1.5 w-4 h-4 sm:w-5 sm:h-5" /></>}
         </button>
       </div>
     </div>

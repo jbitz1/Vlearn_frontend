@@ -222,14 +222,22 @@
   background-color: white;
   border: 1px solid rgba(229, 231, 235, 0.6); /* gray-200/60 */
   border-radius: 0.75rem; /* rounded-xl */
-  padding: 1.5rem;
-  margin: 1.5rem 0;
+  padding: 0.75rem 0.5rem;
+  margin: 1rem 0;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
   overflow-x: auto;
+  max-width: 100%;
   text-align: center;
 }
 
+@media (min-width: 640px) {
+  .katex-display {
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+}
+
 .katex {
-  font-size: 1.15em;
+  font-size: 1.05em;
   color: #1f2937; /* gray-800 */
 }

@@ -173,44 +173,78 @@ export function SchoolStudentsPage() {
         ) : filteredEnrollments.length === 0 ? (
           <div className="p-8 text-center text-xs text-gray-400 italic">No enrolled students found.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-100 text-xs uppercase font-bold text-gray-400">
-                  <th className="py-3 px-4">Student Name</th>
-                  <th className="py-3 px-4">Email</th>
-                  <th className="py-3 px-4">Class</th>
-                  <th className="py-3 px-4">Stream</th>
-                  <th className="py-3 px-4">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 text-xs font-medium text-gray-700">
-                {filteredEnrollments.map((e) => {
-                  const student = e.student_detail || {};
-                  const name = student.first_name
-                    ? `${student.first_name} ${student.last_name || ''}`
-                    : student.username || 'Student';
+          <div>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-100 text-xs uppercase font-bold text-gray-400">
+                    <th className="py-3 px-4">Student Name</th>
+                    <th className="py-3 px-4">Email</th>
+                    <th className="py-3 px-4">Class</th>
+                    <th className="py-3 px-4">Stream</th>
+                    <th className="py-3 px-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 text-xs font-medium text-gray-700">
+                  {filteredEnrollments.map((e) => {
+                    const student = e.student_detail || {};
+                    const name = student.first_name
+                      ? `${student.first_name} ${student.last_name || ''}`
+                      : student.username || 'Student';
 
-                  return (
-                    <tr key={e.id} className="hover:bg-gray-50/80 transition-colors">
-                      <td className="py-3.5 px-4 font-bold text-gray-900">{name}</td>
-                      <td className="py-3.5 px-4 text-gray-600">{student.email || 'N/A'}</td>
-                      <td className="py-3.5 px-4 font-semibold text-gray-800">{e.class_name || 'N/A'}</td>
-                      <td className="py-3.5 px-4">
-                        <span className="font-bold text-custom-blue bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100">
-                          {e.stream_name}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="inline-block text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                          {e.status || 'active'}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    return (
+                      <tr key={e.id} className="hover:bg-gray-50/80 transition-colors">
+                        <td className="py-3.5 px-4 font-bold text-gray-900">{name}</td>
+                        <td className="py-3.5 px-4 text-gray-600">{student.email || 'N/A'}</td>
+                        <td className="py-3.5 px-4 font-semibold text-gray-800">{e.class_name || 'N/A'}</td>
+                        <td className="py-3.5 px-4">
+                          <span className="font-bold text-custom-blue bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100">
+                            {e.stream_name}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="inline-block text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            {e.status || 'active'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card Stack View */}
+            <div className="block md:hidden space-y-3">
+              {filteredEnrollments.map((e) => {
+                const student = e.student_detail || {};
+                const name = student.first_name
+                  ? `${student.first_name} ${student.last_name || ''}`
+                  : student.username || 'Student';
+
+                return (
+                  <div key={e.id} className="p-4 rounded-2xl border border-gray-100 bg-gray-50/50 space-y-2 text-xs">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm">{name}</p>
+                        <p className="text-gray-500 text-xs">{student.email || 'N/A'}</p>
+                      </div>
+                      <span className="inline-block text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        {e.status || 'active'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1 border-t border-gray-100 text-xs">
+                      <span className="text-gray-500 font-semibold">{e.class_name || 'N/A'}</span>
+                      <span className="text-gray-300">•</span>
+                      <span className="font-bold text-custom-blue bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                        {e.stream_name}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </section>

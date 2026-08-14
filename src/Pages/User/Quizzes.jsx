@@ -86,55 +86,37 @@ function Quizzes() {
   }
 
   return (
-    <div className=" mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Available Quizzes</h1>
-        {/* <div className="flex space-x-4">
-        <select className="bg-white border border-gray-300 rounded-3xl px-4 py-2">
-          <option>All Subjects</option>
-          <option>Mathematics</option>
-          <option>Physics</option>
-          <option>Chemistry</option>
-        </select>
-        <select className="bg-white border border-gray-300 rounded-3xl px-4 py-2">
-          <option>All Difficulties</option>
-          <option>Beginner</option>
-          <option>Intermediate</option>
-          <option>Advanced</option>
-        </select>
-      </div> */}
+    <div className="pl-14 pr-4 py-4 sm:p-6 md:p-10 max-w-7xl mx-auto space-y-6 sm:space-y-8">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Available Quizzes</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {quizzes.map((quiz) => (
-          <div key={quiz.id} className="bg-white rounded-3xl shadow-2xl p-6 h-full w-full items-center">
-            <h3 className="text-lg font-semibold text-black mb-2">{quiz.title}</h3>
-            <p className="text-black mb-4 font-light text-sm">{quiz.description}</p>
+          <div key={quiz.id} className="bg-white rounded-2xl sm:rounded-3xl shadow-xs sm:shadow-sm border border-gray-100 p-4 sm:p-6 flex flex-col justify-between h-full">
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">{quiz.title}</h3>
+              <p className="text-gray-500 mb-4 font-normal text-xs sm:text-sm line-clamp-2">{quiz.description}</p>
 
-            <div className="space-y-3 mb-6">
-              <div className="flex items-center text-black font-bold text-sm">
-                <Clock className="h-5 w-5 mr-2" />
-                <span>{quiz.time_limit} minutes</span>
+              <div className="space-y-2 mb-6">
+                <div className="flex items-center text-gray-700 font-bold text-xs sm:text-sm">
+                  <Clock className="h-4 w-4 mr-2 text-custom-blue shrink-0" />
+                  <span>{quiz.time_limit} minutes</span>
+                </div>
+                <div className="flex items-center text-gray-700 font-bold text-xs sm:text-sm">
+                  <BarChart className="h-4 w-4 mr-2 text-custom-blue shrink-0" />
+                  <span>{quiz.question_count} questions</span>
+                </div>
               </div>
-              <div className="flex items-center text-black font-bold text-sm">
-                <BarChart className="h-5 w-5 mr-2" />
-                <span>{quiz.question_count} questions</span>
-              </div>
-              {/* <div className="flex items-center text-black font-bold text-sm">
-                <Award className="h-5 w-5 mr-2" />
-                <span>{quiz.difficulty}</span>
-              </div> */}
             </div>
 
-            <div className="flex space-x-3">
+            <div className="mt-4 pt-3 border-t border-gray-100">
               <button
                 onClick={() => countDownAlert(quiz.id)}
-                className="bg-custom-blue text-white px-4 py-2 rounded-3xl hover:bg-custom-orange w-full cursor-pointer">
+                className="bg-custom-blue text-white px-4 py-2.5 rounded-xl sm:rounded-2xl hover:bg-blue-700 font-bold text-xs sm:text-sm w-full cursor-pointer transition-colors flex items-center justify-center min-h-[44px]"
+              >
                 Start Quiz
               </button>
-              {/* <button className="flex-1 border border-custom-blue text-custom-blue px-4 py-2 rounded-3xl hover:bg-indigo-50">
-              Practice Mode
-            </button> */}
             </div>
           </div>
         ))}

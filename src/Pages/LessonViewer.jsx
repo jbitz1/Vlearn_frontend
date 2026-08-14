@@ -346,24 +346,24 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                     />
                 </div>
 
-                <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+                <div className="max-w-3xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-3">
                     {/* Lesson title + progress meta */}
                     <div className="flex-1 min-w-0">
                         {topicData && (
-                            <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
+                            <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1 truncate">
                                 <button onClick={() => navigate(user?.role === 'teacher' ? '/teacher' : '/student/home')} className="hover:text-custom-blue transition-colors">Dashboard</button>
-                                <ChevronRight size={12} className="text-gray-300" />
-                                <span className="hover:text-custom-blue cursor-pointer transition-colors" onClick={() => navigate(user?.role === 'teacher' ? `/teacher/subject/${topicData.subject}` : `/student/subject/${topicData.subject}`)}>{topicData.subject_name}</span>
-                                <ChevronRight size={12} className="text-gray-300" />
-                                <span className="hover:text-custom-blue cursor-pointer transition-colors" onClick={() => navigate(user?.role === 'teacher' ? `/teacher/topic/${effectiveTopicId}` : `/student/topic/${effectiveTopicId}`)}>{topicData.name}</span>
+                                <ChevronRight size={12} className="text-gray-300 shrink-0" />
+                                <span className="hover:text-custom-blue cursor-pointer transition-colors truncate" onClick={() => navigate(user?.role === 'teacher' ? `/teacher/subject/${topicData.subject}` : `/student/subject/${topicData.subject}`)}>{topicData.subject_name}</span>
+                                <ChevronRight size={12} className="text-gray-300 shrink-0" />
+                                <span className="hover:text-custom-blue cursor-pointer transition-colors truncate" onClick={() => navigate(user?.role === 'teacher' ? `/teacher/topic/${effectiveTopicId}` : `/student/topic/${effectiveTopicId}`)}>{topicData.name}</span>
                             </div>
                         )}
-                        <h1 className="text-sm font-bold text-gray-800 truncate">{lesson.title}</h1>
-                        <div className="flex items-center gap-3 mt-1">
-                            <span className="text-xs text-custom-blue font-bold">
+                        <h1 className="text-xs sm:text-sm font-bold text-gray-800 truncate">{lesson.title}</h1>
+                        <div className="flex items-center gap-2.5 mt-0.5">
+                            <span className="text-[11px] sm:text-xs text-custom-blue font-bold">
                                 {completionPercentage}% complete
                             </span>
-                            <span className="text-xs text-gray-400 flex items-center gap-1">
+                            <span className="text-[11px] sm:text-xs text-gray-400 flex items-center gap-1">
                                 <Clock size={11} />
                                 ~{Math.max(0, totalReadingTime - Math.round(totalReadingTime * completionPercentage / 100))} min left
                             </span>
@@ -373,10 +373,10 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                     {/* Contents toggle */}
                     <button
                         onClick={() => setShowContents((v) => !v)}
-                        className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                        className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 transition-colors shrink-0 cursor-pointer"
                         title="All concepts"
                     >
-                        <LayoutList size={16} />
+                        <LayoutList size={18} />
                     </button>
                 </div>
             </div>
@@ -384,16 +384,16 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
             {/* ── Table of Contents overlay ─────────────────────────────── */}
             {showContents && (
                 <div
-                    className="fixed inset-0 z-30 bg-black/40 flex items-start justify-center pt-20"
+                    className="fixed inset-0 z-30 bg-black/40 flex items-start justify-center pt-16 sm:pt-20 px-3"
                     onClick={() => setShowContents(false)}
                 >
                     <div
-                        className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="px-5 py-4 border-b border-gray-100">
-                            <h2 className="font-bold text-gray-800">Table of Contents</h2>
-                            <p className="text-xs text-gray-500 mt-0.5">{lesson.title}</p>
+                        <div className="px-4 py-3.5 sm:px-5 sm:py-4 border-b border-gray-100">
+                            <h2 className="font-bold text-gray-800 text-base">Table of Contents</h2>
+                            <p className="text-xs text-gray-500 mt-0.5 truncate">{lesson.title}</p>
                         </div>
                         <div className="max-h-80 overflow-y-auto p-2">
                             {pages.map((page, idx) => {
@@ -403,7 +403,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                                     <button
                                         key={page.key || idx}
                                         onClick={() => { navigateTo(idx); setShowContents(false); }}
-                                        className={`w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+                                        className={`w-full text-left flex items-center gap-3 px-3.5 py-3 rounded-xl transition-colors min-h-[44px] ${
                                             isCurrent ? 'bg-blue-50' : 'hover:bg-gray-50'
                                         }`}
                                     >
@@ -420,7 +420,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                                                 {page.pageTitle || page.title || `Concept ${idx + 1}`}
                                             </p>
                                         </div>
-                                        <span className="text-xs text-gray-400 flex-shrink-0">
+                                        <span className="text-xs text-gray-400 flex-shrink-0 font-mono">
                                             {idx + 1}
                                         </span>
                                     </button>
@@ -454,17 +454,17 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                     const cleanTitle = formatCleanTitle(rawTitle, lesson.title);
 
                     return (
-                        <div className="max-w-6xl mx-auto w-full px-4 py-10 lg:py-16">
-                            <div className="mb-8 border-b border-gray-200/60 pb-6">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <span className="text-[11px] font-bold text-custom-blue bg-blue-50 px-3 py-1 rounded-full uppercase tracking-widest border border-blue-200/60">
+                        <div className="max-w-6xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-6 sm:py-10 lg:py-16">
+                            <div className="mb-6 sm:mb-8 border-b border-gray-200/60 pb-4 sm:pb-6">
+                                <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-custom-blue bg-blue-50 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full uppercase tracking-widest border border-blue-200/60">
                                         Concept {pageIndex + 1} of {totalPages}
                                     </span>
                                     <span className="text-xs text-gray-400 flex items-center gap-1.5 font-medium">
                                         <Clock size={12} /> ~{readingTime} min read
                                     </span>
                                 </div>
-                                <h2 className="text-4xl md:text-5xl font-sans font-bold text-gray-900 leading-tight">
+                                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-sans font-bold text-gray-900 leading-tight">
                                     {cleanTitle}
                                 </h2>
                             </div>
@@ -482,7 +482,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                     );
                 })()}
 
-                <div className="max-w-4xl mx-auto px-4 pb-12">
+                <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-8 sm:pb-12">
                     <LessonTimeline 
                         totalPages={totalPages} 
                         currentPageIndex={pageIndex} 
@@ -493,12 +493,12 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
             </div>
 
             {/* ── Navigation footer ─────────────────────────────────────── */}
-            <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t border-gray-200/60 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.05)]">
-                <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur border-t border-gray-200/60 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.05)]">
+                <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-3">
                     <button
                         onClick={goPrev}
                         disabled={pageIndex === 0}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                        className={`flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2.5 min-h-[44px] rounded-xl font-semibold text-sm transition-all cursor-pointer ${
                             pageIndex === 0
                                 ? 'text-gray-300 cursor-not-allowed'
                                 : 'text-gray-600 hover:bg-gray-100'
@@ -512,7 +512,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                         <button
                             onClick={handleComplete}
                             disabled={isGated}
-                            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm ${
+                            className={`flex items-center justify-center gap-1.5 px-5 sm:px-6 py-2.5 min-h-[44px] rounded-xl font-bold text-sm transition-all shadow-sm cursor-pointer ${
                                 isGated ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-emerald-500 text-white hover:bg-emerald-600'
                             }`}
                         >
@@ -522,7 +522,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                         <button
                             onClick={goNext}
                             disabled={isGated}
-                            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm ${
+                            className={`flex items-center justify-center gap-1.5 px-5 sm:px-6 py-2.5 min-h-[44px] rounded-xl font-bold text-sm transition-all shadow-sm cursor-pointer ${
                                 isGated ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-custom-blue text-white hover:bg-blue-700'
                             }`}
                         >

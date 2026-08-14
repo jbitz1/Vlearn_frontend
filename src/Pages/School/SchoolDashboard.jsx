@@ -106,7 +106,7 @@ export function SchoolDashboard() {
                <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
             </div>
         ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
               {setupState?.checklist?.map((item, index) => {
                   let path = '/school/dashboard';
                   if (item.key === 'STREAMS_CREATED') path = '/school/academic-structure';
@@ -116,11 +116,11 @@ export function SchoolDashboard() {
                   if (item.key === 'BASELINE_UPLOADED') path = '/school/students';
   
                   return (
-                      <div key={item.key} onClick={() => navigate(path)} className="p-3 bg-white/10 rounded-2xl text-center border border-white/20 cursor-pointer hover:bg-white/20 transition">
+                      <div key={item.key} onClick={() => navigate(path)} className="p-2.5 sm:p-3 bg-white/10 rounded-2xl text-center border border-white/20 cursor-pointer hover:bg-white/20 transition flex flex-col justify-center min-h-[44px]">
                           <span className="text-[10px] font-semibold block text-blue-200 truncate" title={item.label}>
                             {index + 1}. {item.label.split(' ')[0]}
                           </span>
-                          <span className={`text-sm font-bold ${item.complete ? 'text-green-300' : 'text-yellow-300'}`}>
+                          <span className={`text-xs sm:text-sm font-bold ${item.complete ? 'text-green-300' : 'text-yellow-300'}`}>
                               {item.complete ? '✓ Done' : '+ Add'}
                           </span>
                       </div>
@@ -137,31 +137,31 @@ export function SchoolDashboard() {
         </h2>
 
         {isLoading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded-3xl animate-pulse"></div>
+              <div key={i} className="h-20 sm:h-24 bg-gray-200 rounded-2xl sm:rounded-3xl animate-pulse"></div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-              <span className="text-xs font-bold text-gray-400 uppercase block">Classes</span>
-              <span className="text-3xl font-black text-gray-900 mt-1 block">{classes.length}</span>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs sm:shadow-sm">
+              <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase block">Classes</span>
+              <span className="text-2xl sm:text-3xl font-black text-gray-900 mt-0.5 block">{classes.length}</span>
             </div>
 
-            <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-              <span className="text-xs font-bold text-gray-400 uppercase block">Streams</span>
-              <span className="text-3xl font-black text-gray-900 mt-1 block">{streams.length}</span>
+            <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs sm:shadow-sm">
+              <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase block">Streams</span>
+              <span className="text-2xl sm:text-3xl font-black text-gray-900 mt-0.5 block">{streams.length}</span>
             </div>
 
-            <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-              <span className="text-xs font-bold text-gray-400 uppercase block">Teachers</span>
-              <span className="text-3xl font-black text-gray-900 mt-1 block">{teachers.length}</span>
+            <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs sm:shadow-sm">
+              <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase block">Teachers</span>
+              <span className="text-2xl sm:text-3xl font-black text-gray-900 mt-0.5 block">{teachers.length}</span>
             </div>
 
-            <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-              <span className="text-xs font-bold text-gray-400 uppercase block">Students</span>
-              <span className="text-3xl font-black text-gray-900 mt-1 block">{activeStudentCount}</span>
+            <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs sm:shadow-sm">
+              <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase block">Students</span>
+              <span className="text-2xl sm:text-3xl font-black text-gray-900 mt-0.5 block">{activeStudentCount}</span>
             </div>
           </div>
         )}

@@ -54,11 +54,11 @@ const MD = ({ children, className = '' }) => {
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
         components={{
-          p: ({ node, ...props }) => <p className="mb-6 text-gray-800 leading-relaxed font-sans text-lg md:text-xl" {...props} />,
-          li: ({ node, ...props }) => <li className="mb-2 text-gray-800 font-sans text-lg md:text-xl" {...props} />,
+          p: ({ node, ...props }) => <p className="mb-4 sm:mb-6 text-gray-800 leading-relaxed font-sans text-base sm:text-lg md:text-xl" {...props} />,
+          li: ({ node, ...props }) => <li className="mb-1.5 sm:mb-2 text-gray-800 font-sans text-base sm:text-lg md:text-xl" {...props} />,
           pre: ({ node, children, ...props }) => (
-            <div className="my-8 bg-slate-950 text-emerald-400 border border-slate-800 shadow-2xl rounded-2xl overflow-hidden font-mono text-xs md:text-sm leading-snug">
-              <div className="bg-slate-900/90 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+            <div className="my-6 sm:my-8 bg-slate-950 text-emerald-400 border border-slate-800 shadow-2xl rounded-2xl overflow-hidden font-mono text-xs md:text-sm leading-snug">
+              <div className="bg-slate-900/90 px-3.5 py-2 sm:px-4 sm:py-2.5 border-b border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-500/80" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
@@ -117,9 +117,9 @@ export const LearningGoalBlock = ({ block }) => {
   }
 
   return (
-    <div className="my-12 p-8 bg-blue-50/60 border border-blue-100/80 rounded-3xl">
+    <div className="my-6 sm:my-12 p-4 sm:p-6 md:p-8 bg-blue-50/60 border border-blue-100/80 rounded-2xl sm:rounded-3xl">
       <BlockHeader icon={Target} label="By the end of this concept" colorClass="text-custom-blue" />
-      <MD className="text-gray-900 font-medium text-xl leading-relaxed font-sans max-w-[70ch]">{goalText}</MD>
+      <MD className="text-gray-900 font-medium text-base sm:text-lg md:text-xl leading-relaxed font-sans max-w-[70ch]">{goalText}</MD>
     </div>
   );
 };
@@ -130,8 +130,8 @@ export const ConceptExplanationBlock = ({ block }) => {
   const rawText = c.body || c.text || c.content || text(block.content);
   const blockTitle = block.title && block.title !== 'None' ? block.title : (c.title || '');
   return (
-    <div className="my-12">
-      <MD className="text-gray-800 text-xl leading-relaxed font-sans">
+    <div className="my-6 sm:my-12">
+      <MD className="text-gray-800 text-base sm:text-lg md:text-xl leading-relaxed font-sans">
         {ContentNormalizer.removeDuplicateHeading(rawText, blockTitle)}
       </MD>
     </div>
@@ -144,9 +144,9 @@ export const DefinitionCardBlock = ({ block }) => {
   const term = c.term || (block.title && block.title !== 'None' ? block.title : (c.title || 'Definition'));
   const definition = c.content || c.body || c.text || c.definition || text(block.content);
   return (
-    <div className="my-12 bg-amber-50/60 border border-amber-200/60 rounded-3xl p-8">
+    <div className="my-6 sm:my-12 bg-amber-50/60 border border-amber-200/60 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
       <BlockHeader icon={Book} label="Definition" title={term} colorClass="text-amber-800" />
-      <MD className="text-gray-800 text-xl leading-relaxed font-sans max-w-[70ch]">{definition}</MD>
+      <MD className="text-gray-800 text-base sm:text-lg md:text-xl leading-relaxed font-sans max-w-[70ch]">{definition}</MD>
     </div>
   );
 };
@@ -172,27 +172,27 @@ export const WorkedExampleBlock = ({ block }) => {
   const cleanIntro = ContentNormalizer.removeDuplicateHeading(intro, cleanTitle);
   
   return (
-    <div className="my-16 bg-white border border-gray-100 rounded-3xl p-8 shadow-sm">
+    <div className="my-6 sm:my-16 bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-xs sm:shadow-sm">
       <BlockHeader icon={PenTool} label="Worked Example" title={cleanTitle} colorClass="text-custom-blue" />
       
-      <div className="mt-8">
-        {cleanIntro && <MD className="text-gray-800 text-xl leading-relaxed mb-10">{cleanIntro}</MD>}
+      <div className="mt-4 sm:mt-8">
+        {cleanIntro && <MD className="text-gray-800 text-base sm:text-lg md:text-xl leading-relaxed mb-6 sm:mb-10">{cleanIntro}</MD>}
         
         {steps.length > 0 ? (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {steps.map((step) => (
-              <div key={step.number} className="flex items-start gap-5 p-6 rounded-3xl bg-gray-50 border border-gray-100">
-                <div className="w-10 h-10 rounded-full bg-custom-blue text-white font-bold flex items-center justify-center shrink-0 text-base font-sans">
+              <div key={step.number} className="flex flex-col sm:flex-row items-start gap-3 sm:gap-5 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gray-50/80 border border-gray-100">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-custom-blue text-white font-bold flex items-center justify-center shrink-0 text-sm sm:text-base font-sans">
                   {step.number}
                 </div>
-                <div className="flex-1 mt-1">
-                  <MD className="text-gray-800 text-xl leading-relaxed">{step.text}</MD>
+                <div className="flex-1 mt-0.5 w-full min-w-0">
+                  <MD className="text-gray-800 text-base sm:text-lg md:text-xl leading-relaxed">{step.text}</MD>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <MD className="text-gray-800 text-xl leading-relaxed">{rawText}</MD>
+          <MD className="text-gray-800 text-base sm:text-lg md:text-xl leading-relaxed">{rawText}</MD>
         )}
       </div>
     </div>
@@ -318,16 +318,16 @@ export const FormulaBreakdownBlock = ({ block }) => {
   }
 
   return (
-    <div className="my-16 bg-white rounded-3xl p-8 md:p-10 shadow-sm border border-gray-200/80">
+    <div className="my-6 sm:my-16 bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-10 shadow-xs sm:shadow-sm border border-gray-200/80">
       <BlockHeader label="Key Formula" colorClass="text-custom-blue" />
       {formula && (
-        <div className="bg-slate-50 p-6 md:p-10 rounded-3xl text-center mb-8 border border-slate-200/80 flex flex-col items-center justify-center overflow-x-auto">
-          <MD className="text-gray-900 text-2xl md:text-3xl font-semibold !max-w-none w-full flex justify-center text-center">{formula}</MD>
+        <div className="bg-slate-50 p-4 sm:p-6 md:p-10 rounded-2xl sm:rounded-3xl text-center mb-6 sm:mb-8 border border-slate-200/80 flex flex-col items-center justify-center overflow-x-auto max-w-full">
+          <MD className="text-gray-900 text-xl sm:text-2xl md:text-3xl font-semibold !max-w-none w-full flex justify-center text-center">{formula}</MD>
         </div>
       )}
       <div>
         <BlockHeader label="What Each Part Means" colorClass="text-gray-500" />
-        <MD className="text-gray-800 text-lg md:text-xl font-sans mt-4">{breakdown}</MD>
+        <MD className="text-gray-800 text-base sm:text-lg md:text-xl font-sans mt-3 sm:mt-4">{breakdown}</MD>
       </div>
     </div>
   );
@@ -395,13 +395,13 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
   );
 
   return (
-    <div className="my-16 bg-white rounded-3xl shadow-sm p-8 border border-gray-200/80">
+    <div className="my-6 sm:my-16 bg-white rounded-2xl sm:rounded-3xl shadow-xs sm:shadow-sm p-4 sm:p-6 md:p-8 border border-gray-200/80">
       <BlockHeader label="Check Your Understanding" colorClass="text-custom-blue" />
-      <MD className="text-gray-900 font-semibold text-2xl mb-10 font-sans max-w-[70ch] leading-snug">{question}</MD>
+      <MD className="text-gray-900 font-semibold text-lg sm:text-xl md:text-2xl mb-6 sm:mb-10 font-sans max-w-[70ch] leading-snug">{question}</MD>
 
       {/* Multiple choice */}
       {options.length > 0 && (
-        <div className="space-y-4 mb-10">
+        <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-10">
           {options.map((opt, i) => {
             const label = String.fromCharCode(65 + i);
             const isSelected = selected === label;
@@ -409,17 +409,17 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
             const isWrong = revealed && isSelected && !isRight;
             
             let cardClasses = 'bg-white border-gray-200 text-gray-800 hover:border-custom-blue hover:bg-blue-50/30';
-            let iconElement = <div className="w-6 h-6 rounded-full border border-gray-300 shrink-0 mt-0.5" />;
+            let iconElement = <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-gray-300 shrink-0 mt-0.5" />;
             
             if (isRight) {
               cardClasses = 'bg-emerald-50/80 border-emerald-500 text-emerald-900';
-              iconElement = <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" strokeWidth={1.5} />;
+              iconElement = <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 shrink-0" strokeWidth={1.5} />;
             } else if (isWrong) {
               cardClasses = 'bg-rose-50/80 border-rose-300 text-rose-900';
-              iconElement = <XCircle className="w-6 h-6 text-rose-600 shrink-0" strokeWidth={1.5} />;
+              iconElement = <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600 shrink-0" strokeWidth={1.5} />;
             } else if (isSelected) {
               cardClasses = 'bg-blue-50/60 border-custom-blue text-gray-900 shadow-[0_0_0_1px_#02a0bf]';
-              iconElement = <div className="w-6 h-6 rounded-full border border-custom-blue shrink-0 flex items-center justify-center mt-0.5"><div className="w-3 h-3 rounded-full bg-custom-blue" /></div>;
+              iconElement = <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-custom-blue shrink-0 flex items-center justify-center mt-0.5"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-custom-blue" /></div>;
             }
 
             return (
@@ -427,13 +427,13 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
                 key={i}
                 type="button"
                 onClick={() => !revealed && setSelected(label)}
-                className={`w-full text-left px-6 py-5 rounded-3xl border transition-all flex items-start gap-5 min-h-[4rem] cursor-pointer ${cardClasses}`}
+                className={`w-full text-left px-4 py-3.5 sm:px-6 sm:py-5 rounded-2xl sm:rounded-3xl border transition-all flex items-start gap-3 sm:gap-5 min-h-[44px] sm:min-h-[4rem] cursor-pointer ${cardClasses}`}
               >
                 {iconElement}
-                <div>
-                  <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <span className={`font-bold ${isRight || isSelected ? 'text-inherit' : 'text-gray-400'}`}>{label}.</span>
-                    <MD className="text-xl font-medium font-sans leading-snug">{opt}</MD>
+                    <MD className="text-base sm:text-lg md:text-xl font-medium font-sans leading-snug">{opt}</MD>
                   </div>
                 </div>
               </button>
@@ -444,7 +444,7 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
 
       {/* True / False */}
       {checkType === 'true_false' && (
-        <div className="flex flex-col sm:flex-row gap-4 mb-10">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-10">
           {['True', 'False'].map((opt) => {
             const val = opt === 'True';
             const isSelected = selected === val;
@@ -452,17 +452,17 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
             const isWrong = revealed && isSelected && val !== answer;
             
             let cardClasses = 'bg-white border-gray-200 text-gray-800 hover:border-custom-blue hover:bg-blue-50/30';
-            let iconElement = <div className="w-6 h-6 rounded-full border border-gray-300 shrink-0" />;
+            let iconElement = <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-gray-300 shrink-0" />;
             
             if (isRight) {
               cardClasses = 'bg-emerald-50/80 border-emerald-500 text-emerald-900';
-              iconElement = <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" strokeWidth={1.5} />;
+              iconElement = <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 shrink-0" strokeWidth={1.5} />;
             } else if (isWrong) {
               cardClasses = 'bg-rose-50/80 border-rose-300 text-rose-900';
-              iconElement = <XCircle className="w-6 h-6 text-rose-600 shrink-0" strokeWidth={1.5} />;
+              iconElement = <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600 shrink-0" strokeWidth={1.5} />;
             } else if (isSelected) {
               cardClasses = 'bg-blue-50/60 border-custom-blue text-gray-900 shadow-[0_0_0_1px_#02a0bf]';
-              iconElement = <div className="w-6 h-6 rounded-full border border-custom-blue shrink-0 flex items-center justify-center"><div className="w-3 h-3 rounded-full bg-custom-blue" /></div>;
+              iconElement = <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-custom-blue shrink-0 flex items-center justify-center"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-custom-blue" /></div>;
             }
 
             return (
@@ -470,7 +470,7 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
                 key={opt}
                 type="button"
                 onClick={() => !revealed && setSelected(val)}
-                className={`flex-1 flex justify-center items-center gap-3 py-6 rounded-3xl border font-bold text-xl font-sans transition-all min-h-[4rem] cursor-pointer ${cardClasses}`}
+                className={`flex-1 flex justify-center items-center gap-3 py-4 sm:py-6 rounded-2xl sm:rounded-3xl border font-bold text-lg sm:text-xl font-sans transition-all min-h-[44px] sm:min-h-[4rem] cursor-pointer ${cardClasses}`}
               >
                 {iconElement}
                 {opt}
@@ -483,7 +483,7 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
       {/* Short answer / predict / explain */}
       {(checkType === 'short_answer' || checkType === 'predict_outcome' || checkType === 'explain_in_words' || checkType === 'fill_blank') && !revealed && (
         <textarea
-          className="w-full border border-gray-300 rounded-3xl p-6 text-xl text-gray-900 focus:border-custom-blue focus:ring-1 focus:ring-custom-blue transition resize-none mb-10 font-sans bg-gray-50"
+          className="w-full border border-gray-300 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-base sm:text-xl text-gray-900 focus:border-custom-blue focus:ring-1 focus:ring-custom-blue transition resize-none mb-6 sm:mb-10 font-sans bg-gray-50"
           rows={4}
           placeholder="Write your answer here…"
         />
@@ -493,21 +493,21 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
         <button
           type="button"
           onClick={handleSubmit}
-          className="px-8 py-4 bg-custom-blue text-white rounded-full text-base font-bold transition font-sans hover:bg-blue-700 flex items-center justify-center cursor-pointer shadow-md w-full sm:w-auto"
+          className="px-6 py-3.5 sm:px-8 sm:py-4 bg-custom-blue text-white rounded-full text-sm sm:text-base font-bold transition font-sans hover:bg-blue-700 flex items-center justify-center cursor-pointer shadow-md w-full sm:w-auto min-h-[44px]"
         >
           Submit Answer
           <Check className="ml-2 w-5 h-5" strokeWidth={2} />
         </button>
       ) : (
-        <div className="mt-8 space-y-6 animate-fade-in">
-          <div className={`p-8 rounded-3xl flex items-start gap-5 ${isCorrect || !(checkType === 'multiple_choice' || checkType === 'true_false') ? 'bg-emerald-50/80 border border-emerald-200' : 'bg-rose-50/80 border border-rose-200'}`}>
+        <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6 animate-fade-in">
+          <div className={`p-4 sm:p-8 rounded-2xl sm:rounded-3xl flex items-start gap-4 sm:gap-5 ${isCorrect || !(checkType === 'multiple_choice' || checkType === 'true_false') ? 'bg-emerald-50/80 border border-emerald-200' : 'bg-rose-50/80 border border-rose-200'}`}>
             {(isCorrect || !(checkType === 'multiple_choice' || checkType === 'true_false')) ? (
-              <CheckCircle2 className="text-emerald-600 w-8 h-8 shrink-0 mt-0.5" strokeWidth={1} />
+              <CheckCircle2 className="text-emerald-600 w-6 h-6 sm:w-8 sm:h-8 shrink-0 mt-0.5" strokeWidth={1} />
             ) : (
-              <XCircle className="text-rose-600 w-8 h-8 shrink-0 mt-0.5" strokeWidth={1} />
+              <XCircle className="text-rose-600 w-6 h-6 sm:w-8 sm:h-8 shrink-0 mt-0.5" strokeWidth={1} />
             )}
             <div>
-              <p className={`text-xl font-bold font-sans mb-2 ${(isCorrect || !(checkType === 'multiple_choice' || checkType === 'true_false')) ? 'text-emerald-900' : 'text-rose-900'}`}>
+              <p className={`text-lg sm:text-xl font-bold font-sans mb-1 sm:mb-2 ${(isCorrect || !(checkType === 'multiple_choice' || checkType === 'true_false')) ? 'text-emerald-900' : 'text-rose-900'}`}>
                 {(checkType === 'multiple_choice' || checkType === 'true_false') && isCorrect
                   ? 'Correct! Well done.'
                   : (checkType === 'multiple_choice' || checkType === 'true_false') && !isCorrect
@@ -515,14 +515,14 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
                   : 'Answer noted. Continue when ready.'}
               </p>
               {!(checkType === 'multiple_choice' || checkType === 'true_false') && !isCorrect && (
-                <MD className="text-gray-800 text-lg font-sans">The correct answer was {answer}.</MD>
+                <MD className="text-gray-800 text-base sm:text-lg font-sans">The correct answer was {answer}.</MD>
               )}
             </div>
           </div>
           {(c.explanation || (!(checkType === 'multiple_choice' || checkType === 'true_false') && answer)) && (
-              <div className="p-8 bg-white border border-gray-200 rounded-3xl shadow-sm">
+              <div className="p-4 sm:p-8 bg-white border border-gray-200 rounded-2xl sm:rounded-3xl shadow-xs sm:shadow-sm">
                   <BlockHeader label="Explanation & Analysis" colorClass="text-gray-500" />
-                  <MD className="text-gray-800 text-xl leading-relaxed font-sans max-w-[70ch]">{c.explanation || answer}</MD>
+                  <MD className="text-gray-800 text-base sm:text-lg md:text-xl leading-relaxed font-sans max-w-[70ch]">{c.explanation || answer}</MD>
               </div>
           )}
         </div>
@@ -810,37 +810,77 @@ export const ComparisonTableBlock = ({ block }) => {
   const rows = c.rows || (c.text ? [[ 'Details', c.text ]] : []);
 
   return (
-    <div className="my-16 bg-white rounded-3xl shadow-sm border border-gray-200/80 overflow-hidden">
-      <div className="bg-gray-50 border-b border-gray-100 p-8">
+    <div className="my-6 sm:my-16 bg-white rounded-2xl sm:rounded-3xl shadow-xs sm:shadow-sm border border-gray-200/80 overflow-hidden">
+      <div className="bg-gray-50 border-b border-gray-100 p-4 sm:p-8">
          <BlockHeader label="Comparative Analysis" title={block?.title || 'Comparison Matrix'} colorClass="text-gray-500" />
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse text-lg font-sans">
-          <thead>
-            <tr className="bg-gray-50/50 border-b border-gray-200">
-              {headers.map((h, i) => (
-                <th key={i} className="p-6 md:p-8 font-bold text-gray-900">
-                  <MD>{String(h)}</MD>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, rIdx) => (
-              <tr key={rIdx} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                {Array.isArray(row) ? row.map((cell, cIdx) => (
-                  <td key={cIdx} className="p-6 md:p-8 text-gray-800 leading-relaxed">
-                    <MD>{String(cell)}</MD>
-                  </td>
-                )) : (
-                  <td colSpan={headers.length} className="p-6 md:p-8 text-gray-800 leading-relaxed">
-                    <MD>{String(row)}</MD>
-                  </td>
-                )}
+
+      {/* Mobile Stacked Cards (Visible on < sm) */}
+      <div className="block sm:hidden divide-y divide-gray-100 p-3 space-y-3">
+        {rows.map((row, rIdx) => {
+          const rowCells = Array.isArray(row) ? row : [row];
+          const titleCell = rowCells[0];
+          const valueCells = rowCells.slice(1);
+          return (
+            <div key={rIdx} className="bg-gray-50/80 p-3.5 rounded-xl space-y-2.5">
+              {titleCell && (
+                <div className="font-bold text-gray-900 border-b border-gray-200/60 pb-1.5 text-sm sm:text-base">
+                  <MD>{String(titleCell)}</MD>
+                </div>
+              )}
+              <div className="space-y-2">
+                {valueCells.map((cell, cIdx) => {
+                  const headerName = headers[cIdx + 1] || `Option ${cIdx + 1}`;
+                  return (
+                    <div key={cIdx} className="text-xs sm:text-sm text-gray-800">
+                      <span className="font-bold text-custom-blue text-[11px] uppercase tracking-wider block mb-0.5">
+                        {String(headerName)}:
+                      </span>
+                      <MD>{String(cell)}</MD>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop & Tablet Table (Hidden on < sm) */}
+      <div className="hidden sm:block relative">
+        {headers.length > 3 && (
+          <div className="px-4 py-1.5 bg-blue-50/60 text-custom-blue text-[11px] font-bold text-right border-b border-blue-100/60 sm:hidden">
+            Swipe left/right to view full comparison →
+          </div>
+        )}
+        <div className="overflow-x-auto scrollbar-thin">
+          <table className="w-full text-left border-collapse text-sm sm:text-base md:text-lg font-sans">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-200">
+                {headers.map((h, i) => (
+                  <th key={i} className="p-3.5 sm:p-5 md:p-6 font-bold text-gray-900 whitespace-nowrap">
+                    <MD>{String(h)}</MD>
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((row, rIdx) => (
+                <tr key={rIdx} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  {Array.isArray(row) ? row.map((cell, cIdx) => (
+                    <td key={cIdx} className="p-3.5 sm:p-5 md:p-6 text-gray-800 leading-relaxed">
+                      <MD>{String(cell)}</MD>
+                    </td>
+                  )) : (
+                    <td colSpan={headers.length} className="p-3.5 sm:p-5 md:p-6 text-gray-800 leading-relaxed">
+                      <MD>{String(row)}</MD>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -859,15 +899,15 @@ export const StepProcessBlock = ({ block }) => {
   if (!steps) steps = [];
 
   return (
-    <div className="my-16 bg-white border border-gray-100 rounded-3xl p-8 shadow-sm">
+    <div className="my-6 sm:my-16 bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xs sm:shadow-sm">
       <BlockHeader label="Sequential Process Flow" title={block?.title || 'Process Flow'} colorClass="text-custom-blue" />
-      <div className="space-y-8 mt-10">
+      <div className="space-y-4 sm:space-y-8 mt-6 sm:mt-10">
         {steps.map((step, idx) => (
-          <div key={idx} className="flex items-start gap-6 p-8 rounded-3xl bg-gray-50 border border-gray-100">
-            <div className="w-10 h-10 rounded-full bg-custom-blue text-white font-bold flex items-center justify-center shrink-0 text-base font-sans">
+          <div key={idx} className="flex flex-col sm:flex-row items-start gap-3 sm:gap-6 p-4 sm:p-8 rounded-2xl sm:rounded-3xl bg-gray-50 border border-gray-100">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-custom-blue text-white font-bold flex items-center justify-center shrink-0 text-sm sm:text-base font-sans">
               {idx + 1}
             </div>
-            <div className="text-gray-800 text-xl leading-relaxed pt-1 font-sans">
+            <div className="text-gray-800 text-base sm:text-xl leading-relaxed pt-0.5 font-sans flex-1 w-full min-w-0">
               <MD>{typeof step === 'string' ? step : step.title ? `**${step.title}**: ${step.description || ''}` : JSON.stringify(step)}</MD>
             </div>
           </div>
@@ -941,25 +981,25 @@ export const XRaySimulationSandbox = ({ block }) => {
 
           <div className="pt-2">
             <span className="text-xs text-slate-500 font-bold block mb-2 uppercase tracking-wider">Clinical Presets</span>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => { setVKV(30); setIMA(10); }}
-                className="px-2 py-2 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-300 font-medium transition cursor-pointer"
+                className="px-3 py-2.5 min-h-[44px] bg-slate-800 hover:bg-slate-700 rounded-xl text-xs text-slate-300 font-medium transition cursor-pointer flex items-center justify-center text-center"
               >
                 Mammography (30kV)
               </button>
               <button
                 type="button"
                 onClick={() => { setVKV(80); setIMA(20); }}
-                className="px-2 py-2 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-300 font-medium transition cursor-pointer"
+                className="px-3 py-2.5 min-h-[44px] bg-slate-800 hover:bg-slate-700 rounded-xl text-xs text-slate-300 font-medium transition cursor-pointer flex items-center justify-center text-center"
               >
                 Chest X-Ray (80kV)
               </button>
               <button
                 type="button"
                 onClick={() => { setVKV(120); setIMA(40); }}
-                className="px-2 py-2 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-300 font-medium transition cursor-pointer"
+                className="px-3 py-2.5 min-h-[44px] bg-slate-800 hover:bg-slate-700 rounded-xl text-xs text-slate-300 font-medium transition cursor-pointer flex items-center justify-center text-center"
               >
                 CT Scan (120kV)
               </button>

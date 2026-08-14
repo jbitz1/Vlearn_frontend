@@ -90,24 +90,24 @@ export const SubjectsView = () => {
   };
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
+    <div className="pl-14 pr-4 py-4 sm:p-6 md:p-10 max-w-7xl mx-auto space-y-6 sm:space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Subjects</h1>
-        <p className="text-gray-500 font-medium text-sm mt-1">Select a subject to continue learning.</p>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Subjects</h1>
+        <p className="text-gray-500 font-medium text-xs sm:text-sm mt-0.5">Select a subject to continue learning.</p>
       </div>
 
       {/* Grade Selector Tabs if multiple grades exist */}
       {grades.length > 1 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-gray-200">
-          <Layers className="w-5 h-5 text-gray-400 mr-2 shrink-0" />
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-gray-200 scrollbar-none">
+          <Layers className="w-5 h-5 text-gray-400 mr-1 shrink-0" />
           {grades.map((grade) => (
             <button
               key={grade.id}
               onClick={() => handleGradeChange(grade)}
-              className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${
+              className={`px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-full transition-colors whitespace-nowrap min-h-[44px] flex items-center cursor-pointer ${
                 selectedGrade?.id === grade.id
-                  ? 'bg-custom-blue text-white shadow-sm'
+                  ? 'bg-custom-blue text-white shadow-xs'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -119,13 +119,13 @@ export const SubjectsView = () => {
 
       {/* Subject Cards Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-48 bg-gray-200 rounded-3xl animate-pulse"></div>
+            <div key={i} className="h-44 sm:h-48 bg-gray-200 rounded-2xl sm:rounded-3xl animate-pulse"></div>
           ))}
         </div>
       ) : subjects.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {subjects.map((subject) => {
             const gradeSubtitle = selectedGrade?.name || subject.grade_name || '';
             const progress = subjectProgressMap[subject.id] || { pct: 0, isStarted: false, isCompleted: false };
@@ -134,32 +134,32 @@ export const SubjectsView = () => {
               <div
                 key={subject.id}
                 onClick={() => handleSelectSubject(subject.id)}
-                className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col justify-between"
+                className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs sm:shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-blue-50 text-custom-blue rounded-2xl group-hover:bg-custom-blue group-hover:text-white transition-colors">
-                      <BookOpen className="w-6 h-6" />
+                  <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    <div className="p-2.5 sm:p-3 bg-blue-50 text-custom-blue rounded-xl sm:rounded-2xl group-hover:bg-custom-blue group-hover:text-white transition-colors">
+                      <BookOpen className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
                     <ProgressCircle
                       percentage={progress.pct}
-                      size={44}
+                      size={40}
                       strokeWidth={4}
                     />
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900 group-hover:text-custom-blue transition-colors">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-custom-blue transition-colors">
                     {subject.name}
                   </h2>
                   {gradeSubtitle && (
-                    <p className="text-xs font-semibold text-gray-400 mt-1">
+                    <p className="text-xs font-semibold text-gray-400 mt-0.5">
                       {gradeSubtitle}
                     </p>
                   )}
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-100 flex items-center justify-between">
                   <div className="text-xs font-bold">
-                    <span className="text-gray-500 block">Subject Progress</span>
+                    <span className="text-gray-400 block text-[11px]">Subject Progress</span>
                     <span className={progress.pct > 0 ? 'text-custom-blue font-extrabold' : 'text-gray-400 font-semibold'}>
                       {progress.isCompleted
                         ? '100% Completed'
@@ -178,7 +178,7 @@ export const SubjectsView = () => {
           })}
         </div>
       ) : (
-        <div className="bg-gray-50 rounded-3xl p-12 text-center text-gray-500 border border-gray-200">
+        <div className="bg-gray-50 rounded-2xl sm:rounded-3xl p-8 sm:p-12 text-center text-gray-500 border border-gray-200">
           No subjects available for the selected class.
         </div>
       )}

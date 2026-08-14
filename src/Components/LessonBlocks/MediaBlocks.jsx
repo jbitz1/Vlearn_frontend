@@ -45,16 +45,16 @@ export const VideoRefBlock = ({ block }) => {
             </div>
             
             {content.resolved_video_id ? (
-                <div className="aspect-w-16 aspect-h-9 bg-black w-full relative">
+                <div className="aspect-video bg-black w-full relative">
                     <iframe 
-                        className="w-full h-[400px] md:h-[500px]"
+                        className="w-full aspect-video h-auto"
                         src={`https://www.youtube.com/embed/${content.resolved_video_id}`}
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                     ></iframe>
                 </div>
             ) : (
-                <div className="bg-slate-800/50 border-t border-slate-800 p-16 flex flex-col items-center text-center">
+                <div className="bg-slate-800/50 border-t border-slate-800 p-6 sm:p-12 md:p-16 flex flex-col items-center text-center">
                     <Video className="text-slate-500 w-12 h-12 mb-4 opacity-50" />
                     <p className="text-slate-400 font-medium">Video Placeholder</p>
                     <p className="text-slate-500 text-sm mt-2">Waiting for video resource to be attached.</p>

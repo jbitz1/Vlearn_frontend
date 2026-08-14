@@ -176,26 +176,26 @@ export default function Simulations() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <div className="pl-14 pr-4 py-4 sm:p-6 md:p-10 max-w-7xl mx-auto space-y-6 sm:space-y-8">
       {/* Title & Header */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
-            <Beaker className="w-8 h-8 text-custom-orange" />
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2.5">
+            <Beaker className="w-7 h-7 sm:w-8 sm:h-8 text-custom-orange shrink-0" />
             Experiment Simulations
           </h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className="text-gray-500 text-xs sm:text-sm mt-1">
             Interactive virtual labs, dynamic models, and parameter-driven STEM simulations.
           </p>
         </div>
-        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-50 to-blue-50 text-custom-blue px-4 py-2 rounded-2xl border border-blue-100 text-xs font-semibold">
-          <Sparkles className="w-4 h-4 text-custom-orange" />
+        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-50 to-blue-50 text-custom-blue px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-2xl border border-blue-100 text-xs font-semibold self-start md:self-center">
+          <Sparkles className="w-4 h-4 text-custom-orange shrink-0" />
           {simulations.length} Active Simulations Ready
         </div>
       </div>
 
       {/* Horizontal Filter Navigation Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-none">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-gray-200 scrollbar-none">
         {Object.keys(SUBJECT_CONFIG).map((subKey) => {
           const conf = SUBJECT_CONFIG[subKey];
           const Icon = conf.icon;
@@ -206,9 +206,9 @@ export default function Simulations() {
             <button
               key={subKey}
               onClick={() => setSelectedSubject(subKey)}
-              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium transition-all whitespace-nowrap cursor-pointer border ${
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-medium transition-all whitespace-nowrap cursor-pointer border min-h-[44px] ${
                 isSelected
-                  ? 'bg-custom-orange text-white shadow-md border-custom-orange'
+                  ? 'bg-custom-orange text-white shadow-xs border-custom-orange'
                   : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
               }`}
             >

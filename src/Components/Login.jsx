@@ -82,20 +82,20 @@ function Login() {
 
   return (
     <>
-      <div className="relative min-h-screen flex flex-col sm:justify-center items-center bg-gray-100 w-full bg-custom-bg bg-center bg-cover">
+      <div className="relative min-h-screen flex flex-col sm:justify-center items-center bg-gray-100 w-full bg-custom-bg bg-center bg-cover p-4 sm:p-6">
         {/* Gradient black tint overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-black/60 to-black/30 z-0"></div>
 
-        <div className="relative sm:max-w-lg w-full z-10">
+        <div className="relative max-w-md sm:max-w-lg w-full z-10 my-auto">
           {/* Decorative cards */}
-          <div className="card bg-custom-blue shadow-2xl w-full h-full rounded-3xl absolute transform -rotate-6"></div>
-          <div className="card bg-custom-orange shadow-2xl w-full h-full rounded-3xl absolute transform rotate-6"></div>
+          <div className="card bg-custom-blue shadow-2xl w-full h-full rounded-3xl absolute transform -rotate-2 sm:-rotate-6"></div>
+          <div className="card bg-custom-orange shadow-2xl w-full h-full rounded-3xl absolute transform rotate-2 sm:rotate-6"></div>
 
           {/* Login Card */}
-          <div className="relative w-full rounded-3xl px-6 py-6 bg-gray-100 shadow-md">
+          <div className="relative w-full rounded-3xl px-5 sm:px-8 py-6 bg-gray-100 shadow-md">
             {/* Branding */}
-            <div className="flex flex-col items-center justify-center z-10">
-              <img src="/images/vlearn_logo.png" alt="Logo" className="h-56 w-auto" />
+            <div className="flex flex-col items-center justify-center z-10 mb-2">
+              <img src="/images/vlearn_logo.png" alt="Logo" className="h-24 sm:h-36 md:h-56 w-auto object-contain" />
             </div>
 
             {/* Welcome text */}

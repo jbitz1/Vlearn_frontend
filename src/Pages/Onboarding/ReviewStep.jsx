@@ -23,24 +23,24 @@ export default function ReviewStep({
         {/* Academic Context Summary */}
         <div>
           <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">Academic Context</h3>
+            <h3 className="font-bold text-gray-800 text-xs sm:text-sm uppercase tracking-wider">Academic Context</h3>
             <button 
               onClick={() => setStep(1)} 
-              className="text-custom-blue hover:text-custom-orange text-xs flex items-center transition-colors font-medium"
+              className="text-custom-blue hover:text-custom-orange text-xs flex items-center transition-colors font-medium min-h-[36px] px-2 cursor-pointer"
             >
               <Pencil className="w-3 h-3 mr-1" /> Edit
             </button>
           </div>
-          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm space-y-2">
-            <div className="flex justify-between text-sm">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-gray-100 shadow-xs space-y-2 text-xs sm:text-sm">
+            <div className="flex justify-between gap-3">
               <span className="text-gray-500">School</span>
               <span className="font-medium text-gray-900 text-right">{schoolName}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between gap-3">
               <span className="text-gray-500">Curriculum</span>
               <span className="font-medium text-gray-900 text-right">{curriculumName}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between gap-3">
               <span className="text-gray-500">Grade / Form</span>
               <span className="font-medium text-gray-900 text-right">{gradeName}</span>
             </div>
@@ -50,20 +50,20 @@ export default function ReviewStep({
         {/* Subjects Summary */}
         <div>
           <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">
+            <h3 className="font-bold text-gray-800 text-xs sm:text-sm uppercase tracking-wider">
               Selected Subjects ({selectedSubjects.length})
             </h3>
             <button 
               onClick={() => setStep(2)} 
-              className="text-custom-blue hover:text-custom-orange text-xs flex items-center transition-colors font-medium"
+              className="text-custom-blue hover:text-custom-orange text-xs flex items-center transition-colors font-medium min-h-[36px] px-2 cursor-pointer"
             >
               <Pencil className="w-3 h-3 mr-1" /> Edit
             </button>
           </div>
-          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-            <div className="flex flex-wrap gap-2">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-gray-100 shadow-xs">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {selectedSubjects.map(sub => (
-                <span key={sub.id} className="px-3 py-1 bg-blue-50 text-custom-blue text-xs font-semibold rounded-lg border border-blue-100">
+                <span key={sub.id} className="px-2.5 py-1 bg-blue-50 text-custom-blue text-xs font-semibold rounded-lg border border-blue-100">
                   {sub.name}
                 </span>
               ))}
@@ -76,9 +76,9 @@ export default function ReviewStep({
         <button
           onClick={handleFinish}
           disabled={isLoading}
-          className="w-full px-10 py-3.5 bg-custom-orange text-white font-bold rounded-full hover:bg-custom-blue shadow-lg transition-all flex items-center justify-center"
+          className="w-full px-6 py-3.5 bg-custom-orange text-white font-bold text-xs sm:text-sm rounded-full hover:bg-custom-blue shadow-md transition-all flex items-center justify-center min-h-[44px] cursor-pointer"
         >
-          {isLoading ? <Loader className="w-6 h-6 animate-spin" /> : "Continue to Subscription"}
+          {isLoading ? <Loader className="w-5 h-5 animate-spin" /> : "Continue to Subscription"}
         </button>
       </div>
     </div>

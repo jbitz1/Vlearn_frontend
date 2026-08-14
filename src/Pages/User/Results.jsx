@@ -31,59 +31,41 @@ function Results() {
   if (error) return <div className="text-center py-20 text-red-500">Error: {error}</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Your Quiz Results</h1>
+    <div className="pl-14 pr-4 py-4 sm:p-6 md:p-10 max-w-7xl mx-auto space-y-6 sm:space-y-8">
+      <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Your Quiz Results</h1>
 
       {attempts.length === 0 ? (
-        <div className="bg-white rounded-3xl shadow-2xl p-8 text-center">
-          <p className="text-gray-500">You haven't completed any quizzes yet.</p>
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xs sm:shadow-sm p-6 sm:p-8 text-center border border-gray-100">
+          <p className="text-gray-500 text-xs sm:text-sm">You haven't completed any quizzes yet.</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {attempts
             .sort((a, b) => new Date(b.end_time) - new Date(a.end_time))
             .map((attempt) => (
-              <div key={attempt.id} className="bg-white rounded-3xl shadow-2xl p-6">
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
+              <div key={attempt.id} className="bg-white rounded-2xl sm:rounded-3xl shadow-xs sm:shadow-sm border border-gray-100 p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
                   <div>
-                    <h2 className="text-xl font-semibold">{attempt.quiz.title}</h2>
-                    <p className="text-gray-600 text-sm">{attempt.quiz.description}</p>
+                    <h2 className="text-base sm:text-xl font-bold text-gray-900">{attempt.quiz.title}</h2>
+                    <p className="text-gray-500 text-xs sm:text-sm mt-0.5">{attempt.quiz.description}</p>
                   </div>
-                  <div className="mt-4 md:mt-0">
-                    <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${attempt.score >= 70 ? 'bg-green-100 text-green-800' :
+                  <div className="shrink-0 self-start sm:self-center">
+                    <div className={`inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-bold ${attempt.score >= 70 ? 'bg-green-100 text-green-800' :
                         attempt.score >= 50 ? 'bg-yellow-100 text-yellow-800' :
                           'bg-red-100 text-red-800'
                       }`}>
-                      <Trophy className="h-4 w-4 mr-1" />
+                      <Trophy className="h-4 w-4 mr-1.5 shrink-0" />
                       Score: {attempt.score?.toFixed(1)}%
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  {/* <div className="flex items-center text-gray-600">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  <span>
-                    {new Date(attempt.start_time).toLocaleDateString()} at{' '}
-                    {new Date(attempt.start_time).toLocaleTimeString()}
-                  </span>
-                </div> */}
-                  {/* <div className="flex items-center text-gray-600">
-                  <Clock className="h-5 w-5 mr-2" />
-                  <span>
-                    {attempt.end_time
-                      ? `${Math.round(
-                          (new Date(attempt.end_time) - new Date(attempt.start_time)
-                        ) / 60000
-                      )} minutes`
-                      : 'Not completed'}
-                  </span>
-                </div> */}
-                  <div className="flex items-center text-gray-600">
-                    <BarChart className="h-5 w-5 mr-2" />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-gray-100 text-xs sm:text-sm">
+                  <div className="flex items-center text-gray-600 font-semibold">
+                    <BarChart className="h-4 w-4 mr-2 text-custom-blue shrink-0" />
                     <span>
                       {attempt.student_answers.filter(a => a.is_correct).length} /{' '}
-                      {attempt.student_answers.length} correct
+                      {attempt.student_answers.length} correct answers
                     </span>
                   </div>
                 </div>
