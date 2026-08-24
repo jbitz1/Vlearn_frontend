@@ -102,8 +102,21 @@ const SideNav = () => {
                     </nav>
                 </div>
 
-                {/* Logout button */}
-                <div className="mt-auto pt-4 border-t border-gray-300">
+                <div className="mt-auto pt-4 border-t border-gray-300 space-y-3">
+                    <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100 space-y-1.5">
+                        <p className="text-[10px] font-extrabold uppercase text-custom-blue tracking-wider">Switch Workspace</p>
+                        <div className="flex flex-col gap-1 text-xs font-semibold">
+                            <Link to="/school/dashboard" className="px-2.5 py-1.5 bg-white hover:bg-blue-100 text-gray-800 rounded-xl transition-colors border border-blue-100 flex items-center justify-between">
+                                <span>School Master UI</span>
+                            </Link>
+                            <Link to="/teacher/dashboard" className="px-2.5 py-1.5 bg-white hover:bg-blue-100 text-gray-800 rounded-xl transition-colors border border-blue-100 flex items-center justify-between">
+                                <span>Teacher Portal</span>
+                            </Link>
+                            <Link to="/student" className="px-2.5 py-1.5 bg-white hover:bg-blue-100 text-gray-800 rounded-xl transition-colors border border-blue-100 flex items-center justify-between">
+                                <span>Student Workspace</span>
+                            </Link>
+                        </div>
+                    </div>
                     <button
                         onClick={handleLogout}
                         className="px-3 py-2 bg-red-600 w-full text-white rounded-3xl text-sm hover:bg-red-800 transition-colors duration-200"

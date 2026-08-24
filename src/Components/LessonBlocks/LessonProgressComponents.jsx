@@ -26,8 +26,8 @@ export const LessonTimeline = ({ totalPages, currentPageIndex, completedConcepts
                         <button 
                             onClick={() => onNavigate(idx)}
                             className={baseClasses}
-                            aria-label={`Go to concept ${idx + 1}`}
-                            title={`Concept ${idx + 1}`}
+                            aria-label={`Go to part ${idx + 1}`}
+                            title={`Part ${idx + 1}`}
                         />
                     </React.Fragment>
                 );
@@ -48,7 +48,7 @@ export const LessonCompletionCard = ({ lessonTitle, completedConceptsCount, esti
             <div className="grid grid-cols-2 gap-6 max-w-md mx-auto mb-12">
                 <div className="bg-emerald-50 p-6 rounded-2xl shadow-sm border border-emerald-100">
                     <span className="block text-4xl font-black text-emerald-600 mb-2">{completedConceptsCount}</span>
-                    <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Concepts<br/>Completed</span>
+                    <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Parts<br/>Completed</span>
                 </div>
                 <div className="bg-indigo-50 p-6 rounded-2xl shadow-sm border border-indigo-100">
                     <span className="block text-4xl font-black text-indigo-600 mb-2">{estimatedStudyTime}</span>
@@ -89,7 +89,7 @@ export const LessonResumeBanner = ({ lastConceptTitle, onResume, onDismiss }) =>
                     onClick={onResume}
                     className="px-6 py-2 bg-white text-indigo-900 rounded-full font-bold hover:bg-indigo-50 transition shadow-sm text-sm"
                 >
-                    Jump to Concept
+                    Continue Lesson
                 </button>
                 <button onClick={onDismiss} className="p-2 text-indigo-300 hover:text-white transition">
                     ✕

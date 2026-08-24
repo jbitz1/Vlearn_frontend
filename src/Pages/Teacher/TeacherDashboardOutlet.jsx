@@ -1,6 +1,5 @@
-import { Outlet, useLocation } from "react-router";
 import { useContext } from "react";
-import TeacherSideNav from "../../Components/Teacher/TeacherSideNav";
+import TeacherLayout from "../../Components/Teacher/TeacherLayout";
 import { TeacherProvider } from "../../Context/TeacherContext";
 import TeacherContext from "../../Context/TeacherContext";
 import TeacherWelcome from "./TeacherWelcome";
@@ -9,14 +8,13 @@ import SubscriptionRestricted from "../../component-library/billing-and-payments
 
 function TeacherGate() {
   const { activeSchool, isLoading } = useContext(TeacherContext);
-  const location = useLocation();
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="flex h-screen items-center justify-center bg-slate-100 font-sans">
         <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="w-10 h-10 animate-spin text-custom-blue" />
-          <p className="text-gray-500 font-medium">Loading your workspace...</p>
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          <p className="text-slate-500 font-medium text-sm">Loading your workspace...</p>
         </div>
       </div>
     );
@@ -28,14 +26,7 @@ function TeacherGate() {
   }
 
   return (
-    <div className="flex bg-gray-50 min-h-screen">
-      <TeacherSideNav />
-      <main className="md:ml-64 w-full p-4 md:p-8">
-        <SubscriptionRestricted>
-          <Outlet />
-        </SubscriptionRestricted>
-      </main>
-    </div>
+    <TeacherLayout />
   );
 }
 

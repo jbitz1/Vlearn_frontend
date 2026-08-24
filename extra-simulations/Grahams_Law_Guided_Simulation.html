@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graham's Law of Diffusion — Guided Lab | Form 3 Chemistry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12121b;
+    --bg-2:#171722;
+    --panel:#1a1a27;
+    --panel-2:#21212f;
+    --line: rgba(236,234,245,0.10);
+    --line-strong: rgba(236,234,245,0.22);
+    --ink:#ecead5;
+    --ink:#ecebf5;
+    --ink-dim:#b7b3c9;
+    --ink-faint:#7c7891;
+    --teal:#5fd0c0;
+    --teal-dim: rgba(95,208,192,0.15);
+    --violet:#a48ce8;
+    --violet-dim: rgba(164,140,232,0.15);
+    --gold:#d9b44c;
+    --gold-dim: rgba(217,180,76,0.15);
+    --radius:12px;
+    --display:'Fraunces', Georgia, serif;
+    --mono:'IBM Plex Mono','Courier New',monospace;
+    --sans:'IBM Plex Sans', -apple-system, Segoe UI, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1100px 700px at 10% -8%, rgba(95,208,192,0.06), transparent 60%),
+      radial-gradient(950px 650px at 108% 6%, rgba(164,140,232,0.07), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    min-height:100vh;
+    padding: 26px 16px 70px;
+  }
+  .wrap{max-width:1020px; margin:0 auto;}
+
+  .hero{
+    border:1px solid var(--line); border-radius:var(--radius);
+    background: linear-gradient(180deg, var(--bg-2), var(--panel));
+    padding:26px 26px 20px; margin-bottom:20px; position:relative; overflow:hidden;
+  }
+  .hero::before{
+    content:""; position:absolute; inset:0;
+    background-image: radial-gradient(1.5px 1.5px at 20px 20px, var(--line) 1px, transparent 1px);
+    background-size: 22px 22px; opacity:.4;
+    mask-image: radial-gradient(650px 240px at 15% 0%, black, transparent 75%);
+    pointer-events:none;
+  }
+  .eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--violet); margin:0 0 10px; position:relative;}
+  h1.title{font-family:var(--display); font-weight:600; font-size:clamp(26px,4vw,38px); margin:0 0 8px; letter-spacing:-0.01em; position:relative;}
+  .subtitle{color:var(--ink-dim); font-size:15px; max-width:64ch; line-height:1.55; position:relative;}
+
+  .rail{ display:flex; align-items:center; gap:0; margin:22px 0 20px; overflow-x:auto; padding-bottom:4px;}
+  .rail-step{ display:flex; flex-direction:column; align-items:center; gap:6px; min-width:82px; cursor:pointer; position:relative; flex-shrink:0;}
+  .rail-step:not(:last-child)::after{ content:""; position:absolute; top:13px; left:calc(50% + 20px); width:calc(100% - 20px); height:1.5px; background:var(--line-strong); z-index:0;}
+  .rail-step.done:not(:last-child)::after{ background:var(--violet); }
+  .rail-num{ width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:11px; font-weight:600; z-index:1; background:var(--panel-2); border:1.5px solid var(--line-strong); color:var(--ink-faint); transition: all .2s ease;}
+  .rail-step.active .rail-num{ background:var(--violet); border-color:var(--violet); color:#12121b; }
+  .rail-step.done .rail-num{ background:transparent; border-color:var(--violet); color:var(--violet); }
+  .rail-label{ font-family:var(--mono); font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-faint); text-align:center;}
+  .rail-step.active .rail-label{ color:var(--ink); }
+
+  .top-controls{ display:flex; justify-content:flex-end; margin-bottom:14px;}
+  .simple-toggle{ display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:11.5px; color:var(--ink-dim); background:var(--panel-2); border:1px solid var(--line); padding:7px 12px; border-radius:20px; cursor:pointer; user-select:none;}
+  .simple-toggle input{ accent-color: var(--violet); }
+
+  .stage2{ display:grid; grid-template-columns: 1.05fr 1fr; gap:18px; align-items:start; }
+  @media (max-width:820px){ .stage2{grid-template-columns:1fr;} }
+  .diagram-col{ position:sticky; top:16px; }
+  @media (max-width:820px){ .diagram-col{position:static;} }
+
+  .card{ border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); padding:20px; margin-bottom:16px;}
+  .card-label{ font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
+  .card-label .dot{width:6px;height:6px;border-radius:50%; background:var(--violet);}
+
+  svg{display:block; width:100%; height:auto;}
+
+  .readouts{ display:grid; grid-template-columns: repeat(3,1fr); gap:9px; margin-top:14px;}
+  .readout{ background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:9px 11px;}
+  .readout .r-label{font-family:var(--mono); font-size:10px; color:var(--ink-faint); letter-spacing:.07em; text-transform:uppercase; display:flex; justify-content:space-between;}
+  .readout .r-value{font-family:var(--mono); font-size:19px; font-weight:600; color:var(--ink); margin-top:4px; display:flex; align-items:baseline; gap:4px;}
+  .readout .r-unit{font-size:12px; color:var(--ink-dim); font-weight:400;}
+  .readout.const .r-value{color:var(--gold);}
+  .readout.tealv .r-value{color:var(--teal);}
+  .readout.violetv .r-value{color:var(--violet);}
+  .trend{font-family:var(--mono); font-size:11px;}
+  .trend.up{color:var(--violet);} .trend.flat{color:var(--ink-faint);}
+
+  .control-row{margin-top:16px;}
+  .control-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
+  .control-name{font-family:var(--display); font-size:15px; font-weight:600;}
+  .control-hint{font-family:var(--mono); font-size:11px; color:var(--ink-faint);}
+
+  .gas-picker{ display:flex; gap:7px; flex-wrap:wrap; margin-bottom:14px;}
+  .gas-chip{ font-family:var(--mono); font-size:12px; background:var(--panel-2); border:1px solid var(--line-strong); color:var(--ink-dim); padding:7px 11px; border-radius:20px; cursor:pointer; transition:all .15s ease;}
+  .gas-chip:hover{ border-color:var(--violet); color:var(--ink);}
+  .gas-chip.active{ background:var(--violet-dim); border-color:var(--violet); color:var(--violet); font-weight:600;}
+
+  .btnrow{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+  button.ctrl{ font-family:var(--mono); font-size:12px; letter-spacing:.03em; background:var(--panel-2); color:var(--ink); border:1px solid var(--line-strong); padding:9px 14px; border-radius:8px; cursor:pointer; transition:all .15s ease;}
+  button.ctrl:hover{ border-color:var(--violet); color:var(--violet); }
+  button.ctrl.primary{ background:var(--violet); color:#12121b; border-color:transparent; font-weight:600; }
+  button.ctrl.primary:hover{ opacity:.88; color:#12121b; }
+  button.ctrl:disabled{ opacity:.35; cursor:not-allowed; }
+  button.ctrl.primary:disabled{ background:var(--line-strong); color:var(--ink-faint);}
+
+  .step-panel{ min-height: 220px; }
+  .step-kicker{ font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--violet); margin:0 0 8px;}
+  .step-title{ font-family:var(--display); font-size:22px; font-weight:600; margin:0 0 12px; letter-spacing:-.01em;}
+  .step-body{ font-size:14.5px; line-height:1.65; color:var(--ink-dim); }
+  .step-body b{ color:var(--ink); font-weight:600; }
+  .step-body b.a{color:var(--teal);} .step-body b.b{color:var(--violet);}
+
+  .predict-row{ display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;}
+  .predict-btn{ font-family:var(--mono); font-size:12.5px; background:var(--panel-2); border:1px solid var(--line-strong); color:var(--ink); padding:10px 14px; border-radius:8px; cursor:pointer; }
+  .predict-btn:hover{ border-color:var(--violet); }
+  .predict-btn.chosen-right{ background:var(--violet-dim); border-color:var(--violet); color:var(--violet); }
+  .predict-btn.chosen-wrong{ background: rgba(200,80,80,0.12); border-color:#c85050; color:#e08a8a; }
+  .predict-feedback{ margin-top:10px; font-size:13.5px; color:var(--ink-dim); }
+
+  .whats-happening{ display:flex; gap:12px; align-items:flex-start; margin-top:6px; background:var(--panel-2); border-left:3px solid var(--violet); border-radius:0 8px 8px 0; padding:14px 16px;}
+  .wh-icon{ font-family:var(--display); font-weight:700; font-size:14px; color:var(--violet); flex-shrink:0;}
+  .wh-text{ font-size:14.5px; line-height:1.6; color:var(--ink); }
+
+  .changing-flag{ display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; padding:4px 10px; border-radius:20px; margin-bottom:12px; margin-right:6px;}
+  .changing-flag.indep{ background:var(--violet-dim); color:var(--violet); }
+  .changing-flag.dep{ background:var(--teal-dim); color:var(--teal); }
+
+  .graph-caption{font-family:var(--mono); font-size:11px; color:var(--ink-faint); margin-top:8px; text-align:center;}
+
+  .formula-box{ background: linear-gradient(180deg, var(--panel-2), var(--panel)); border:1px solid var(--line-strong); border-radius:10px; padding:22px; text-align:center;}
+  .formula-main{ font-family:var(--display); font-size:26px; font-weight:600; color:var(--ink);}
+  .formula-main .eq{ color:var(--gold); }
+  .formula-sub{ font-family:var(--mono); font-size:11.5px; color:var(--ink-faint); margin-top:10px; line-height:1.9;}
+
+  .worked{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;}
+  @media(max-width:600px){.worked{grid-template-columns:1fr;}}
+  .worked .wcol{ background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:12px 14px;}
+  .worked .wcol h4{ font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 8px;}
+  .worked .wcol .wline{ font-family:var(--mono); font-size:13.5px; color:var(--ink); margin:3px 0;}
+  .worked .verify{ grid-column:1/-1; text-align:center; font-family:var(--mono); font-size:13px; background:var(--teal-dim); color:var(--teal); border-radius:8px; padding:10px;}
+
+  .practice-box{ background:var(--panel-2); border:1px solid var(--line-strong); border-radius:10px; padding:18px; margin-top:14px;}
+  .practice-q{ font-size:14.5px; line-height:1.6; color:var(--ink); margin-bottom:14px;}
+  .practice-q .given{ font-family:var(--mono); color:var(--gold); }
+  .practice-input-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .practice-input-row input[type=number]{ font-family:var(--mono); font-size:16px; background:var(--panel); border:1px solid var(--line-strong); color:var(--ink); border-radius:8px; padding:9px 12px; width:120px;}
+  .practice-input-row input[type=number]:focus{ outline:none; border-color:var(--violet);}
+  .practice-feedback{ margin-top:12px; font-family:var(--mono); font-size:13.5px; padding:10px 12px; border-radius:8px; display:none;}
+  .practice-feedback.show{ display:block; }
+  .practice-feedback.correct{ background:var(--violet-dim); color:var(--violet); }
+  .practice-feedback.wrong{ background:rgba(200,80,80,0.12); color:#e08a8a;}
+  .practice-solution{ margin-top:12px; font-size:13.5px; color:var(--ink-dim); line-height:1.7; display:none; border-top:1px dashed var(--line-strong); padding-top:12px;}
+  .practice-solution.show{ display:block; }
+
+  .step-nav{ display:flex; justify-content:space-between; margin-top:20px; gap:10px;}
+
+  footer{ text-align:center; color:var(--ink-faint); font-family:var(--mono); font-size:11px; margin-top:30px; letter-spacing:.04em;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <p class="eyebrow">KLB Secondary Chemistry · Form 3 · Topic 1 · Gas Laws</p>
+    <h1 class="title">Graham's Law of Diffusion — Guided Lab</h1>
+    <p class="subtitle">Two gases are released from opposite ends of the same tube at the same moment. Follow seven steps to find out why they never meet in the middle — and what that tells us about their particles.</p>
+  </div>
+
+  <div class="top-controls">
+    <label class="simple-toggle"><input type="checkbox" id="simpleMode"> Explain It Simply</label>
+  </div>
+
+  <div class="rail" id="rail"></div>
+
+  <div class="stage2">
+    <!-- LEFT: live diagram -->
+    <div class="diagram-col">
+      <div class="card">
+        <p class="card-label"><span class="dot"></span>Diffusion tube</p>
+        <svg id="grahamSvg" viewBox="0 0 340 210" xmlns="http://www.w3.org/2000/svg"></svg>
+
+        <div>
+          <span class="changing-flag indep">Changing: Molar mass of Gas B</span>
+          <span class="changing-flag dep">Watching: Ring position</span>
+        </div>
+
+        <div class="readouts">
+          <div class="readout tealv">
+            <div class="r-label"><span>Gas A · NH₃</span><span>fixed</span></div>
+            <div class="r-value"><span id="ma-val">17.0</span><span class="r-unit">g/mol</span></div>
+          </div>
+          <div class="readout violetv" id="mb-card">
+            <div class="r-label"><span>Gas B</span><span id="gasBname">HCl</span></div>
+            <div class="r-value"><span id="mb-val">36.5</span><span class="r-unit">g/mol</span></div>
+          </div>
+          <div class="readout const">
+            <div class="r-label"><span>Rate A ÷ Rate B</span><span class="trend up" id="ratio-trend">—</span></div>
+            <div class="r-value"><span id="ratio-val">1.47</span><span class="r-unit">×</span></div>
+          </div>
+        </div>
+
+        <div class="control-row">
+          <div class="control-head">
+            <span class="control-name">Choose Gas B</span>
+            <span class="control-hint">released from the right</span>
+          </div>
+          <div class="gas-picker" id="gasPicker"></div>
+        </div>
+
+        <div class="btnrow">
+          <button class="ctrl primary" id="releaseBtn">▶ Release both gases</button>
+          <button class="ctrl" id="resetBtn">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: step content -->
+    <div>
+      <div class="card step-panel" id="stepCard"></div>
+    </div>
+  </div>
+
+  <footer>GAS LAWS · GUIDED LAB · BUILT FOR FORM 3 CHEMISTRY REVISION</footer>
+</div>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+function fmt(n,d=2){ return Number(n).toFixed(d); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+
+/* ============================================================
+   GAS DATA
+   ============================================================ */
+const MA = 17.0; // ammonia, gas A, always released from left
+const GASES = [
+  {id:'h2',  name:'Hydrogen (H₂)',        formula:'H₂',  M:2.0},
+  {id:'ch4', name:'Methane (CH₄)',        formula:'CH₄', M:16.0},
+  {id:'hcl', name:'Hydrogen chloride',    formula:'HCl', M:36.5},
+  {id:'co2', name:'Carbon(IV) oxide',     formula:'CO₂', M:44.0},
+  {id:'so2', name:'Sulphur(IV) oxide',    formula:'SO₂', M:64.0},
+  {id:'cl2', name:'Chlorine',             formula:'Cl₂', M:71.0},
+];
+let gasBIndex = 2; // default HCl
+function gasB(){ return GASES[gasBIndex]; }
+
+/* ============================================================
+   DIAGRAM — diffusion tube
+   ============================================================ */
+const svg = document.getElementById('grahamSvg');
+const tubeX0=26, tubeX1=314, tubeY=90, tubeLen = tubeX1-tubeX0;
+let progress = 0; // 0..1 race progress
+let releasing = false;
+let releaseTimer = null;
+
+function meetFraction(MB){
+  const rA = 1/Math.sqrt(MA), rB = 1/Math.sqrt(MB);
+  return rA/(rA+rB); // fraction of tube length from left (A) end
+}
+
+function drawTube(){
+  svg.innerHTML = "";
+  const MB = gasB().M;
+  const meet = meetFraction(MB);
+
+  // tube body
+  el('rect',{x:tubeX0,y:tubeY-16,width:tubeLen,height:32,rx:7,fill:'none',stroke:'#5a5a72','stroke-width':2.5}, svg);
+  // cotton wool plugs
+  el('circle',{cx:tubeX0+7,cy:tubeY,r:10,fill:'#ecebf5',opacity:0.9}, svg);
+  el('circle',{cx:tubeX1-7,cy:tubeY,r:10,fill:'#ecebf5',opacity:0.9}, svg);
+
+  el('text',{x:tubeX0-4,y:tubeY-28,'text-anchor':'start',fill:'#5fd0c0','font-family':'IBM Plex Mono','font-size':11,'font-weight':600}, svg).textContent = 'NH₃ (conc.)';
+  el('text',{x:tubeX1+4,y:tubeY-28,'text-anchor':'end',fill:'#a48ce8','font-family':'IBM Plex Mono','font-size':11,'font-weight':600}, svg).textContent = gasB().formula;
+
+  const rA = 1/Math.sqrt(MA), rB = 1/Math.sqrt(MB);
+  const norm = Math.max(rA,rB);
+  const frontA = clamp(progress*(rA/norm), 0, meet);
+  const frontB = clamp(progress*(rB/norm), 0, 1-meet);
+
+  // gas clouds
+  el('rect',{x:tubeX0+11,y:tubeY-13,width:frontA*tubeLen,height:26,fill:'#5fd0c0',opacity:0.32,rx:3}, svg);
+  el('rect',{x:tubeX1-11-frontB*tubeLen,y:tubeY-13,width:frontB*tubeLen,height:26,fill:'#a48ce8',opacity:0.32,rx:3}, svg);
+
+  // moving particles at the fronts
+  for(let i=0;i<6;i++){
+    const px = tubeX0+11+frontA*tubeLen-(i*4);
+    if(px>tubeX0+11) el('circle',{cx:px, cy: tubeY-6+Math.sin(progress*14+i)*5, r:2.2, fill:'#5fd0c0'}, svg);
+    const qx = tubeX1-11-frontB*tubeLen+(i*4);
+    if(qx<tubeX1-11) el('circle',{cx:qx, cy: tubeY+6+Math.cos(progress*14+i)*5, r:2.2, fill:'#a48ce8'}, svg);
+  }
+
+  // ring once fronts meet
+  if(progress >= 0.995){
+    const ringX = tubeX0+meet*tubeLen;
+    el('circle',{cx:ringX,cy:tubeY,r:8,fill:'#ecebf5'}, svg);
+    el('circle',{cx:ringX,cy:tubeY,r:8,fill:'none',stroke:'#ecebf5','stroke-width':2,opacity:0.5}, svg);
+    el('line',{x1:ringX,y1:tubeY+16,x2:ringX,y2:tubeY+32,stroke:'#ecebf5','stroke-width':1}, svg);
+    el('text',{x:ringX,y:tubeY+46,'text-anchor':'middle',fill:'#ecebf5','font-family':'IBM Plex Mono','font-size':10,'font-weight':600}, svg).textContent = 'white ring — NH₄Cl'.replace('HCl', gasB().formula==='HCl'?'':'HCl');
+  }
+
+  // ruler
+  el('line',{x1:tubeX0,y1:tubeY+56,x2:tubeX1,y2:tubeY+56,stroke:'#7c7891','stroke-width':1}, svg);
+  for(let i=0;i<=6;i++){
+    const xx = tubeX0 + (tubeLen/6)*i;
+    el('line',{x1:xx,y1:tubeY+52,x2:xx,y2:tubeY+60,stroke:'#7c7891','stroke-width':1}, svg);
+  }
+  el('text',{x:tubeX0,y:tubeY+72,'text-anchor':'start',fill:'#7c7891','font-family':'IBM Plex Mono','font-size':9}, svg).textContent='0 cm';
+  el('text',{x:tubeX1,y:tubeY+72,'text-anchor':'end',fill:'#7c7891','font-family':'IBM Plex Mono','font-size':9}, svg).textContent='30 cm';
+  el('text',{x:(tubeX0+tubeX1)/2,y:tubeY+72,'text-anchor':'middle',fill:'#d9b44c','font-family':'IBM Plex Mono','font-size':9,'font-weight':600}, svg).textContent = `ring meets at ${fmt(meet*30,1)} cm from NH₃ end`;
+
+  el('text',{x:tubeX0-4,y:tubeY-42,fill:'#7c7891','font-family':'IBM Plex Mono','font-size':9.5}, svg).textContent='SAME TEMPERATURE · SAME PRESSURE · RELEASED TOGETHER';
+}
+
+/* ============================================================
+   READOUTS
+   ============================================================ */
+function updateReadouts(){
+  const MB = gasB().M;
+  document.getElementById('gasBname').textContent = gasB().formula;
+  document.getElementById('mb-val').textContent = fmt(MB,1);
+  const ratio = Math.sqrt(MB/MA);
+  document.getElementById('ratio-val').textContent = fmt(ratio,2);
+  const rt = document.getElementById('ratio-trend');
+  rt.textContent = ratio>1.05 ? 'A faster' : 'A ≈ B';
+  drawTube();
+}
+
+function buildGasPicker(){
+  const picker = document.getElementById('gasPicker');
+  picker.innerHTML = "";
+  GASES.forEach((g,i)=>{
+    const chip = document.createElement('div');
+    chip.className = 'gas-chip' + (i===gasBIndex ? ' active':'');
+    chip.textContent = g.formula + ' · ' + fmt(g.M,1);
+    chip.addEventListener('click', ()=>{
+      gasBIndex = i; progress = 0; releasing=false; clearInterval(releaseTimer);
+      document.getElementById('releaseBtn').textContent = '▶ Release both gases';
+      buildGasPicker(); updateReadouts(); renderStep();
+    });
+    picker.appendChild(chip);
+  });
+}
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  progress=0; releasing=false; clearInterval(releaseTimer);
+  document.getElementById('releaseBtn').textContent = '▶ Release both gases';
+  updateReadouts(); renderStep();
+});
+
+document.getElementById('releaseBtn').addEventListener('click', function(){
+  if(releasing){ releasing=false; clearInterval(releaseTimer); this.textContent='▶ Release both gases'; return; }
+  progress = 0; releasing = true; this.textContent = '⏸ Diffusing...';
+  const btn = this;
+  releaseTimer = setInterval(()=>{
+    progress += 0.018;
+    if(progress>=1){ progress=1; releasing=false; clearInterval(releaseTimer); btn.textContent='↻ Release again'; renderStep(); }
+    drawTube();
+  }, 35);
+});
+
+/* ============================================================
+   GRAPH
+   ============================================================ */
+function drawGraph(container){
+  container.innerHTML = "";
+  const w=340,h=250,pad=44;
+  const x0=pad,y0=h-pad,x1=w-14,y1=18;
+  el('line',{x1:x0,y1:y0,x2:x1,y2:y0,stroke:'#7c7891','stroke-width':1.2}, container);
+  el('line',{x1:x0,y1:y0,x2:x0,y2:y1,stroke:'#7c7891','stroke-width':1.2}, container);
+  el('text',{x:(x0+x1)/2,y:h-6,'text-anchor':'middle',fill:'#7c7891','font-family':'IBM Plex Mono','font-size':10}, container).textContent='1 / √M';
+  const ylab = el('text',{x:12,y:(y0+y1)/2,'text-anchor':'middle',fill:'#7c7891','font-family':'IBM Plex Mono','font-size':10, transform:`rotate(-90 12 ${(y0+y1)/2})`}, container);
+  ylab.textContent='Relative rate of diffusion';
+
+  const Xmax=0.75, Ymax=0.75;
+  const sx = v => x0+(v/Xmax)*(x1-x0);
+  const sy = v => y0-(v/Ymax)*(y0-y1);
+  el('path',{d:`M ${sx(0)},${sy(0)} L ${sx(Xmax)},${sy(Xmax)}`, fill:'none', stroke:'#d9b44c','stroke-width':2, opacity:0.5}, container);
+
+  GASES.forEach((g,i)=>{
+    const xv = 1/Math.sqrt(g.M);
+    const isSel = i===gasBIndex;
+    el('circle',{cx:sx(xv),cy:sy(xv),r: isSel?6:3.5, fill: isSel? '#a48ce8':'#41415a', stroke: isSel?'#12121b':'none','stroke-width': isSel?2:0}, container);
+    el('text',{x:sx(xv), y:sy(xv)-10, 'text-anchor':'middle', fill: isSel?'#a48ce8':'#7c7891', 'font-family':'IBM Plex Mono','font-size':8.5}, container).textContent = g.formula;
+  });
+  const xa = 1/Math.sqrt(MA);
+  el('circle',{cx:sx(xa),cy:sy(xa),r:5, fill:'#5fd0c0'}, container);
+  el('text',{x:sx(xa), y:sy(xa)-10, 'text-anchor':'middle', fill:'#5fd0c0','font-family':'IBM Plex Mono','font-size':8.5}, container).textContent='NH₃';
+}
+
+/* ============================================================
+   GUIDED STEPS
+   ============================================================ */
+const STEP_LABELS = ['Observe','Interact','Notice','Explain','Represent','Formalize','Apply'];
+let currentStep = 0;
+let predicted = null;
+
+function buildRail(){
+  const rail = document.getElementById('rail');
+  rail.innerHTML = "";
+  STEP_LABELS.forEach((label,i)=>{
+    const d = document.createElement('div');
+    d.className = 'rail-step' + (i===currentStep?' active':'') + (i<currentStep?' done':'');
+    d.innerHTML = `<div class="rail-num">${i<currentStep?'✓':i+1}</div><div class="rail-label">${label}</div>`;
+    d.addEventListener('click', ()=>{ if(i<=currentStep+1){ currentStep=i; renderStep(); } });
+    rail.appendChild(d);
+  });
+}
+
+function simple(){ return document.getElementById('simpleMode').checked; }
+
+function stepNavHtml(backDisabled, nextLabel){
+  return `<div class="step-nav">
+    <button class="ctrl" id="backBtn" ${backDisabled?'disabled':''}>← Back</button>
+    ${nextLabel ? `<button class="ctrl primary" id="nextBtn">${nextLabel} →</button>` : `<span></span>`}
+  </div>`;
+}
+
+function renderStep(){
+  buildRail();
+  const card = document.getElementById('stepCard');
+  const MB = gasB().M;
+  const meet = meetFraction(MB);
+  const ratio = Math.sqrt(MB/MA);
+  const easy = simple();
+
+  let html = "";
+
+  if(currentStep===0){
+    html = `
+      <p class="step-kicker">Step 1 · Observe</p>
+      <h2 class="step-title">Meet the setup</h2>
+      <div class="step-body">
+        ${easy
+          ? `A glass tube is plugged at both ends with cotton wool. One plug is soaked in ammonia, the other in a second gas. Both gases start moving into the tube at the exact same moment.`
+          : `A long glass tube is sealed with cotton wool plugs at each end. One plug is soaked in concentrated ammonia solution (releasing <b class="a">NH₃ gas</b>), and the other in a chosen second gas. Both are released into the tube <b>simultaneously</b>, at the same temperature and pressure.`}
+        <br><br>Where the two gases meet, they react to form a visible <b>white ring of ammonium chloride</b> — and that ring's position tells us something about how fast each gas travelled.
+      </div>
+      <div class="predict-row" id="predictRow">
+        <button class="predict-btn" data-choice="middle">The ring will form exactly in the middle</button>
+        <button class="predict-btn" data-choice="notmiddle">The ring will form off-centre</button>
+      </div>
+      <div class="predict-feedback" id="predictFeedback"></div>
+      ${stepNavHtml(true,'Run the race')}
+    `;
+  }
+
+  else if(currentStep===1){
+    html = `
+      <p class="step-kicker">Step 2 · Interact</p>
+      <h2 class="step-title">Pick a gas B, then release</h2>
+      <div class="step-body">
+        Choose a gas from the chips on the left (below the tube), then press <b>Release both gases</b>. Watch the two coloured fronts race toward each other.
+        <br><br>Try at least two different gases — one much heavier than ammonia, and one close to it in mass — before moving on.
+      </div>
+      <div class="whats-happening">
+        <div class="wh-icon">→</div>
+        <div class="wh-text">Currently racing against <b class="b">${gasB().formula}</b> (M = ${fmt(MB,1)} g/mol).</div>
+      </div>
+      ${stepNavHtml(false,'What happened?')}
+    `;
+  }
+
+  else if(currentStep===2){
+    html = `
+      <p class="step-kicker">Step 3 · Notice</p>
+      <h2 class="step-title">The ring never lands in the middle</h2>
+      <div class="step-body">
+        <span class="changing-flag indep">Independent variable: Molar mass of Gas B</span>
+        <span class="changing-flag dep">Dependent variable: Ring position / rate</span>
+        <br><br>
+        With <b class="b">${gasB().formula}</b> (M = ${fmt(MB,1)}), the ring formed <b>${fmt(meet*30,1)} cm</b> from the ammonia end — that's ${meet>0.5? 'more than half way, meaning ammonia travelled further':'less than half way'}.
+        ${easy
+          ? ` Ammonia is lighter, so it always travels further before meeting the other gas.`
+          : ` Ammonia (M=17) is consistently the lighter molecule against every gas on the list except hydrogen — and the lighter gas always covers more distance in the same time.`}
+        <br><br>Temperature and pressure were <b style="color:var(--gold)">identical for both gases</b> — that's the controlled condition that makes this a fair comparison.
+      </div>
+      ${stepNavHtml(false,'Why does mass matter?')}
+    `;
+  }
+
+  else if(currentStep===3){
+    html = `
+      <p class="step-kicker">Step 4 · Explain</p>
+      <h2 class="step-title">Why lighter particles win the race</h2>
+      <div class="whats-happening">
+        <div class="wh-icon">?</div>
+        <div class="wh-text">
+          ${easy
+            ? `At the same temperature, all gas particles carry the same amount of movement energy. Light particles use that energy to move fast. Heavy particles use the same energy but move slower — like a tennis ball and a bowling ball hit with equal force.`
+            : `At a given temperature, all gas particles share the same <b>average kinetic energy</b> (KE = ½mv²). Since KE is fixed, a particle with a <b>smaller mass (m)</b> must have a <b>larger velocity (v)</b> to match it — so light molecules like NH₃ move faster than heavy ones like ${gasB().formula}, and cover more distance in the same time.`}
+        </div>
+      </div>
+      <div class="step-body" style="margin-top:14px;">
+        This is exactly why the ring forms closer to the <b>heavier</b> gas's end — ammonia has already covered more ground by the time they collide.
+      </div>
+      ${stepNavHtml(false,'Plot the relationship')}
+    `;
+  }
+
+  else if(currentStep===4){
+    html = `
+      <p class="step-kicker">Step 5 · Represent</p>
+      <h2 class="step-title">Rate vs. 1/√(molar mass)</h2>
+      <div class="step-body" style="margin-bottom:10px;">
+        Plotting the relative rate of diffusion against <b>1/√M</b> gives a straight line through the origin — confirming rate is <b>directly proportional to 1/√M</b>, for every gas on the graph.
+      </div>
+      <svg id="grahamGraph" viewBox="0 0 340 250" xmlns="http://www.w3.org/2000/svg"></svg>
+      <p class="graph-caption">Highlighted: NH₃ (fixed) and your chosen ${gasB().formula}</p>
+      ${stepNavHtml(false,'Turn it into a formula')}
+    `;
+  }
+
+  else if(currentStep===5){
+    html = `
+      <p class="step-kicker">Step 6 · Formalize</p>
+      <h2 class="step-title">Graham's Law of Diffusion</h2>
+      <div class="formula-box">
+        <div class="formula-main">R<sub>A</sub>/R<sub>B</sub> <span class="eq">=</span> √(M<sub>B</sub>/M<sub>A</sub>)</div>
+        <div class="formula-sub">R = rate of diffusion &nbsp;·&nbsp; M = molar mass &nbsp;·&nbsp; same temperature and pressure for both gases</div>
+      </div>
+      <p style="font-family:var(--mono); font-size:12.5px; color:var(--ink-faint); margin:14px 0 0;">"The rate of diffusion of a gas is inversely proportional to the square root of its molar mass."</p>
+      <div class="worked">
+        <div class="wcol"><h4>Gas A — Ammonia</h4><div class="wline">M_A = 17.0 g/mol</div></div>
+        <div class="wcol"><h4>Gas B — ${gasB().formula}</h4><div class="wline">M_B = ${fmt(MB,1)} g/mol</div></div>
+        <div class="verify">R_A/R_B = √(${fmt(MB,1)}/17.0) = ${fmt(ratio,2)} &nbsp;→&nbsp; ammonia diffuses ${fmt(ratio,2)}× faster than ${gasB().formula}</div>
+      </div>
+      ${stepNavHtml(false,'Try a problem')}
+    `;
+  }
+
+  else if(currentStep===6){
+    html = `
+      <p class="step-kicker">Step 7 · Apply</p>
+      <h2 class="step-title">Solve it yourself</h2>
+      <div class="practice-box">
+        <p class="practice-q">Hydrogen gas (H₂, M = <span class="given">2.0</span> g/mol) and oxygen gas (O₂, M = <span class="given">32.0</span> g/mol) diffuse from the same point under identical conditions. How many times faster does hydrogen diffuse than oxygen?</p>
+        <div class="practice-input-row">
+          <input type="number" step="0.1" id="practiceInput" placeholder="ratio">
+          <span style="font-family:var(--mono); color:var(--ink-dim); font-size:13px;">× faster</span>
+          <button class="ctrl primary" id="checkBtn">Check answer</button>
+          <button class="ctrl" id="showSolutionBtn">Show working</button>
+        </div>
+        <div class="practice-feedback" id="practiceFeedback"></div>
+        <div class="practice-solution" id="practiceSolution">
+          <b style="color:var(--ink)">Working:</b><br>
+          R(H₂)/R(O₂) = √(M(O₂)/M(H₂)) = √(32.0/2.0) = √16<br>
+          R(H₂)/R(O₂) = <b style="color:var(--gold)">4.0</b> — hydrogen diffuses 4 times faster than oxygen.
+        </div>
+      </div>
+      <div class="step-body" style="margin-top:16px;">
+        You've completed the guided walkthrough. Pick other gases on the left to keep exploring, or jump back to any step above.
+      </div>
+      ${stepNavHtml(false,'')}
+    `;
+  }
+
+  card.innerHTML = html;
+
+  if(currentStep===4){
+    drawGraph(document.getElementById('grahamGraph'));
+  }
+
+  if(currentStep===0){
+    const feedback = document.getElementById('predictFeedback');
+    if(predicted) feedback.innerHTML = predicted==='notmiddle' ? `<b style="color:var(--violet)">Good prediction!</b> Let's go run the race and see by how much.` : `That's a common guess — release the gases in the next step and watch closely.`;
+    document.querySelectorAll('.predict-btn').forEach(btn=>{
+      if(predicted && btn.dataset.choice===predicted){
+        btn.classList.add(predicted==='notmiddle' ? 'chosen-right':'chosen-wrong');
+      }
+      btn.addEventListener('click', ()=>{ predicted = btn.dataset.choice; renderStep(); });
+    });
+  }
+
+  const backBtn = document.getElementById('backBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  if(backBtn) backBtn.addEventListener('click', ()=>{ if(currentStep>0){ currentStep--; renderStep(); }});
+  if(nextBtn && currentStep<6) nextBtn.addEventListener('click', ()=>{ currentStep++; renderStep(); });
+  if(currentStep===6){
+    const checkBtn = document.getElementById('checkBtn');
+    const input = document.getElementById('practiceInput');
+    const fb = document.getElementById('practiceFeedback');
+    const correct = 4.0;
+    checkBtn.addEventListener('click', ()=>{
+      const val = parseFloat(input.value);
+      fb.classList.add('show');
+      if(!isNaN(val) && Math.abs(val-correct) <= 0.15){
+        fb.className = 'practice-feedback show correct';
+        fb.textContent = `Correct — hydrogen diffuses 4.0 times faster than oxygen, because it is 16 times lighter and √16 = 4.`;
+      } else {
+        fb.className = 'practice-feedback show wrong';
+        fb.textContent = `Not quite. Use R_A/R_B = √(M_B/M_A), with hydrogen as A and oxygen as B. Try again, or click "Show working".`;
+      }
+    });
+    document.getElementById('showSolutionBtn').addEventListener('click', ()=>{
+      document.getElementById('practiceSolution').classList.toggle('show');
+    });
+  }
+}
+
+document.getElementById('simpleMode').addEventListener('change', renderStep);
+
+buildGasPicker();
+updateReadouts();
+renderStep();
+</script>
+</body>
+</html>

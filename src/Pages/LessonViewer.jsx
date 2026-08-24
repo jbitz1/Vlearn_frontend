@@ -302,6 +302,35 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
         setInteractedBlocks((prev) => new Set([...prev, blockId]));
     }, []);
 
+    // ── Keyboard Arrow Navigation ──────────────────────────────────────────────
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            // Do not intercept if typing in an answer box, search field, or input
+            const activeTag = document.activeElement?.tagName?.toLowerCase();
+            if (activeTag === 'input' || activeTag === 'textarea' || document.activeElement?.isContentEditable) {
+                return;
+            }
+
+            if (e.key === 'ArrowRight' || e.key === 'Right') {
+                if (isGated) return; // Guardrail: require answering knowledge checks before advancing
+                e.preventDefault();
+                if (pageIndex === totalPages - 1) {
+                    handleComplete();
+                } else {
+                    goNext();
+                }
+            } else if (e.key === 'ArrowLeft' || e.key === 'Left') {
+                if (pageIndex > 0) {
+                    e.preventDefault();
+                    goPrev();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [pageIndex, totalPages, isGated, goNext, goPrev, handleComplete]);
+
     if (isCompleted) {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -346,7 +375,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                     />
                 </div>
 
-                <div className="max-w-3xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-3">
+                <div className="max-w-[1536px] mx-auto px-4 sm:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-3">
                     {/* Lesson title + progress meta */}
                     <div className="flex-1 min-w-0">
                         {topicData && (
@@ -374,7 +403,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                     <button
                         onClick={() => setShowContents((v) => !v)}
                         className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 transition-colors shrink-0 cursor-pointer"
-                        title="All concepts"
+                        title="Table of Contents"
                     >
                         <LayoutList size={18} />
                     </button>
@@ -417,7 +446,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                                         </span>
                                         <div className="flex-1 min-w-0">
                                             <p className={`text-sm font-medium truncate ${isCurrent ? 'text-custom-blue' : 'text-gray-700'}`}>
-                                                {page.pageTitle || page.title || `Concept ${idx + 1}`}
+                                                {page.pageTitle || page.title || `Part ${idx + 1}`}
                                             </p>
                                         </div>
                                         <span className="text-xs text-gray-400 flex-shrink-0 font-mono">
@@ -448,17 +477,19 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                             .replace(/\*\*/g, '')
                             .replace(/^-\s*/, '')
                             .replace(/^Module\s*\d+(\.\d+)?:\s*/i, '')
+                            .replace(/^(Core|Key)?\s*Concept\s*(\d+|one|two|three|four|five)?[.:\s\-]*/i, '')
+                            .replace(/^(Section|Part|Unit|Phase|Step)\s*\d+[.:\s\-]+/i, '')
                             .trim();
                         return text || fallback;
                     };
                     const cleanTitle = formatCleanTitle(rawTitle, lesson.title);
 
                     return (
-                        <div className="max-w-6xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-6 sm:py-10 lg:py-16">
+                        <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-8 lg:px-12 py-6 sm:py-10">
                             <div className="mb-6 sm:mb-8 border-b border-gray-200/60 pb-4 sm:pb-6">
                                 <div className="flex items-center gap-2 mb-2.5 flex-wrap">
                                     <span className="text-[10px] sm:text-[11px] font-bold text-custom-blue bg-blue-50 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full uppercase tracking-widest border border-blue-200/60">
-                                        Concept {pageIndex + 1} of {totalPages}
+                                        Part {pageIndex + 1} of {totalPages}
                                     </span>
                                     <span className="text-xs text-gray-400 flex items-center gap-1.5 font-medium">
                                         <Clock size={12} /> ~{readingTime} min read
@@ -482,7 +513,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                     );
                 })()}
 
-                <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-8 sm:pb-12">
+                <div className="max-w-[1536px] mx-auto px-4 sm:px-8 pb-8 sm:pb-12">
                     <LessonTimeline 
                         totalPages={totalPages} 
                         currentPageIndex={pageIndex} 
@@ -494,7 +525,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
 
             {/* ── Navigation footer ─────────────────────────────────────── */}
             <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur border-t border-gray-200/60 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.05)]">
-                <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-3">
+                <div className="max-w-[1536px] mx-auto px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-3">
                     <button
                         onClick={goPrev}
                         disabled={pageIndex === 0}
@@ -526,7 +557,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                                 isGated ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-custom-blue text-white hover:bg-blue-700'
                             }`}
                         >
-                            Next Concept <ChevronRight size={18} />
+                            Continue <ChevronRight size={18} />
                         </button>
                     )}
                 </div>

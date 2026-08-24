@@ -35,9 +35,9 @@ const ACCOUNT_TYPES = [
   },
   {
     id: "school_admin",
-    title: "School Administrator",
+    title: "Register a School",
     description:
-      "Manage your institution, staff, enrolments and subscription from one place.",
+      "Register your institution on VizLearn with your school and administrator details.",
     Icon: Building2,
     iconColor: "text-green-600",
     iconBg: "bg-green-50",

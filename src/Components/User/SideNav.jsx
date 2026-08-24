@@ -7,7 +7,7 @@ import Swal from 'sweetalert2';
 const SideNav = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const sidebarRef = useRef(null);
-  const { logout } = useContext(UserContext);
+  const { user, logout } = useContext(UserContext);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -104,8 +104,39 @@ const SideNav = () => {
           </nav>
         </div>
 
-        {/* Logout button */}
-        <div className="pt-4 border-t border-gray-100">
+        {/* Switch Workspace & Logout */}
+        <div className="pt-4 border-t border-gray-100 space-y-3">
+          {user && (user.role === 'school_admin' || user.role === 'platform_admin' || user.is_superuser) && (
+            <div className="p-3 bg-blue-50/80 rounded-2xl border border-blue-100 space-y-1.5">
+              <p className="text-[10px] font-extrabold uppercase text-custom-blue tracking-wider">Switch Workspace</p>
+              <div className="flex flex-col gap-1 text-xs font-semibold">
+                <Link
+                  to="/school/dashboard"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="px-2.5 py-1.5 bg-white text-gray-800 hover:bg-custom-blue hover:text-white rounded-xl transition-colors flex items-center justify-between border border-blue-100 shadow-xs"
+                >
+                  <span>School Master</span>
+                </Link>
+                <Link
+                  to="/teacher/dashboard"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="px-2.5 py-1.5 bg-white text-gray-800 hover:bg-custom-blue hover:text-white rounded-xl transition-colors flex items-center justify-between border border-blue-100 shadow-xs"
+                >
+                  <span>Teacher Portal</span>
+                </Link>
+                {(user.role === 'platform_admin' || user.is_superuser) && (
+                  <Link
+                    to="/admin-dashboard"
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="px-2.5 py-1.5 bg-white text-gray-800 hover:bg-custom-blue hover:text-white rounded-xl transition-colors flex items-center justify-between border border-blue-100 shadow-xs"
+                  >
+                    <span>Admin Hub</span>
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+
           <button
             onClick={() => {
               setIsSidebarOpen(false);

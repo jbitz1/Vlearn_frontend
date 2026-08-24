@@ -61,17 +61,19 @@ const ReactionRateSim = () => {
   }, [reactionStarted, reactionComplete, temperature]);
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center">
-        Temperature and Reaction Rate
-      </h2>
-      <p className="text-center mb-6 text-gray-600">
-        Na₂S₂O₃(aq) + 2HCl(aq) → 2NaCl(aq) + S(s) + SO₂(g) + H₂O(l)
-      </p>
+    <div className="w-full p-4 sm:p-6 md:p-8 bg-white rounded-2xl sm:rounded-3xl border border-gray-100 shadow-xs space-y-6">
+      <div className="text-center space-y-2">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900">
+          Temperature & Reaction Rate Kinetics (Sodium Thiosulfate Cross Test)
+        </h2>
+        <p className="text-xs sm:text-sm font-mono text-gray-600 bg-gray-50 inline-block px-3 py-1.5 rounded-xl border border-gray-200">
+          Na₂S₂O₃(aq) + 2HCl(aq) → 2NaCl(aq) + S(s) + SO₂(g) + H₂O(l)
+        </p>
+      </div>
 
-      <div className="grid md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
         {/* Controls panel */}
-        <div className="space-y-6">
+        <div className="lg:col-span-6 space-y-6">
           <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <Thermometer className="w-5 h-5" /> Temperature Controls
@@ -150,7 +152,7 @@ const ReactionRateSim = () => {
         </div>
 
         {/* Visualization */}
-        <div className="flex flex-col items-center justify-center">
+        <div className="lg:col-span-6 flex flex-col items-center justify-center space-y-6">
           <div className="relative w-48 h-64 mb-6">
             {/* Flask */}
             <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-40 h-48">

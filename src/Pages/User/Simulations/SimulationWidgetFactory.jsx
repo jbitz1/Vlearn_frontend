@@ -2,7 +2,16 @@ import React, { lazy, Suspense } from 'react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
 const simulationRegistry = {
-  charles_law: lazy(() => import('./CharlesLawSim')),
+  charles_law: lazy(() => import('./CharlesLawGuidedSim')),
+  chem_charles_law: lazy(() => import('./CharlesLawGuidedSim')),
+  charles_law_guided: lazy(() => import('./CharlesLawGuidedSim')),
+  chem_charles_law_guided: lazy(() => import('./CharlesLawGuidedSim')),
+  boyles_law: lazy(() => import('./BoylesLawSim')),
+  chem_boyles_law: lazy(() => import('./BoylesLawSim')),
+  grahams_law: lazy(() => import('./GrahamsLawSim')),
+  chem_grahams_law: lazy(() => import('./GrahamsLawSim')),
+  grahams_law_diffusion: lazy(() => import('./GrahamsLawSim')),
+  chem_grahams_law_diffusion: lazy(() => import('./GrahamsLawSim')),
   reaction_rate: lazy(() => import('./ReactionRatesim')),
   electrolysis: lazy(() => import('./ElectrolysisSim')),
   chemical_equilibrium: lazy(() => import('./ChemicalSim')),

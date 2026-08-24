@@ -16,7 +16,11 @@ export const TeacherProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   const loadData = useCallback(async () => {
-    if (!token?.access || user?.role !== 'teacher') {
+    const isPlatformAdmin = user?.role === 'platform_admin' || user?.is_superuser;
+    const isSchoolAdmin = user?.role === 'school_admin';
+    const isTeacher = user?.role === 'teacher';
+
+    if (!token?.access || (!isTeacher && !isSchoolAdmin && !isPlatformAdmin)) {
       setIsLoading(false);
       return;
     }
@@ -25,11 +29,12 @@ export const TeacherProvider = ({ children }) => {
     setError(null);
     try {
       // 1. Fetch memberships first
-      const mems = await teacherCurriculumService.getMyMemberships();
-      setMemberships(mems);
+      const mems = await teacherCurriculumService.getMyMemberships().catch(() => []);
+      const memsList = Array.isArray(mems) ? mems : (mems?.results || []);
+      setMemberships(memsList);
 
       // Find an accepted or active membership
-      const activeMem = mems.find(m => m.state === 'ACCEPTED' || m.state === 'ACTIVE');
+      const activeMem = memsList.find(m => m.state === 'ACCEPTED' || m.state === 'ACTIVE');
       
       if (activeMem) {
         setActiveSchool({
@@ -39,20 +44,23 @@ export const TeacherProvider = ({ children }) => {
 
         // 2. Fetch assignments only if attached to a school
         const [streams, subjects, recent] = await Promise.all([
-          teacherCurriculumService.getMyStreams(),
-          teacherCurriculumService.getTeacherSubjects(),
-          teacherCurriculumService.getRecentlyTaught()
+          teacherCurriculumService.getMyStreams().catch(() => []),
+          teacherCurriculumService.getTeacherSubjects().catch(() => []),
+          teacherCurriculumService.getRecentlyTaught().catch(() => [])
         ]);
         
-        setAssignedStreams(streams);
-        setAssignedSubjects(subjects);
-        setRecentActivity(recent);
+        const validStreams = Array.isArray(streams) ? streams : (streams?.results || []);
+        const validSubjects = Array.isArray(subjects) ? subjects : (subjects?.results || []);
+        const validRecent = Array.isArray(recent) ? recent : (recent?.results || []);
+
+        setAssignedStreams(validStreams);
+        setAssignedSubjects(validSubjects);
+        setRecentActivity(validRecent);
         
-        // If the membership didn't have school_name populated but the stream does, we can enrich it
-        if (!activeMem.school_name && streams.length > 0 && streams[0].school_name) {
+        if (!activeMem.school_name && validStreams.length > 0 && validStreams[0].school_name) {
           setActiveSchool({
             id: activeMem.school,
-            name: streams[0].school_name
+            name: validStreams[0].school_name
           });
         }
       } else {

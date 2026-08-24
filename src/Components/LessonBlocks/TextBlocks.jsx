@@ -7,19 +7,122 @@ import 'katex/dist/katex.min.css';
 import { Target, Book, PenTool, AlertTriangle, PlayCircle, FlaskConical, Sparkles, HelpCircle, CheckCircle2 } from 'lucide-react';
 
 const ensureMathDelimiters = (str) => {
-  if (typeof str !== 'string') return str;
+  if (typeof str !== 'string' || !str) return str;
   let text = str.replace(/\\+\$/g, '$');
-  const parts = text.split(/(\$\$.*?\$\$|\$.*?\$)/g);
-  return parts.map((part, idx) => {
-    if (idx % 2 === 0) {
-      let p = part;
-      p = p.replace(/(?<![a-zA-Z0-9\\])\\(alpha|beta|gamma|lambda|Delta|sigma|mu|Omega|theta|pi|rho|tau|phi|omega)(?![a-zA-Z])/g, '$\\$1$');
-      p = p.replace(/(\^\{[^\}]+\}_\{[^\}]+\}(?:\\text\{[^\}]+\})?)/g, '$$1$');
-      p = p.replace(/\$\$+/g, '$');
-      return p;
+
+  // 1. Convert parenthetical math expressions like ((\Delta H^\circ_c)) into ($...$)
+  text = text.replace(/\(\((\s*\\[a-zA-Z]+[^\(\)]*?)\)\)/g, '($$$1$$)');
+  text = text.replace(/\(\((\s*\^[0-9]+_[0-9]+[^\(\)]*?)\)\)/g, '($$$1$$)');
+
+  // 2. Normalize common corrupted LaTeX commands anywhere in text
+  text = text.replace(/\\(?:xr\\)*xr\\rightarrow\{([^}]+)\}/g, '\\xrightarrow{$1}');
+  text = text.replace(/\\(?:xr\\)*rightarrow\{([^}]+)\}/g, '\\xrightarrow{$1}');
+  text = text.replace(/\\rightarrow\{([^}]+)\}/g, '\\xrightarrow{$1}');
+  text = text.replace(/\\rightarrow\[([^\]]+)\]\{([^}]+)\}/g, '\\xrightarrow[$1]{$2}');
+  text = text.replace(/\\(?:xr\\)*xr\\rightarrow\b/g, '\\rightarrow');
+  text = text.replace(/\\xr\b/g, '');
+  text = text.replace(/(\\\w+|\})\s*\*\s*\{(\([a-zA-Z]+\))\s*\}/g, '$1_$2');
+  text = text.replace(/\*\s*\{(\([a-zA-Z]+\))\s*\}/g, '_$1');
+  text = text.replace(/\\\_\{/g, '_{');
+  text = text.replace(/\\\^\{/g, '^{');
+
+  // 3. Remove isolated dollar signs around operators inside equations
+  text = text.replace(/\$(?:\\rightarrow|\\rightleftharpoons|\\leftarrow|\\Delta|\\pm|\\times|\\approx)\$/g, (m) => m.slice(1, -1));
+
+  // 4. Split content by existing display math ($$ ... $$) and inline math ($ ... $) blocks
+  // to avoid EVER altering or double-wrapping content that is already inside math mode!
+  const segments = text.split(/(\$\$[\s\S]*?\$\$|\$[^\$\n]+?\$)/g);
+
+  const processed = segments.map((segment, idx) => {
+    // Odd index = already a valid $$ ... $$ or $ ... $ math block!
+    if (idx % 2 === 1) {
+      if (segment.startsWith('$$')) {
+        let inner = segment.slice(2, -2).trim();
+        inner = inner.replace(/^\$+|\$+$/g, '').trim();
+        return `\n\n$$\n${inner}\n$$\n\n`;
+      }
+      return segment;
     }
-    return part;
-  }).join('');
+
+    // Even index = regular markdown text outside math
+    const lines = segment.split('\n');
+    const processedLines = lines.map(line => {
+      // Normalize unicode square roots and math operators before equation check
+      let cleanTrimmed = trimmed
+        .replace(/√\(([^\)]+)\)/g, '\\sqrt{$1}')
+        .replace(/√([0-9a-zA-Z]+)/g, '\\sqrt{$1}');
+
+      // Check if this line is an unbracketed standalone chemical / mathematical equation
+      const hasMathCommand = /\\(?:propto|implies|iff|frac|sqrt|times|cdot|approx|equiv|sum|int|partial|Delta|rho|alpha|beta|gamma|theta|lambda|sigma|omega|pi|mu|nu|pm|mp|le|ge|leq|geq|neq|ne|quad|qquad|left|right|over|choose|text|circ|degree|rightarrow|leftarrow|rightleftharpoons|xrightarrow|xleftarrow)\b/.test(cleanTrimmed);
+      const isStandaloneEquation = (
+        hasMathCommand ||
+        /^[a-zA-Z0-9_\^\(\)\s\+\-\*\/\.\{\}\\]*(=|∝|→|⇌|\\implies|\\approx)[a-zA-Z0-9_\^\(\)\s\+\-\*\/\.\{\}\\]+$/.test(cleanTrimmed)
+      );
+
+      const isProseSentence = /^(?:For|If|When|Where|Note|Since|Then|According|Therefore|Thus|Hence|Step|Given|The|A|An|Let)\b/i.test(cleanTrimmed);
+
+      if (isStandaloneEquation && !isProseSentence) {
+        return `\n\n$$\n${cleanTrimmed}\n$$\n\n`;
+      }
+
+      // Check if line is a bullet item with an unbracketed equation: e.g. "- \text{C} + \text{O}_2 \rightarrow ..."
+      const bulletMatch = line.match(/^(\s*(?:[-*]|\d+\.)\s*)(.*)$/);
+      if (bulletMatch) {
+        const prefix = bulletMatch[1];
+        let rest = bulletMatch[2].trim()
+          .replace(/√\(([^\)]+)\)/g, '\\sqrt{$1}')
+          .replace(/√([0-9a-zA-Z]+)/g, '\\sqrt{$1}');
+        if (hasMathCommand && !/^(?:For|If|When|Where|Note|Since|Then|The|A|An|Let)\b/i.test(rest)) {
+          return `${prefix}$${rest}$`;
+        }
+      }
+
+      // In regular prose, normalize unicode square roots
+      let p = line
+        .replace(/√\(([^\)]+)\)/g, '$\\sqrt{$1}$')
+        .replace(/(?<![\$\w])√([0-9a-zA-Z]+)/g, '$\\sqrt{$1}$');
+
+      // Replace unbracketed LaTeX fractions or square roots in prose
+      p = p.replace(/(?<!\$)\\(?:frac|sqrt)\{(?:[^{}]+|\{[^{}]*\})*\}(?:\{(?:[^{}]+|\{[^{}]*\})*\})?(?!\$)/g, (m) => `$${m}$`);
+
+      // Replace unbracketed math operators in prose
+      p = p.replace(/(?<![\$\\])\\(times|approx|implies|propto|pm|mp|div|le|ge|leq|geq|neq|ne|cdot|Delta)\b(?!\$)/g, '$$\\$1$$');
+
+      // Replace un-delimited variable subscripts like V_1, T_1, P_1, t_2, R_A, M_r, M_B
+      p = p.replace(/(?<![\$\w\\])\b([a-zA-Z])_([0-9a-zA-Z]+)\b(?![\$\w])/g, '$$$1_$2$$');
+
+      // Inline standalone chemical formulas like \text{NaOH} or \text{SO}_2
+      p = p.replace(/(?<!\$)(?:\\text\{[a-zA-Z0-9_\(\)\+\-\s]+\}(?:[_\^]\{[^\}]+\})?\s*)+(?!\$)/g, (m) => `$${m.trim()}$`);
+
+      // Replace isolated un-delimited Greek symbols in prose
+      p = p.replace(/(?<![\$\\])\\(rho|alpha|beta|gamma|theta|lambda|pi|mu|sigma|omega|Phi)\b(?!\$)/g, '$$\\$1$$');
+
+      // Replace isolated un-delimited degree notations like ^\circ or ^\circ\text{C}
+      p = p.replace(/(?<![\$\\])\^\\circ(?:\\text\{C\})?/g, (m) => `$${m}$`);
+
+      return p;
+    });
+
+    return processedLines.join('\n');
+  });
+
+  let result = processed.join('');
+  result = result.replace(/\n{3,}/g, '\n\n');
+  return result.trim();
+};
+
+const normalizeMarkdownText = (rawStr) => {
+  if (!rawStr || typeof rawStr !== 'string') return rawStr;
+  let text = rawStr;
+  // Convert lines starting with bullet character (• or \u2022) to markdown list item (- )
+  text = text.replace(/^[ \t]*[•\u2022][ \t]*/gm, '- ');
+  // Convert inline bullets separated by spaces or punctuation into new line list items
+  text = text.replace(/([^\n])[ \t]+[•\u2022][ \t]+/g, '$1\n- ');
+  // Strip accidental 4+ space indentation that turns regular text into <pre><code> blocks
+  text = text.replace(/^[ \t]{4,}(?![*\-\d]\s)([^\n]+)/gm, '$1');
+  // Ensure a blank line before the first list item IF preceded by a regular paragraph line
+  text = text.replace(/^([^\n\-\*\d\>#][^\n]*)\n(- |\* )/gm, '$1\n\n$2');
+  return ensureMathDelimiters(text);
 };
 
 const MD = ({ children, className = '' }) => {
@@ -27,13 +130,19 @@ const MD = ({ children, className = '' }) => {
     ? children.map(child => (typeof child === 'string' ? child : String(child ?? ''))).join('')
     : (typeof children === 'string' ? children : String(children ?? ''));
 
-  const content = ensureMathDelimiters(rawContent);
+  const content = normalizeMarkdownText(rawContent);
 
   return (
     <div className={`prose max-w-none text-gray-800 font-sans ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
+        components={{
+          p: ({ node, ...props }) => <p className="mb-4 sm:mb-6 text-gray-800 leading-relaxed font-sans text-base sm:text-lg md:text-xl" {...props} />,
+          ul: ({ node, ...props }) => <ul className="list-disc list-outside ml-6 sm:ml-8 mb-4 sm:mb-6 space-y-2 text-gray-800 font-sans text-base sm:text-lg md:text-xl" {...props} />,
+          ol: ({ node, ...props }) => <ol className="list-decimal list-outside ml-6 sm:ml-8 mb-4 sm:mb-6 space-y-2 text-gray-800 font-sans text-base sm:text-lg md:text-xl" {...props} />,
+          li: ({ node, ...props }) => <li className="text-gray-800 font-sans text-base sm:text-lg md:text-xl leading-relaxed pl-1" {...props} />,
+        }}
       >
         {content}
       </ReactMarkdown>
@@ -247,7 +356,7 @@ export const RevisionQuestionsBlock = ({ block, onInteract }) => {
                     <div className="p-5 bg-emerald-50 rounded-xl border border-emerald-200">
                         <p className="text-emerald-800 font-semibold flex items-center gap-3">
                             <CheckCircle2 className="text-emerald-500 w-6 h-6 shrink-0" /> 
-                            <span>Answer submitted! You can now continue to the next concept.</span>
+                            <span>Answer submitted! You can now continue to the next section.</span>
                         </p>
                     </div>
                 </div>

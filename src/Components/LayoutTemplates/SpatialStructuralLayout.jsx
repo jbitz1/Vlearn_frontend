@@ -35,8 +35,8 @@ export const SpatialStructuralLayout = ({ page, renderBlock, context }) => {
   }
 
   return (
-    <div className="layout-strategy spatial-layout max-w-7xl mx-auto px-0 sm:px-4 lg:px-12">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-24 items-start">
+    <div className="layout-strategy spatial-layout max-w-[1536px] mx-auto px-0 sm:px-4 lg:px-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-16 items-start">
         {/* Right Column (Pedagogical Content) renders FIRST on mobile (order-1), SECOND on desktop (lg:order-2) */}
         <div className="lg:col-span-7 order-1 lg:order-2 space-y-6 sm:space-y-12 lg:pl-8">
           {textBlocks.map((block, idx) => (

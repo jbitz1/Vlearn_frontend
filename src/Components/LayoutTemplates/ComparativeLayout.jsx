@@ -12,7 +12,7 @@ export const ComparativeLayout = ({ page, renderBlock, context }) => {
   const useGrid = blocks.length >= 2;
 
   return (
-    <div className="layout-strategy comparative-layout max-w-5xl mx-auto space-y-8">
+    <div className="layout-strategy comparative-layout max-w-6xl xl:max-w-7xl mx-auto space-y-8">
       <div className={useGrid ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-6'}>
         {blocks.map((block, idx) => (
           <div

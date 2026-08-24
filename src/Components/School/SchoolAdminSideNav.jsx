@@ -1,6 +1,6 @@
 import { Link, NavLink, useNavigate } from "react-router";
 import {
-  Menu, GraduationCap, Home, Layers, Users, UserCheck, CreditCard, X, Settings
+  Menu, GraduationCap, Home, Layers, Users, UserCheck, X, Settings, FileText, TrendingUp, BarChart
 } from 'lucide-react';
 import { useState, useContext, useRef, useEffect } from 'react';
 import UserContext from '../../Context/UserContext';
@@ -21,7 +21,7 @@ const SchoolAdminSideNav = () => {
       if (
         sidebarRef.current &&
         !sidebarRef.current.contains(event.target) &&
-        window.innerWidth < 768
+        window.innerWidth < 1024
       ) {
         setIsSidebarOpen(false);
       }
@@ -38,8 +38,8 @@ const SchoolAdminSideNav = () => {
       title: 'Are you sure you want to logout?',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
+      confirmButtonColor: '#02A0BF',
+      cancelButtonColor: '#ef4444',
       confirmButtonText: 'Yes, logout',
     }).then((result) => {
       if (result.isConfirmed) {
@@ -51,94 +51,121 @@ const SchoolAdminSideNav = () => {
 
   const navItems = [
     { icon: Home, text: 'Dashboard', path: '/school/dashboard' },
-    { icon: Layers, text: 'Academic Structure', path: '/school/academic-structure' },
-    { icon: Users, text: 'Teachers', path: '/school/teachers' },
+    { icon: Layers, text: 'Classes', path: '/school/academic-structure' },
     { icon: UserCheck, text: 'Students', path: '/school/students' },
-    { icon: CreditCard, text: 'Subscription', path: '/school/subscription' },
+    { icon: Users, text: 'Teachers', path: '/school/teachers' },
+    { icon: FileText, text: 'Subjects', path: '/school/subjects' },
+    { icon: FileText, text: 'Assessments', path: '/school/assessments' },
+    { icon: TrendingUp, text: 'Performance', path: '/school/performance' },
+    { icon: BarChart, text: 'Final Exams', path: '/school/final-exams' },
+    { icon: FileText, text: 'Reports', path: '/school/reports' },
+    { icon: Settings, text: 'Settings', path: '/school/year-transition' },
   ];
 
   return (
     <>
-      {/* Mobile toggle button */}
       <button
-        className="fixed top-4 left-4 z-30 md:hidden bg-custom-blue text-white p-2 rounded-full shadow-md"
+        className="fixed top-4 left-4 z-40 lg:hidden bg-navy text-white p-2.5 rounded-xl shadow-lg border border-navy-700"
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
       >
         {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
       </button>
 
-      {/* Sidebar */}
+      {/* Backdrop for mobile */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 z-30 bg-slate-900/60 backdrop-blur-sm lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       <aside
         ref={sidebarRef}
-        className={`fixed left-0 top-0 z-20 h-screen w-64 bg-white border-r border-gray-200 p-5 transition-transform duration-300 flex flex-col justify-between
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
+        className={`fixed left-0 top-0 z-40 h-screen w-64 bg-navy text-white p-4 transition-transform duration-300 flex flex-col justify-between shadow-xl
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
       >
         <div>
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-8 pl-2">
-            <GraduationCap className="h-9 w-9 text-custom-blue shrink-0" />
-            <div>
+          <div className="flex items-center gap-3 mb-6 pl-2 pt-2">
+            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0 text-white shadow-md shadow-primary/30">
+              <GraduationCap className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
               <Link to="/school/dashboard">
-                <h1 className="text-2xl font-black text-gray-900 tracking-tight">VizLearn</h1>
+                <h1 className="text-xl font-bold font-heading text-white tracking-tight">VizLearn</h1>
               </Link>
-              <span className="text-[11px] bg-blue-50 text-custom-blue font-extrabold px-2 py-0.5 rounded-full uppercase border border-blue-100">
-                School Admin
-              </span>
+              <p className="text-[11px] font-semibold text-white/60 truncate">
+                {school?.name?.split(' ').slice(0, 3).join(' ') || 'School'}
+              </p>
             </div>
           </div>
 
-          {/* School Badge / Institution Settings trigger */}
-          <div className="mb-6 p-3 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+          <div className="mb-4 p-3 bg-navy-700 rounded-xl text-xs text-white/80 flex items-center justify-between">
             <div className="overflow-hidden">
-              <p className="text-xs font-bold text-gray-900 truncate">
-                {school?.name || 'School Workspace'}
+              <p className="font-semibold text-white truncate">
+                <span className="text-accent">2026</span> · Term 1
               </p>
-              <p className="text-[11px] font-semibold text-gray-400 truncate">
-                {school?.code ? `Code: ${school.code}` : user?.username || 'Admin'}
+              <p className="text-[11px] text-white/50 truncate">
+                {school?.curricula_offered || school?.curriculum || ''}
               </p>
             </div>
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="p-1.5 hover:bg-gray-200/60 rounded-xl transition-colors text-gray-500 hover:text-custom-blue shrink-0"
+              className="p-1.5 hover:bg-navy/50 rounded-lg transition-colors text-white/70 hover:text-white shrink-0"
               title="Institution Settings"
             >
               <Settings className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Navigation */}
-          <nav className="space-y-1.5">
+          <nav className="space-y-1">
             {navItems.map((item, index) => (
               <NavLink
                 to={item.path}
                 key={index}
+                onClick={() => setIsSidebarOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 w-full px-4 py-3 font-semibold text-sm rounded-2xl transition-all duration-200 ${
+                  `flex items-center gap-3 w-full px-3.5 py-2.5 font-medium text-sm rounded-xl transition-colors ${
                     isActive
-                      ? 'bg-blue-50 text-custom-blue shadow-sm'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-primary text-white font-semibold shadow-sm'
+                      : 'text-white/70 hover:bg-navy-700 hover:text-white'
                   }`
                 }
               >
-                <item.icon className="h-5 w-5 shrink-0" />
+                <item.icon className="h-4.5 w-4.5 shrink-0" />
                 <span>{item.text}</span>
               </NavLink>
             ))}
           </nav>
         </div>
 
-        {/* Logout button */}
-        <div className="pt-4 border-t border-gray-100">
+        <div className="pt-4 border-t border-navy-700 space-y-3">
+          {user && (user.role === 'school_admin' || user.role === 'platform_admin' || user.is_superuser) && (
+            <div className="p-3 bg-navy-700/80 rounded-xl border border-navy-700 space-y-1.5">
+              <p className="text-[10px] font-extrabold uppercase text-accent tracking-wider">Switch Workspace</p>
+              <div className="flex flex-col gap-1 text-xs font-semibold">
+                <Link to="/teacher/dashboard" className="px-2.5 py-1.5 bg-navy text-white hover:bg-primary rounded-lg transition-colors flex items-center justify-between border border-navy-700">
+                  <span>Teacher Portal</span>
+                </Link>
+                <Link to="/student" className="px-2.5 py-1.5 bg-navy text-white hover:bg-primary rounded-lg transition-colors flex items-center justify-between border border-navy-700">
+                  <span>Student Workspace</span>
+                </Link>
+                {(user.role === 'platform_admin' || user.is_superuser) && (
+                  <Link to="/admin-dashboard" className="px-2.5 py-1.5 bg-navy text-white hover:bg-primary rounded-lg transition-colors flex items-center justify-between border border-navy-700">
+                    <span>Admin Hub</span>
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
           <button
             onClick={handleLogout}
-            className="w-full px-4 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 font-semibold rounded-2xl text-sm transition-colors duration-200 flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full px-3 py-2 rounded-xl text-xs text-white/60 hover:bg-navy-700 hover:text-white transition-colors flex items-center justify-center gap-2 cursor-pointer font-medium"
           >
-            Logout
+            Sign out
           </button>
         </div>
       </aside>
 
-      {/* Institution Settings Modal */}
       <InstitutionSettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}

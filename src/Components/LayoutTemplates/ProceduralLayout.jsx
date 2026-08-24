@@ -9,7 +9,7 @@ export const ProceduralLayout = ({ page, renderBlock, context }) => {
   const blocks = page?.blocks || [];
 
   return (
-    <div className="layout-strategy procedural-layout max-w-4xl mx-auto space-y-8">
+    <div className="layout-strategy procedural-layout max-w-5xl xl:max-w-6xl mx-auto space-y-8">
       {/* Procedural Moments */}
       <div className="space-y-8">
         {blocks.map((block, idx) => (

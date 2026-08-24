@@ -1,229 +1,255 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { useNavigate } from 'react-router';
-import { Layers, Users, UserCheck, CreditCard, ChevronRight, Clock, Building2, Calendar } from 'lucide-react';
-import { useSchoolContext } from '../../Context/SchoolContext';
-import PageHeader from '../../Components/School/PageHeader';
-import schoolAdminService from '../../services/schoolAdminService';
+import UserContext from '../../Context/UserContext';
+import SchoolContext from '../../Context/SchoolContext';
+import { Users, GraduationCap, Layers, BarChart3, TrendingUp, UserCheck, Plus, Settings } from 'lucide-react';
 
-export function SchoolDashboard() {
-  const navigate = useNavigate();
-  const {
-    school,
-    activeAcademicYear,
-    classes,
-    streams,
-    teachers,
-    enrollments,
-    isLoading,
-  } = useSchoolContext();
-
-  const [setupState, setSetupState] = useState(null);
-  const [isSetupLoading, setIsSetupLoading] = useState(true);
-
-  useEffect(() => {
-    if (school?.id) {
-      setIsSetupLoading(true);
-      schoolAdminService.fetchSetupState(school.id)
-        .then(data => setSetupState(data))
-        .catch(err => console.error("Failed to load setup state", err))
-        .finally(() => setIsSetupLoading(false));
-    }
-  }, [school?.id]);
-
-  const activeStudentCount = enrollments.filter((e) => e.status === 'active').length;
-
-  const quickActions = [
-    {
-      title: 'Manage Academic Structure',
-      description: 'Configure academic years, classes, and streams',
-      icon: Layers,
-      path: '/school/academic-structure',
-    },
-    {
-      title: 'Manage Teachers',
-      description: 'Onboard faculty and assign subjects & streams',
-      icon: Users,
-      path: '/school/teachers',
-    },
-    {
-      title: 'Manage Students',
-      description: 'Manage student enrollments and stream placements',
-      icon: UserCheck,
-      path: '/school/students',
-    },
-    {
-      title: 'Subscription',
-      description: 'View current plan details and capacity limits',
-      icon: CreditCard,
-      path: '/school/subscription',
-    },
-  ];
-
+function StatCard({ label, value, sub, color = 'primary', icon }) {
+  const colors = {
+    primary: 'bg-primary-light text-primary',
+    accent: 'bg-accent-light text-accent',
+    navy: 'bg-navy/10 text-navy',
+    success: 'bg-success-light text-success',
+  };
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <PageHeader title="Dashboard" />
-
-      {/* School Header Card */}
-      <div className="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h2 className="text-2xl font-black text-gray-900">
-              {school?.name || 'School Institution'}
-            </h2>
-            {school?.code && (
-              <span className="text-xs bg-blue-50 text-custom-blue font-extrabold px-3 py-1 rounded-full border border-blue-100 uppercase">
-                {school.code}
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-gray-500 font-semibold flex items-center gap-2">
-            <Building2 className="w-3.5 h-3.5 text-gray-400" />
-            <span>{school?.contact_email || 'No contact email'}</span>
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-4 py-2 rounded-2xl text-custom-blue text-xs font-bold shrink-0">
-          <Calendar className="w-4 h-4 text-custom-blue" />
-          <span>Active Year: {activeAcademicYear?.name || activeAcademicYear?.year || 'Current Academic Term'}</span>
-        </div>
+    <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4 shadow-sm">
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${colors[color]}`}>
+        {icon}
       </div>
-
-      {/* School Setup Checklist Card */}
-      <div className="bg-gradient-to-r from-blue-900 to-custom-blue text-white rounded-3xl p-6 shadow-md mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-bold">School Setup & Onboarding Hub</h2>
-            <p className="text-xs text-blue-200">Complete institutional setup tasks to unlock full classroom delivery & subscriptions.</p>
-          </div>
-          <span className="text-xs bg-orange-500 font-extrabold px-3 py-1 rounded-full uppercase">
-            {setupState?.setup_status || school?.setup_status || 'PROFILE_COMPLETE'}
-          </span>
-        </div>
-
-        {isSetupLoading ? (
-            <div className="flex items-center justify-center p-6">
-               <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-            </div>
-        ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
-              {setupState?.checklist?.map((item, index) => {
-                  let path = '/school/dashboard';
-                  if (item.key === 'STREAMS_CREATED') path = '/school/academic-structure';
-                  if (item.key === 'TEACHERS_INVITED') path = '/school/teachers';
-                  if (item.key === 'SUBJECTS_ASSIGNED') path = '/school/teachers';
-                  if (item.key === 'STUDENTS_IMPORTED') path = '/school/students';
-                  if (item.key === 'BASELINE_UPLOADED') path = '/school/students';
-  
-                  return (
-                      <div key={item.key} onClick={() => navigate(path)} className="p-2.5 sm:p-3 bg-white/10 rounded-2xl text-center border border-white/20 cursor-pointer hover:bg-white/20 transition flex flex-col justify-center min-h-[44px]">
-                          <span className="text-[10px] font-semibold block text-blue-200 truncate" title={item.label}>
-                            {index + 1}. {item.label.split(' ')[0]}
-                          </span>
-                          <span className={`text-xs sm:text-sm font-bold ${item.complete ? 'text-green-300' : 'text-yellow-300'}`}>
-                              {item.complete ? '✓ Done' : '+ Add'}
-                          </span>
-                      </div>
-                  )
-              })}
-            </div>
-        )}
+      <div>
+        <p className="text-2xl font-bold font-heading text-navy">{value}</p>
+        <p className="text-xs font-semibold text-slate-600 mt-0.5">{label}</p>
+        {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
       </div>
-
-      {/* Organizational Facts */}
-      <section>
-        <h2 className="text-xs font-extrabold text-gray-400 uppercase tracking-wider mb-3">
-          Organizational Overview
-        </h2>
-
-        {isLoading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-20 sm:h-24 bg-gray-200 rounded-2xl sm:rounded-3xl animate-pulse"></div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs sm:shadow-sm">
-              <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase block">Classes</span>
-              <span className="text-2xl sm:text-3xl font-black text-gray-900 mt-0.5 block">{classes.length}</span>
-            </div>
-
-            <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs sm:shadow-sm">
-              <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase block">Streams</span>
-              <span className="text-2xl sm:text-3xl font-black text-gray-900 mt-0.5 block">{streams.length}</span>
-            </div>
-
-            <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs sm:shadow-sm">
-              <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase block">Teachers</span>
-              <span className="text-2xl sm:text-3xl font-black text-gray-900 mt-0.5 block">{teachers.length}</span>
-            </div>
-
-            <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs sm:shadow-sm">
-              <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase block">Students</span>
-              <span className="text-2xl sm:text-3xl font-black text-gray-900 mt-0.5 block">{activeStudentCount}</span>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* Quick Actions (Navigational Cards) */}
-      <section>
-        <h2 className="text-xs font-extrabold text-gray-400 uppercase tracking-wider mb-3">
-          Quick Navigation
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {quickActions.map((action, i) => (
-            <div
-              key={i}
-              onClick={() => navigate(action.path)}
-              className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer group flex items-center justify-between"
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-50 text-custom-blue rounded-2xl group-hover:bg-custom-blue group-hover:text-white transition-colors">
-                  <action.icon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-gray-900 group-hover:text-custom-blue transition-colors">
-                    {action.title}
-                  </h3>
-                  <p className="text-xs text-gray-500 font-medium mt-0.5">{action.description}</p>
-                </div>
-              </div>
-
-              <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-custom-blue group-hover:translate-x-1 transition-all" />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Recent Activity */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs font-extrabold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-            <Clock className="w-4 h-4 text-custom-blue" />
-            Recent Activity
-          </h2>
-        </div>
-
-        <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-3">
-          <div className="flex items-center justify-between text-xs py-2 border-b border-gray-100">
-            <div className="font-semibold text-gray-800">Academic structure configured</div>
-            <div className="text-gray-400">Current Term</div>
-          </div>
-          <div className="flex items-center justify-between text-xs py-2 border-b border-gray-100">
-            <div className="font-semibold text-gray-800">Faculty roster updated</div>
-            <div className="text-gray-400">Active</div>
-          </div>
-          <div className="flex items-center justify-between text-xs py-2">
-            <div className="font-semibold text-gray-800">Student enrollment active</div>
-            <div className="text-gray-400">Active</div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
 
-export default SchoolDashboard;
+function ProgressBar({ value, color = '#02A0BF' }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${value}%`, backgroundColor: color }}
+        />
+      </div>
+      <span className="text-xs font-semibold text-slate-600 w-8 text-right">{value}%</span>
+    </div>
+  );
+}
+
+function getPerformanceColor(val) {
+  if (val >= 70) return '#10b981';
+  if (val >= 55) return '#02A0BF';
+  if (val >= 40) return '#f59e0b';
+  return '#ef4444';
+}
+
+export default function SchoolDashboard() {
+  const navigate = useNavigate();
+  const { user } = useContext(UserContext);
+  const schoolContext = useContext(SchoolContext);
+  const school = schoolContext?.school;
+
+  const schoolName = school?.name || 'School Dashboard';
+  const academicYear = schoolContext?.activeAcademicYear?.year || '2026';
+  const currentTerm = 'Term 1';
+  const curriculum = school?.curricula_offered || school?.curriculum || '';
+
+  const formsData = (schoolContext?.classes || []).map((cls, idx) => ({
+    id: cls.id,
+    level: String(idx + 1),
+    name: cls.name,
+    assessment: 0
+  }));
+
+  const streamsData = (schoolContext?.streams || []).map(st => ({
+    id: st.id,
+    name: st.name,
+    studentCount: 0,
+    assessment: 0,
+    progress: 0,
+    teacher: st.class_teacher_detail?.first_name || null
+  }));
+
+  const totalStudents = schoolContext?.enrollments?.length || 0;
+  const teacherCount = schoolContext?.teachers?.length || 0;
+  const formCount = schoolContext?.classes?.length || 0;
+  const streamCount = schoolContext?.streams?.length || 0;
+
+  const schoolAssessment = 0;
+  const schoolProgress = 0;
+
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto font-sans">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold font-heading text-navy">{schoolName}</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Academic Year {academicYear} · {currentTerm} · {curriculum}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-success-light text-success text-xs font-semibold self-start sm:self-auto">
+          <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+          Active
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Total Students" value={totalStudents} sub={`${streamCount} streams`} icon={<Users size={20} />} color="primary" />
+        <StatCard label="Teachers" value={teacherCount} sub="Active staff" icon={<UserCheck size={20} />} color="accent" />
+        <StatCard label="Forms" value={formCount} sub={`${streamCount} streams`} icon={<Layers size={20} />} color="navy" />
+        <StatCard label="School Average" value={schoolAssessment > 0 ? `${schoolAssessment}%` : 'N/A'} sub="Assessment performance" icon={<BarChart3 size={20} />} color="success" />
+      </div>
+
+      {/* Performance overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* School performance */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-bold font-heading text-navy">School Performance</h2>
+            <span className="text-xs text-slate-400">{currentTerm} · {academicYear}</span>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between text-xs font-semibold text-slate-500 mb-1.5">
+                <span>Assessment Average</span>
+                <span className="text-navy font-bold">{schoolAssessment > 0 ? `${schoolAssessment}%` : 'N/A'}</span>
+              </div>
+              <ProgressBar value={schoolAssessment} color={getPerformanceColor(schoolAssessment)} />
+            </div>
+            <div>
+              <div className="flex justify-between text-xs font-semibold text-slate-500 mb-1.5">
+                <span>Learning Progress</span>
+                <span className="text-navy font-bold">{schoolProgress > 0 ? `${schoolProgress}%` : 'N/A'}</span>
+              </div>
+              <ProgressBar value={schoolProgress} color="#ff8400" />
+            </div>
+          </div>
+          {schoolAssessment > 0 ? (
+            <div className="flex items-center gap-1.5 mt-4 p-3 rounded-xl bg-success-light">
+              <TrendingUp size={14} className="text-success" />
+              <span className="text-xs text-success font-semibold">Performance on track</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 mt-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <span className="text-xs text-slate-500">No assessment performance recorded yet for this school.</span>
+            </div>
+          )}
+        </div>
+
+        {/* Form performance */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-bold font-heading text-navy">Performance by Form</h2>
+            <button
+              onClick={() => navigate('/school/performance')}
+              className="text-xs text-primary font-semibold hover:underline"
+            >
+              View all →
+            </button>
+          </div>
+          <div className="space-y-3">
+            {formsData.map(form => (
+              <button
+                key={form.id}
+                onClick={() => navigate('/school/performance')}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors text-left group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-navy/10 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-bold text-navy font-heading">{form.level}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm font-semibold text-navy font-heading">{form.name}</span>
+                    <span className="text-xs font-semibold text-slate-600">{form.assessment}%</span>
+                  </div>
+                  <ProgressBar value={form.assessment} color={getPerformanceColor(form.assessment)} />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Stream overview */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-bold font-heading text-navy">Stream Performance Overview</h2>
+          <button onClick={() => navigate('/school/academic-structure')} className="text-xs text-primary font-semibold hover:underline">
+            Manage classes →
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100">
+                <th className="pb-3 text-left text-xs font-semibold text-slate-500">Stream</th>
+                <th className="pb-3 text-left text-xs font-semibold text-slate-500">Students</th>
+                <th className="pb-3 text-left text-xs font-semibold text-slate-500 w-44">Assessment</th>
+                <th className="pb-3 text-left text-xs font-semibold text-slate-500 w-44">Progress</th>
+                <th className="pb-3 text-left text-xs font-semibold text-slate-500">Class Teacher</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {streamsData.map(stream => (
+                <tr key={stream.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="py-3">
+                    <button
+                      onClick={() => navigate('/school/academic-structure')}
+                      className="font-semibold text-navy font-heading hover:text-primary transition-colors"
+                    >
+                      {stream.name}
+                    </button>
+                  </td>
+                  <td className="py-3 text-slate-600">{stream.studentCount}</td>
+                  <td className="py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-slate-100 rounded-full max-w-24 overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${stream.assessment}%`, backgroundColor: getPerformanceColor(stream.assessment) }} />
+                      </div>
+                      <span className="text-xs font-semibold text-slate-700">{stream.assessment}%</span>
+                    </div>
+                  </td>
+                  <td className="py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-slate-100 rounded-full max-w-24 overflow-hidden">
+                        <div className="h-full rounded-full bg-accent" style={{ width: `${stream.progress}%` }} />
+                      </div>
+                      <span className="text-xs font-semibold text-slate-700">{stream.progress}%</span>
+                    </div>
+                  </td>
+                  <td className="py-3 text-slate-600 text-xs">
+                    {stream.teacher ? stream.teacher : <span className="text-slate-400 italic">Not assigned</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Quick actions */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Add Students', icon: <Plus size={20} className="text-primary" />, action: () => navigate('/school/students') },
+          { label: 'Assign Teacher', icon: <UserCheck size={20} className="text-accent" />, action: () => navigate('/school/teachers') },
+          { label: 'View KCSE History', icon: <GraduationCap size={20} className="text-navy" />, action: () => navigate('/school/final-exams') },
+          { label: 'New Academic Year', icon: <Settings size={20} className="text-success" />, action: () => navigate('/school/year-transition') },
+        ].map(({ label, icon, action }) => (
+          <button
+            key={label}
+            onClick={action}
+            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white border border-slate-200 hover:border-primary hover:shadow-sm transition-all text-sm font-semibold text-navy font-heading"
+          >
+            {icon}
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}

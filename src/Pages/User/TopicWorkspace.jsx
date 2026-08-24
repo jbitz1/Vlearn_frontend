@@ -332,34 +332,69 @@ export const TopicWorkspace = () => {
 
       {/* Modal for Experiment Video */}
       {selectedExperiment && (
-        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl overflow-hidden relative">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-base sm:text-xl font-bold text-gray-900 pr-8 truncate">{selectedExperiment.title}</h3>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+          <div className="bg-white border border-gray-200 text-gray-900 rounded-3xl max-w-5xl w-full p-5 sm:p-7 shadow-2xl overflow-hidden relative my-auto">
+            {/* Header Bar */}
+            <div className="flex justify-between items-center pb-4 mb-4 border-b border-gray-100">
+              <div className="flex items-center gap-2.5 pr-6">
+                <PlayCircle className="text-red-500 w-5 h-5 shrink-0" />
+                <h3 className="text-base sm:text-xl font-bold text-gray-900 truncate">{selectedExperiment.title}</h3>
+              </div>
               <button
                 onClick={() => setSelectedExperiment(null)}
-                className="text-gray-400 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
+                className="text-gray-400 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="relative aspect-video bg-black rounded-xl sm:rounded-2xl overflow-hidden">
-              {selectedExperiment.video_url || selectedExperiment.file ? (
-                <video
-                  src={selectedExperiment.video_url || selectedExperiment.file}
-                  controls
-                  autoPlay
-                  className="w-full h-full object-contain"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-white text-xs sm:text-sm">
-                  Video source unavailable.
+
+            {/* Side-by-Side Responsive Grid: Video Priority */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left: Video Player */}
+              <div className="lg:col-span-8 bg-black rounded-2xl overflow-hidden border border-gray-200 shadow-xs">
+                <div className="relative aspect-video w-full">
+                  {selectedExperiment.cloudflare_video_id ? (
+                    <iframe
+                      src={`https://iframe.videodelivery.net/${selectedExperiment.cloudflare_video_id}`}
+                      className="w-full h-full"
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                      allowFullScreen
+                    />
+                  ) : selectedExperiment.playback_url ? (
+                    <video
+                      src={selectedExperiment.playback_url}
+                      controls
+                      autoPlay
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs sm:text-sm">
+                      Video source unavailable.
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Right: Instructions & Explanations Panel */}
+              <div className="lg:col-span-4 flex flex-col justify-between space-y-4 bg-gray-50 border border-gray-100 rounded-2xl p-5 self-stretch">
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-gray-700 uppercase">
+                    <BookOpen className="w-4 h-4 text-custom-blue" />
+                    <span>Experiment Context</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-sans">
+                    {selectedExperiment.description || 'Watch the laboratory demonstration to observe the practical procedures, apparatus setup, and chemical reactions.'}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => navigate(`/coursedetails/${selectedExperiment.id}`)}
+                  className="w-full py-2.5 px-4 bg-custom-blue hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs min-h-[44px]"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> Full Practical Page
+                </button>
+              </div>
             </div>
-            {selectedExperiment.description && (
-              <p className="text-gray-600 text-xs sm:text-sm mt-3">{selectedExperiment.description}</p>
-            )}
           </div>
         </div>
       )}

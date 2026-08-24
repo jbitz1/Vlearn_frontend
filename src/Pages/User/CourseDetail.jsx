@@ -171,7 +171,14 @@ function CourseDetail() {
           <div className="col-span-1 lg:col-span-2 space-y-4 md:space-y-6">
             {/* Video Player */}
             <div className="w-full aspect-video bg-black rounded-xl overflow-hidden">
-              {course?.playback_url ? (
+              {course?.cloudflare_video_id ? (
+                <iframe
+                  src={`https://iframe.videodelivery.net/${course.cloudflare_video_id}`}
+                  className="w-full h-full"
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                  allowFullScreen
+                />
+              ) : course?.playback_url ? (
                 <ReactPlayer
                   url={course.playback_url}
                   controls

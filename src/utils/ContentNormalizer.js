@@ -98,6 +98,16 @@ export const ContentNormalizer = {
         // Strip research citation markers like [95], [88, 89], [91, 95, 96]
         text = text.replace(/\s*\[\s*\d+(?:\s*,\s*\d+)*\s*\]/g, '');
 
+        // Normalize unicode bullets (•, \u2022) to standard Markdown list items (- )
+        // 1. Convert lines starting with bullet character
+        text = text.replace(/^[ \t]*[•\u2022][ \t]*/gm, '- ');
+
+        // 2. Convert inline bullets separated by spaces or punctuation into new line list items
+        text = text.replace(/([^\n])[ \t]+[•\u2022][ \t]+/g, '$1\n- ');
+
+        // 3. Ensure a blank line before the first list item IF preceded by a regular paragraph line
+        text = text.replace(/^([^\n\-\*\d\>#][^\n]*)\n(- |\* )/gm, '$1\n\n$2');
+
         return text.trim();
     },
 

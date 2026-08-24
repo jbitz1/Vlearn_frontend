@@ -6,8 +6,9 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import BASE_URL from '../../config';
 import { ContentNormalizer } from '../../utils/ContentNormalizer';
+import SimulationViewerContainer from '../../Pages/User/Simulations/SimulationViewerContainer';
 import {
-  Target, Book, PenTool, Lightbulb, AlertTriangle, XCircle, Zap, Star, BrainCircuit, Globe, Hand, FlaskConical, Sparkles, CheckCircle2, PlayCircle, BarChart, Image as ImageIcon, MonitorPlay, Link2, BookOpen, Check, X
+  Target, Book, PenTool, Lightbulb, AlertTriangle, XCircle, Zap, Star, BrainCircuit, Globe, Hand, FlaskConical, Sparkles, CheckCircle2, PlayCircle, BarChart, Image as ImageIcon, MonitorPlay, Link2, BookOpen, Check, X, Clock
 } from 'lucide-react';
 
 // ─── Content extraction helper ───────────────────────────────────────────────
@@ -15,30 +16,125 @@ const text = (c) => ContentNormalizer.sanitizeText(ContentNormalizer.extractText
 const parseContent = (c) => ContentNormalizer.parseContent(c);
 
 const ensureMathDelimiters = (str) => {
-  if (typeof str !== 'string') return str;
+  if (typeof str !== 'string' || !str) return str;
   let text = str.replace(/\\+\$/g, '$');
-  
-  // 1. Convert parenthetical math expressions like ((\Delta H^\circ_c)) or ((\text{pH})) into ($...$)
+
+  // 1. Convert parenthetical math expressions like ((\Delta H^\circ_c)) into ($...$)
   text = text.replace(/\(\((\s*\\[a-zA-Z]+[^\(\)]*?)\)\)/g, '($$$1$$)');
   text = text.replace(/\(\((\s*\^[0-9]+_[0-9]+[^\(\)]*?)\)\)/g, '($$$1$$)');
-  
-  // 2. Fix corrupted 'eq \text' -> '\neq \text'
-  text = text.replace(/(?<![a-zA-Z0-9\\])eq\s+(\\text\{)/g, '\\neq $1');
-  text = text.replace(/(?<![a-zA-Z0-9\\])eq\s+(\\[a-zA-Z]+)/g, '\\neq $1');
-  
-  // 3. Process non-math parts
-  const parts = text.split(/(\$\$.*?\$\$|\$.*?\$)/g);
-  return parts.map((part, idx) => {
-    if (idx % 2 === 0) {
-      let p = part;
-      // Convert single raw Greek letters or standard math symbols outside $ into $symbol$
-      p = p.replace(/(?<![a-zA-Z0-9\\])\\(alpha|beta|gamma|lambda|Delta|sigma|mu|Omega|theta|pi|rho|tau|phi|omega|times|rightarrow|leftarrow|approx|neq|leq|geq|pm)(?![a-zA-Z])/g, '$\\$1$');
-      // Convert isotope notation e.g. ^{235}_{92}\text{U} outside $ into $...$
-      p = p.replace(/(?<!\$)\^\{?([0-9]+)\}?_\{?([0-9]+)\}?(\\text\{[^\}]+\})?(?!\$)/g, '$$^{$1}_{$2}$3$$');
-      return p;
+
+  // 2. Normalize common corrupted LaTeX commands anywhere in text
+  text = text.replace(/\\(?:xr\\)*xr\\rightarrow\{([^}]+)\}/g, '\\xrightarrow{$1}');
+  text = text.replace(/\\(?:xr\\)*rightarrow\{([^}]+)\}/g, '\\xrightarrow{$1}');
+  text = text.replace(/\\rightarrow\{([^}]+)\}/g, '\\xrightarrow{$1}');
+  text = text.replace(/\\rightarrow\[([^\]]+)\]\{([^}]+)\}/g, '\\xrightarrow[$1]{$2}');
+  text = text.replace(/\\(?:xr\\)*xr\\rightarrow\b/g, '\\rightarrow');
+  text = text.replace(/\\xr\b/g, '');
+  text = text.replace(/(\\\w+|\})\s*\*\s*\{(\([a-zA-Z]+\))\s*\}/g, '$1_$2');
+  text = text.replace(/\*\s*\{(\([a-zA-Z]+\))\s*\}/g, '_$1');
+  text = text.replace(/\\\_\{/g, '_{');
+  text = text.replace(/\\\^\{/g, '^{');
+
+  // 3. Remove isolated dollar signs around operators inside equations
+  text = text.replace(/\$(?:\\rightarrow|\\rightleftharpoons|\\leftarrow|\\Delta|\\pm|\\times|\\approx)\$/g, (m) => m.slice(1, -1));
+
+  // 4. Split content by existing display math ($$ ... $$) and inline math ($ ... $) blocks
+  // to avoid EVER altering or double-wrapping content that is already inside math mode!
+  const segments = text.split(/(\$\$[\s\S]*?\$\$|\$[^\$\n]+?\$)/g);
+
+  const processed = segments.map((segment, idx) => {
+    // Odd index = already a valid $$ ... $$ or $ ... $ math block!
+    if (idx % 2 === 1) {
+      if (segment.startsWith('$$')) {
+        let inner = segment.slice(2, -2).trim();
+        inner = inner.replace(/^\$+|\$+$/g, '').trim();
+        return `\n\n$$\n${inner}\n$$\n\n`;
+      }
+      return segment;
     }
-    return part;
-  }).join('');
+
+    // Even index = regular markdown text outside math
+    const lines = segment.split('\n');
+    const processedLines = lines.map(line => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('```') || trimmed.startsWith('#')) return line;
+
+      // Normalize unicode square roots and math operators before equation check
+      let cleanTrimmed = trimmed
+        .replace(/√\(([^\)]+)\)/g, '\\sqrt{$1}')
+        .replace(/√([0-9a-zA-Z]+)/g, '\\sqrt{$1}');
+
+      // Check if this line is an unbracketed standalone chemical / mathematical equation
+      const hasMathCommand = /\\(?:propto|implies|iff|frac|sqrt|times|cdot|approx|equiv|sum|int|partial|Delta|rho|alpha|beta|gamma|theta|lambda|sigma|omega|pi|mu|nu|pm|mp|le|ge|leq|geq|neq|ne|quad|qquad|left|right|over|choose|text|circ|degree|rightarrow|leftarrow|rightleftharpoons|xrightarrow|xleftarrow)\b/.test(cleanTrimmed);
+      const isStandaloneEquation = (
+        hasMathCommand ||
+        /^[a-zA-Z0-9_\^\(\)\s\+\-\*\/\.\{\}\\]*(=|∝|→|⇌|\\implies|\\approx)[a-zA-Z0-9_\^\(\)\s\+\-\*\/\.\{\}\\]+$/.test(cleanTrimmed)
+      );
+
+      const isProseSentence = /^(?:For|If|When|Where|Note|Since|Then|According|Therefore|Thus|Hence|Step|Given|The|A|An|Let)\b/i.test(cleanTrimmed);
+
+      if (isStandaloneEquation && !isProseSentence) {
+        return `\n\n$$\n${cleanTrimmed}\n$$\n\n`;
+      }
+
+      // Check if line is a bullet item with an unbracketed equation: e.g. "- \text{C} + \text{O}_2 \rightarrow ..."
+      const bulletMatch = line.match(/^(\s*(?:[-*]|\d+\.)\s*)(.*)$/);
+      if (bulletMatch) {
+        const prefix = bulletMatch[1];
+        let rest = bulletMatch[2].trim()
+          .replace(/√\(([^\)]+)\)/g, '\\sqrt{$1}')
+          .replace(/√([0-9a-zA-Z]+)/g, '\\sqrt{$1}');
+        if (hasMathCommand && !/^(?:For|If|When|Where|Note|Since|Then|The|A|An|Let)\b/i.test(rest)) {
+          return `${prefix}$${rest}$`;
+        }
+      }
+
+      // In regular prose, normalize unicode square roots
+      let p = line
+        .replace(/√\(([^\)]+)\)/g, '$\\sqrt{$1}$')
+        .replace(/(?<![\$\w])√([0-9a-zA-Z]+)/g, '$\\sqrt{$1}$');
+
+      // Replace unbracketed LaTeX fractions or square roots in prose
+      p = p.replace(/(?<!\$)\\(?:frac|sqrt)\{(?:[^{}]+|\{[^{}]*\})*\}(?:\{(?:[^{}]+|\{[^{}]*\})*\})?(?!\$)/g, (m) => `$${m}$`);
+
+      // Replace unbracketed math operators in prose
+      p = p.replace(/(?<![\$\\])\\(times|approx|implies|propto|pm|mp|div|le|ge|leq|geq|neq|ne|cdot|Delta)\b(?!\$)/g, '$$\\$1$$');
+
+      // Replace un-delimited variable subscripts like V_1, T_1, P_1, t_2, R_A, M_r, M_B
+      p = p.replace(/(?<![\$\w\\])\b([a-zA-Z])_([0-9a-zA-Z]+)\b(?![\$\w])/g, '$$$1_$2$$');
+
+      // Inline standalone chemical formulas like \text{NaOH} or \text{SO}_2
+      p = p.replace(/(?<!\$)(?:\\text\{[a-zA-Z0-9_\(\)\+\-\s]+\}(?:[_\^]\{[^\}]+\})?\s*)+(?!\$)/g, (m) => `$${m.trim()}$`);
+
+      // Replace isolated un-delimited Greek symbols in prose
+      p = p.replace(/(?<![\$\\])\\(rho|alpha|beta|gamma|theta|lambda|pi|mu|sigma|omega|Phi)\b(?!\$)/g, '$$\\$1$$');
+
+      // Replace isolated un-delimited degree notations like ^\circ or ^\circ\text{C}
+      p = p.replace(/(?<![\$\\])\^\\circ(?:\\text\{C\})?/g, (m) => `$${m}$`);
+
+      return p;
+    });
+
+    return processedLines.join('\n');
+  });
+
+  let result = processed.join('');
+  result = result.replace(/\n{3,}/g, '\n\n');
+  return result.trim();
+};
+
+const normalizeMarkdownText = (rawStr) => {
+  if (!rawStr || typeof rawStr !== 'string') return rawStr;
+  let text = rawStr;
+  // Convert lines starting with bullet character (• or \u2022) to markdown list item (- )
+  text = text.replace(/^[ \t]*[•\u2022][ \t]*/gm, '- ');
+  // Convert inline bullets separated by spaces or punctuation into new line list items
+  text = text.replace(/([^\n])[ \t]+[•\u2022][ \t]+/g, '$1\n- ');
+  // Strip accidental 4+ space indentation that turns regular text into <pre><code> blocks
+  text = text.replace(/^[ \t]{4,}(?![*\-\d]\s)([^\n]+)/gm, '$1');
+  // Ensure a blank line before the first list item IF preceded by a regular paragraph line
+  text = text.replace(/^([^\n\-\*\d\>#][^\n]*)\n(- |\* )/gm, '$1\n\n$2');
+  return ensureMathDelimiters(text);
 };
 
 const MD = ({ children, className = '' }) => {
@@ -46,7 +142,7 @@ const MD = ({ children, className = '' }) => {
     ? children.map(child => (typeof child === 'string' ? child : String(child ?? ''))).join('')
     : (typeof children === 'string' ? children : String(children ?? ''));
 
-  const content = ensureMathDelimiters(rawContent);
+  const content = normalizeMarkdownText(rawContent);
 
   return (
     <div className={`prose prose-stone max-w-[70ch] leading-relaxed text-gray-800 font-sans ${className}`}>
@@ -55,7 +151,9 @@ const MD = ({ children, className = '' }) => {
         rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
         components={{
           p: ({ node, ...props }) => <p className="mb-4 sm:mb-6 text-gray-800 leading-relaxed font-sans text-base sm:text-lg md:text-xl" {...props} />,
-          li: ({ node, ...props }) => <li className="mb-1.5 sm:mb-2 text-gray-800 font-sans text-base sm:text-lg md:text-xl" {...props} />,
+          ul: ({ node, ...props }) => <ul className="list-disc list-outside ml-6 sm:ml-8 mb-4 sm:mb-6 space-y-2 text-gray-800 font-sans text-base sm:text-lg md:text-xl" {...props} />,
+          ol: ({ node, ...props }) => <ol className="list-decimal list-outside ml-6 sm:ml-8 mb-4 sm:mb-6 space-y-2 text-gray-800 font-sans text-base sm:text-lg md:text-xl" {...props} />,
+          li: ({ node, ...props }) => <li className="text-gray-800 font-sans text-base sm:text-lg md:text-xl leading-relaxed pl-1" {...props} />,
           pre: ({ node, children, ...props }) => (
             <div className="my-6 sm:my-8 bg-slate-950 text-emerald-400 border border-slate-800 shadow-2xl rounded-2xl overflow-hidden font-mono text-xs md:text-sm leading-snug">
               <div className="bg-slate-900/90 px-3.5 py-2 sm:px-4 sm:py-2.5 border-b border-slate-800 flex items-center justify-between">
@@ -118,7 +216,7 @@ export const LearningGoalBlock = ({ block }) => {
 
   return (
     <div className="my-6 sm:my-12 p-4 sm:p-6 md:p-8 bg-blue-50/60 border border-blue-100/80 rounded-2xl sm:rounded-3xl">
-      <BlockHeader icon={Target} label="By the end of this concept" colorClass="text-custom-blue" />
+      <BlockHeader icon={Target} label="Learning Goal" colorClass="text-custom-blue" />
       <MD className="text-gray-900 font-medium text-base sm:text-lg md:text-xl leading-relaxed font-sans max-w-[70ch]">{goalText}</MD>
     </div>
   );
@@ -587,13 +685,12 @@ export const SuggestedMediaBlock = ({ block }) => {
     const path = fileStr.startsWith('/') ? fileStr : `/media/${fileStr}`;
     return `${BASE_URL}${path}`;
   };
-  const assetUrl = getFileUrl(asset?.url) || getFileUrl(asset?.file);
-  
+  const rawUrl = asset?.url || asset?.file || c.resolved_url || c.url || c.resolved_video_id || c.playback_url || c.cloudflare_video_id;
   const isVideo = asset 
     ? ['video', 'youtube'].includes(asset.asset_type) 
-    : ['suggested_video', 'video_ref'].includes(block.block_type);
-  const resolvedUrl = assetUrl || c.resolved_url || c.url || c.resolved_video_id;
-  const resolvedImageUrl = !isVideo ? (resolvedUrl || c.resolved_image_url) : c.resolved_image_url;
+    : (['suggested_video', 'video_ref'].includes(block.block_type) || Boolean(c?.cloudflare_video_id || c?.playback_url || c?.resolved_video_id || (c?.url && (c.url.includes('youtube') || c.url.includes('youtu.be') || c.url.includes('videodelivery.net')))));
+  const resolvedUrl = isVideo ? (rawUrl || c.resolved_video_id || c.cloudflare_video_id) : getFileUrl(rawUrl);
+  const resolvedImageUrl = !isVideo ? (resolvedUrl || getFileUrl(c.resolved_image_url)) : getFileUrl(c.resolved_image_url);
 
   // Direct SVG XML support (from metadata, content, or fetched)
   const inlineSvg = asset?.metadata?.svg_content || block?.metadata?.svg_content || c?.svg_content || c?.svg_markup || c?.svg || fetchedSvg;
@@ -717,40 +814,92 @@ export const SuggestedMediaBlock = ({ block }) => {
 
   if (resolvedUrl && isVideo) {
     const isYouTube = resolvedUrl.includes('youtube.com') || resolvedUrl.includes('youtu.be') || /^[a-zA-Z0-9_-]{11}$/.test(resolvedUrl);
-    
+    const description = c?.description || c?.text || c?.instruction || c?.purpose || '';
+    const videoTitle = block.title || (isYouTube ? 'Demonstration Video' : 'Laboratory Experiment');
+
+    let videoElement = null;
+
     if (isYouTube) {
-        let videoId = resolvedUrl;
-        if (resolvedUrl.includes('youtube.com') || resolvedUrl.includes('youtu.be')) {
-            try {
-                const u = new URL(resolvedUrl);
-                videoId = u.searchParams.get('v') || u.pathname.split('/').pop() || '';
-            } catch { /* ignore */ }
-        }
-        
-        return (
-          <div className="my-16 bg-black rounded-3xl overflow-hidden shadow-xl">
-            <div className="aspect-video w-full">
-              <iframe src={`https://www.youtube.com/embed/${videoId}`} className="w-full h-full" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen />
-            </div>
-            <div className="px-8 py-5 bg-white flex items-center justify-between border border-t-0 border-gray-200 rounded-b-3xl">
-              <span className="text-gray-900 font-semibold text-lg font-sans">{block.title || 'Video Resource'}</span>
-              <PlayCircle className="text-gray-400 w-8 h-8 shrink-0" strokeWidth={1} />
-            </div>
-          </div>
+      let videoId = resolvedUrl;
+      if (resolvedUrl.includes('youtube.com') || resolvedUrl.includes('youtu.be')) {
+        try {
+          const u = new URL(resolvedUrl);
+          videoId = u.searchParams.get('v') || u.pathname.split('/').pop() || '';
+        } catch { /* ignore */ }
+      }
+      videoElement = (
+        <iframe
+          src={`https://www.youtube.com/embed/${videoId}`}
+          className="w-full h-full"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          allowFullScreen
+        />
+      );
+    } else {
+      const cloudflareMatch = resolvedUrl.match(/videodelivery\.net\/([a-zA-Z0-9]+)/);
+      const cloudflareId = cloudflareMatch ? cloudflareMatch[1] : (asset?.metadata?.cloudflare_video_id || c?.cloudflare_video_id || (/^[a-f0-9]{32}$/i.test(resolvedUrl) ? resolvedUrl : null));
+
+      if (cloudflareId) {
+        videoElement = (
+          <iframe
+            src={`https://iframe.videodelivery.net/${cloudflareId}`}
+            className="w-full h-full"
+            allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+            allowFullScreen
+          />
         );
-    }
-    
-    return (
-      <div className="my-16 bg-black rounded-3xl overflow-hidden shadow-xl">
-        <div className="aspect-video w-full">
+      } else {
+        videoElement = (
           <video controls className="w-full h-full" src={resolvedUrl}>
             Your browser doesn't support video.
           </video>
-        </div>
-        <div className="px-8 py-5 bg-white flex items-center justify-between border border-t-0 border-gray-200 rounded-b-3xl">
-          <span className="text-gray-900 font-semibold text-lg font-sans">{block.title || 'Video Resource'}</span>
-          <PlayCircle className="text-gray-400 w-8 h-8 shrink-0" strokeWidth={1} />
-        </div>
+        );
+      }
+    }
+
+    const hasDescription = Boolean(description && description.trim().length > 0);
+
+    return (
+      <div className="my-8 sm:my-10 w-full">
+        {hasDescription ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-stretch w-full">
+            {/* Left: Dominant, Extra-Wide Video Player */}
+            <div className="lg:col-span-8 xl:col-span-9 bg-white border border-gray-200/80 rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+              <div className="flex items-center gap-2 mb-3.5 px-1">
+                <PlayCircle className="text-red-500 w-5 h-5 shrink-0" />
+                <h3 className="font-bold text-base sm:text-xl text-gray-900 font-sans tracking-tight">
+                  {videoTitle}
+                </h3>
+              </div>
+              <div className="aspect-video w-full bg-black rounded-2xl overflow-hidden shadow-xs">
+                {videoElement}
+              </div>
+            </div>
+
+            {/* Right: Separate, Clean Light Explanation Card */}
+            <div className="lg:col-span-4 xl:col-span-3 bg-white border border-gray-200/80 rounded-3xl p-6 sm:p-7 shadow-xs space-y-4 flex flex-col justify-center">
+              <div className="flex items-center gap-2 text-xs font-bold text-gray-700 uppercase tracking-wider">
+                <BookOpen className="w-4 h-4 text-custom-blue" />
+                <span>Overview & Context</span>
+              </div>
+              <p className="text-sm text-gray-600 leading-relaxed font-sans">
+                {description}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white border border-gray-200/80 rounded-3xl p-4 sm:p-6 shadow-xs space-y-3 w-full">
+            <div className="flex items-center gap-2 px-1">
+              <PlayCircle className="text-red-500 w-5 h-5 shrink-0" />
+              <h3 className="font-bold text-base sm:text-xl text-gray-900 font-sans tracking-tight">
+                {videoTitle}
+              </h3>
+            </div>
+            <div className="aspect-video w-full bg-black rounded-2xl overflow-hidden shadow-xs">
+              {videoElement}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -777,7 +926,7 @@ export const ConceptCompletionCard = ({ page, nextPageTitle, onNext, onComplete,
 
   return (
     <div className="mt-20 mb-16 bg-slate-900 border border-slate-800 rounded-3xl p-10 md:p-14 text-white shadow-xl">
-      <BlockHeader icon={Check} label="Concept Complete" iconClass="text-emerald-400" colorClass="text-emerald-400" />
+      <BlockHeader icon={Check} label="Section Complete" iconClass="text-emerald-400" colorClass="text-emerald-400" />
 
       {takeaways.length > 0 && (
         <div className="my-10">
@@ -1224,6 +1373,28 @@ export const PhotoelectricSimulationSandbox = ({ block }) => {
 export const InteractiveSimulationBlock = ({ block }) => {
   const title = block?.title || '';
   const content = parseContent(block?.content);
+  const metadata = block?.metadata || {};
+  const asset = block?.assets && block.assets.length > 0 ? block.assets[0] : null;
+
+  const simKey = metadata.simulation_key || content?.simulation_key || asset?.metadata?.simulation_key || block?.simulation_key || metadata.key || content?.key;
+  const archetype = metadata.archetype || content?.archetype || asset?.metadata?.archetype || block?.archetype || simKey;
+
+  if (simKey || archetype) {
+    const simObject = {
+      title: title || 'Interactive Simulation',
+      key: simKey || archetype,
+      archetype: archetype || simKey,
+      subject: metadata.subject || content?.subject || asset?.metadata?.subject || 'CHEMISTRY',
+      topic: metadata.concept_group || metadata.topic || content?.topic || 'Interactive Simulation',
+      config: metadata.config || content?.config || asset?.metadata?.config || {}
+    };
+    return (
+      <div className="my-8">
+        <SimulationViewerContainer simulation={simObject} />
+      </div>
+    );
+  }
+
   const text = ((content?.text || '') + ' ' + title).toLowerCase();
 
   if (text.includes('x-ray') || text.includes('xray') || text.includes('coolidge')) {

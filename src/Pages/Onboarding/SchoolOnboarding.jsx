@@ -1,255 +1,393 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import SchoolInfoStep from './SchoolInfoStep';
-import FirstStreamStep from './FirstStreamStep';
-import SchoolReviewStep from './SchoolReviewStep';
-import schoolAdminService from '../../services/schoolAdminService';
-import { LogOut } from 'lucide-react';
-import UserContext from '../../Context/UserContext';
+import { GraduationCap, Check } from 'lucide-react';
+import apiClient from '../../config/apiClient';
 
-const LOCAL_STORAGE_KEY = 'vlearn_school_onboarding_draft';
+// Import Steps
+import SchoolProfileStep from './steps/SchoolProfileStep';
+import SubjectsStep from './steps/SubjectsStep';
+import TeachersStep from './steps/TeachersStep';
+import FormsStreamsStep from './steps/FormsStreamsStep';
+import StudentsStep from './steps/StudentsStep';
+import TeacherAssignmentsStep from './steps/TeacherAssignmentsStep';
+import ExamSetupStep from './steps/ExamSetupStep';
+import ReviewStep from './steps/ReviewStep';
+
+const LOCAL_STORAGE_KEY = 'vlearn_school_setup_wizard';
+
+const SUBJECT_MAP = {
+  'mat': 'Mathematics',
+  'eng': 'English',
+  'kis': 'Kiswahili',
+  'bio': 'Biology',
+  'chem': 'Chemistry',
+  'phy': 'Physics',
+  'geo': 'Geography',
+  'his': 'History & Government',
+  'cre': 'Christian Religious Education',
+  'agr': 'Agriculture',
+  'bst': 'Business Studies',
+  'comp': 'Computer Studies',
+};
+
+const STEPS = [
+  { num: 1, label: 'Profile' },
+  { num: 2, label: 'Subjects' },
+  { num: 3, label: 'Teachers' },
+  { num: 4, label: 'Structure' },
+  { num: 5, label: 'Students' },
+  { num: 6, label: 'Assignments' },
+  { num: 7, label: 'Exams' },
+  { num: 8, label: 'Review' },
+];
+
+function formatSchoolType(val) {
+  if (!val) return '';
+  const map = {
+    'NATIONAL': 'National School',
+    'EXTRA_COUNTY': 'Extra County School',
+    'COUNTY': 'County School',
+    'SUB_COUNTY': 'Sub-County School',
+    'PRIVATE': 'Private School',
+    'INTERNATIONAL': 'International School'
+  };
+  return map[String(val).toUpperCase()] || val;
+}
+
+function formatCurriculum(val) {
+  if (!val) return '';
+  const map = {
+    '8-4-4': '8-4-4',
+    'CBC': 'CBC',
+    'BOTH': 'Both'
+  };
+  return map[String(val).toUpperCase()] || val;
+}
 
 export default function SchoolOnboarding() {
   const navigate = useNavigate();
-  const { logout } = useContext(UserContext);
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [globalError, setGlobalError] = useState(null);
-
-  // Form Data
-  const [schoolData, setSchoolData] = useState({
-    name: '',
-    code: '',
-    location_county: '',
-    location_subcounty: '',
-    school_type: '',
-    ownership_type: '',
-    curricula_offered: ''
+  const [isSaving, setIsSaving] = useState(false);
+  const [activeSchoolId, setActiveSchoolId] = useState(null);
+  
+  // Wizard State - starts with clean empty fields waiting for database hydration
+  const [wizardData, setWizardData] = useState({
+    schoolProfile: {
+      id: null,
+      name: '',
+      code: '',
+      type: '',
+      curriculum: '',
+      county: '',
+      subCounty: '',
+      phone: '',
+      email: '',
+      adminName: '',
+      adminPhone: '',
+      adminEmail: '',
+      academicYear: '2026',
+      currentTerm: 'Term 1'
+    },
+    subjects: [],
+    teachers: [],
+    formsStreams: {
+      forms: [],
+      streams: {}
+    },
+    students: {},
+    teacherAssignments: {},
+    examConfig: { count: '', names: [] }
   });
 
-  const [streamData, setStreamData] = useState({
-    curriculumId: '',
-    gradeId: '',
-    name: '',
-    numberOfStudents: ''
-  });
-
-  // Reference Data
-  const [curricula, setCurricula] = useState([]);
-  const [grades, setGrades] = useState([]);
-  const [loadingStates, setLoadingStates] = useState({ curricula: false, grades: false });
-
-  // 1. Centralized Gating & Initialization
+  // Load authoritative school record from backend on mount
   useEffect(() => {
-    const initializeOnboarding = async () => {
+    const initialize = async () => {
       try {
-        // Check if school already exists on backend
-        const schools = await schoolAdminService.fetchSchools();
-        if (schools && schools.length > 0) {
-          // School exists, skip onboarding and send to dashboard (dashboard handles subscription gate if needed)
-          navigate('/school/dashboard', { replace: true });
-          return;
+        // Fetch the authenticated user's actual school from the backend API
+        const res = await apiClient.get('/api/organizations/schools/');
+        const fetchedSchools = res.data?.results || res.data || [];
+        const school = fetchedSchools.length > 0 ? fetchedSchools[0] : null;
+
+        if (school) {
+          setActiveSchoolId(school.id);
         }
 
-        // Restore from localStorage if backend has nothing
+        const authoritativeProfile = {
+          id: school?.id || null,
+          name: school?.name || '',
+          code: school?.code || '',
+          type: formatSchoolType(school?.school_type),
+          curriculum: formatCurriculum(school?.curricula_offered),
+          county: school?.location_county || '',
+          subCounty: school?.location_subcounty || '',
+          phone: school?.phone_number || '',
+          email: school?.contact_email || '',
+          adminName: school?.owner_detail?.first_name || '',
+          adminPhone: school?.owner_detail?.phone_number || school?.owner_detail?.username || '',
+          adminEmail: school?.owner_detail?.email || '',
+          academicYear: '2026',
+          currentTerm: 'Term 1'
+        };
+
+        // Check for local draft progress for non-registration steps
         const savedDraft = localStorage.getItem(LOCAL_STORAGE_KEY);
+        let draftData = null;
         if (savedDraft) {
           try {
             const parsed = JSON.parse(savedDraft);
-            if (parsed.schoolData) setSchoolData(parsed.schoolData);
-            if (parsed.streamData) setStreamData(parsed.streamData);
+            draftData = parsed.wizardData;
             if (parsed.step) setCurrentStep(parsed.step);
           } catch (e) {
             console.error("Failed to parse local draft", e);
           }
         }
 
-        // Fetch Curricula
-        setLoadingStates(prev => ({ ...prev, curricula: true }));
-        const fetchedCurricula = await schoolAdminService.fetchCurricula();
-        setCurricula(fetchedCurricula);
+        setWizardData({
+          // School profile is strictly populated from the backend database record
+          schoolProfile: authoritativeProfile,
+          // Wizard steps start empty unless the user entered draft data during this session
+          subjects: draftData?.subjects || [],
+          teachers: draftData?.teachers || [],
+          formsStreams: draftData?.formsStreams || { forms: [], streams: {} },
+          students: draftData?.students || {},
+          teacherAssignments: draftData?.teacherAssignments || {},
+          examConfig: draftData?.examConfig || { count: '3', names: ['Opening Exam', 'Mid-Term Exam', 'Closing Exam'] }
+        });
       } catch (err) {
-        console.error("Initialization error:", err);
-        setGlobalError("Failed to initialize setup. Please refresh the page.");
+        console.error("Failed to load authoritative school profile from backend:", err);
       } finally {
-        setLoadingStates(prev => ({ ...prev, curricula: false }));
         setIsInitializing(false);
       }
     };
 
-    initializeOnboarding();
-  }, [navigate]);
+    initialize();
+  }, []);
 
-  // Fetch grades whenever curriculum changes
-  useEffect(() => {
-    const fetchGradesForCurriculum = async () => {
-      if (!streamData.curriculumId) {
-        setGrades([]);
-        return;
-      }
-      try {
-        setLoadingStates(prev => ({ ...prev, grades: true }));
-        const fetchedGrades = await schoolAdminService.fetchGrades(streamData.curriculumId);
-        setGrades(fetchedGrades);
-        
-        // Clear grade if it's no longer in the list
-        if (streamData.gradeId && !fetchedGrades.find(g => g.id.toString() === streamData.gradeId.toString())) {
-           setStreamData(prev => ({ ...prev, gradeId: '' }));
-        }
-      } catch (err) {
-        console.error("Failed to fetch grades", err);
-      } finally {
-        setLoadingStates(prev => ({ ...prev, grades: false }));
-      }
-    };
-
-    fetchGradesForCurriculum();
-  }, [streamData.curriculumId]);
-
-  // Persist draft on every step change or data change
+  // Save wizard draft on change
   useEffect(() => {
     if (isInitializing) return;
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
       step: currentStep,
-      schoolData,
-      streamData
+      wizardData
     }));
-  }, [currentStep, schoolData, streamData, isInitializing]);
+  }, [currentStep, wizardData, isInitializing]);
 
-  const handleSchoolDataChange = (field, value) => {
-    setSchoolData(prev => ({ ...prev, [field]: value }));
+  const updateSectionData = (section, data) => {
+    setWizardData(prev => ({
+      ...prev,
+      [section]: data
+    }));
   };
 
-  const handleStreamDataChange = (field, value) => {
-    setStreamData(prev => ({ ...prev, [field]: value }));
+  const handleNext = () => {
+    if (activeSchoolId && wizardData) {
+      apiClient.post(`/api/organizations/schools/${activeSchoolId}/save-draft/`, {
+        draft_data: wizardData
+      }).catch(err => console.warn("Background draft sync error:", err));
+    }
+    if (currentStep < 8) setCurrentStep(prev => prev + 1);
   };
 
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    setGlobalError(null);
+  const handleBack = () => {
+    if (currentStep > 1) setCurrentStep(prev => prev - 1);
+  };
+
+  const handleSaveAndContinue = async () => {
+    setIsSaving(true);
     try {
-      const payload = {
-        ...schoolData,
-        first_stream: {
-          curriculum_id: streamData.curriculumId,
-          grade_id: streamData.gradeId,
-          name: streamData.name,
-          number_of_students: streamData.numberOfStudents ? parseInt(streamData.numberOfStudents, 10) : 0
-        }
-      };
-
-      await schoolAdminService.submitSchoolOnboarding(payload);
-      
-      // Clear localStorage on success
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-      
-      // Navigate to subscription
-      navigate('/school/subscription', { replace: true });
+      if (activeSchoolId) {
+        await apiClient.post(`/api/organizations/schools/${activeSchoolId}/save-draft/`, {
+          draft_data: wizardData
+        });
+      }
     } catch (err) {
-      console.error("Submission failed:", err);
-      const msg = err.response?.data?.detail || err.response?.data?.message || err.response?.data?.[0] || "Failed to create school profile.";
-      setGlobalError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      console.warn("Saving draft to server failed, draft is preserved in local storage.");
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
+      navigate('/school/dashboard');
+    }
+  };
+
+  const handleActivate = async () => {
+    setIsSaving(true);
+    try {
+      if (activeSchoolId) {
+        await apiClient.post(`/api/organizations/schools/${activeSchoolId}/save-draft/`, {
+          draft_data: wizardData
+        });
+        await apiClient.patch(`/api/organizations/schools/${activeSchoolId}/`, {
+          setup_status: 'PROFILE_COMPLETE'
+        });
+      }
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      navigate('/school/dashboard');
+    } catch (err) {
+      console.warn("Error updating school setup:", err);
+      navigate('/school/dashboard');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   if (isInitializing) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-custom-blue/30 border-t-custom-blue rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="text-center space-y-3">
+          <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm font-medium text-slate-600">Loading school setup details...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-custom-blue rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-xl leading-none">V</span>
+    <div className="min-h-screen bg-slate-50 font-sans">
+      {/* Top Banner Header */}
+      <header className="bg-navy text-white px-6 py-4 flex items-center justify-between shadow-md">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white">
+            <GraduationCap size={18} />
+          </div>
+          <span className="font-bold font-heading text-base tracking-tight">
+            VizLearn — School Setup
+            {wizardData.schoolProfile.name ? ` · ${wizardData.schoolProfile.name}` : ''}
+          </span>
+        </div>
+        <button
+          onClick={handleSaveAndContinue}
+          className="text-xs text-white/70 hover:text-white transition-colors cursor-pointer"
+        >
+          {isSaving ? 'Saving...' : 'Save & continue later'}
+        </button>
+      </header>
+
+      {/* Horizontal Stepper Progress */}
+      <div className="bg-white border-b border-slate-200 px-6 py-4 overflow-x-auto shadow-sm">
+        <div className="flex items-center justify-center gap-0 min-w-max mx-auto max-w-4xl">
+          {STEPS.map((s, idx) => (
+            <div key={s.num} className="flex items-center">
+              <button
+                onClick={() => setCurrentStep(s.num)}
+                className="flex flex-col items-center gap-1 group cursor-pointer"
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold font-heading transition-colors ${
+                  currentStep > s.num
+                    ? 'bg-success text-white'
+                    : currentStep === s.num
+                      ? 'bg-primary text-white shadow-sm shadow-primary/30'
+                      : 'bg-slate-100 text-slate-400'
+                }`}>
+                  {currentStep > s.num ? <Check size={12} /> : s.num}
+                </div>
+                <span className={`text-xs font-medium whitespace-nowrap ${currentStep === s.num ? 'text-primary font-semibold' : 'text-slate-400'}`}>
+                  {s.label}
+                </span>
+              </button>
+              {idx < STEPS.length - 1 && (
+                <div className={`w-8 h-0.5 mb-4 mx-1.5 transition-colors ${currentStep > s.num ? 'bg-success' : 'bg-slate-200'}`} />
+              )}
             </div>
-            <span className="font-bold text-2xl text-gray-800 tracking-tight">VLearn</span>
-          </div>
-          <button 
-            onClick={logout}
-            className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
+          ))}
         </div>
-
-        {/* Progress Bar */}
-        <div className="bg-white rounded-3xl shadow-xl overflow-hidden mb-6">
-          <div className="h-2 flex">
-            <div className={`h-full transition-all duration-500 ease-out ${currentStep >= 1 ? 'bg-custom-orange w-1/3' : 'bg-gray-100'}`} />
-            <div className={`h-full transition-all duration-500 ease-out ${currentStep >= 2 ? 'bg-custom-orange w-1/3' : 'bg-gray-100'}`} />
-            <div className={`h-full transition-all duration-500 ease-out ${currentStep >= 3 ? 'bg-custom-orange w-1/3' : 'bg-gray-100'}`} />
-          </div>
-        </div>
-
-        {/* Global Error Banner */}
-        {globalError && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-start gap-3">
-            <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
-              <p className="font-semibold">Something went wrong</p>
-              <p className="mt-1">{globalError}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Step Content */}
-        <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12">
-          {currentStep === 1 && (
-            <SchoolInfoStep 
-              formData={schoolData}
-              onChange={handleSchoolDataChange}
-              onNext={() => setCurrentStep(2)}
-            />
-          )}
-          
-          {currentStep === 2 && (
-            <FirstStreamStep 
-              curricula={curricula}
-              grades={grades}
-              selectedCurriculumId={streamData.curriculumId}
-              selectedGradeId={streamData.gradeId}
-              streamName={streamData.name}
-              numberOfStudents={streamData.numberOfStudents}
-              onCurriculumChange={(val) => handleStreamDataChange('curriculumId', val)}
-              onGradeChange={(val) => handleStreamDataChange('gradeId', val)}
-              onStreamNameChange={(val) => handleStreamDataChange('name', val)}
-              onStudentCountChange={(val) => handleStreamDataChange('numberOfStudents', val)}
-              loadingStates={loadingStates}
-              onBack={() => setCurrentStep(1)}
-              onNext={() => setCurrentStep(3)}
-            />
-          )}
-
-          {currentStep === 3 && (
-            <SchoolReviewStep 
-              formData={schoolData}
-              firstStreamData={streamData}
-              curricula={curricula}
-              grades={grades}
-              onEditSchool={() => setCurrentStep(1)}
-              onEditStream={() => setCurrentStep(2)}
-              onConfirm={handleSubmit}
-              isSubmitting={isSubmitting}
-            />
-          )}
-        </div>
-
       </div>
+
+      {/* Main Form Content */}
+      <main className="max-w-2xl mx-auto px-4 py-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+          {currentStep === 1 && (
+            <SchoolProfileStep 
+              data={wizardData.schoolProfile} 
+              updateData={(data) => updateSectionData('schoolProfile', data)} 
+            />
+          )}
+          {currentStep === 2 && (
+            <SubjectsStep 
+              selectedSubjects={wizardData.subjects} 
+              updateData={(data) => updateSectionData('subjects', data)} 
+            />
+          )}
+          {currentStep === 3 && (
+            <TeachersStep 
+              teachers={wizardData.teachers} 
+              schoolId={wizardData.schoolProfile.id}
+              updateData={(data) => updateSectionData('teachers', data)} 
+            />
+          )}
+          {currentStep === 4 && (
+            <FormsStreamsStep 
+              data={wizardData.formsStreams} 
+              curriculum={wizardData.schoolProfile.curriculum}
+              updateData={(data) => updateSectionData('formsStreams', data)} 
+            />
+          )}
+          {currentStep === 5 && (
+            <StudentsStep 
+              formsAndStreams={wizardData.formsStreams}
+              data={wizardData.students} 
+              updateData={(data) => updateSectionData('students', data)} 
+            />
+          )}
+          {currentStep === 6 && (
+            <TeacherAssignmentsStep 
+              data={wizardData.teacherAssignments}
+              schoolId={wizardData.schoolProfile.id}
+              subjects={wizardData.subjects.map(sId => SUBJECT_MAP[sId] || sId)}
+              teachers={wizardData.teachers}
+              formsAndStreams={wizardData.formsStreams}
+              updateData={(data) => updateSectionData('teacherAssignments', data)} 
+            />
+          )}
+          {currentStep === 7 && (
+            <ExamSetupStep 
+              data={wizardData.examConfig} 
+              updateData={(data) => updateSectionData('examConfig', data)} 
+            />
+          )}
+          {currentStep === 8 && (
+            <ReviewStep 
+              wizardData={wizardData}
+              setStep={setCurrentStep}
+              onActivate={handleActivate}
+            />
+          )}
+
+          {/* Embedded Card Footer Navigation */}
+          <div className="flex items-center justify-between gap-3 mt-8 pt-6 border-t border-slate-100">
+            {currentStep > 1 ? (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="px-6 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Back
+              </button>
+            ) : <div />}
+
+            <div className="flex gap-3">
+              {currentStep < 8 ? (
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="px-6 py-2.5 rounded-xl bg-navy text-white text-sm font-semibold font-heading hover:bg-navy-700 active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  Continue →
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleActivate}
+                  disabled={isSaving}
+                  className="px-6 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold font-heading hover:bg-primary-dark active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {isSaving ? 'Activating...' : 'Activate School & Go to Dashboard →'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

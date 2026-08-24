@@ -126,7 +126,8 @@ const teacherCurriculumService = {
   async getMyMemberships() {
     try {
       const response = await apiClient.get('/api/organizations/memberships/?user=me');
-      return response.data || [];
+      const data = response.data?.results || response.data || [];
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       console.warn('Failed to fetch teacher memberships:', error.message);
       return [];
@@ -137,7 +138,8 @@ const teacherCurriculumService = {
   async getMyStreams() {
     try {
       const response = await apiClient.get('/api/organizations/teacher/my-streams/');
-      return response.data || [];
+      const data = response.data?.results || response.data || [];
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       console.warn('Failed to fetch teacher streams from backend:', error.message);
       return [];
@@ -469,7 +471,7 @@ const teacherCurriculumService = {
           const simTopic = (s.topic || '').toLowerCase();
           const simTitle = (s.title || '').toLowerCase();
           if (tLower.includes('acid') || tLower.includes('base') || tLower.includes('salt')) return simTopic.includes('acid') || simTitle.includes('acid') || simTitle.includes('solubility');
-          if (tLower.includes('gas law')) return simTopic.includes('gas') || simTitle.includes('charles');
+          if (tLower.includes('gas law')) return simTopic.includes('gas') || simTitle.includes('gas') || simTitle.includes('charles') || simTitle.includes('boyle') || simTitle.includes('graham') || simTitle.includes('diffusion');
           if (tLower.includes('energy') || tLower.includes('heat') || tLower.includes('therm')) return simTopic.includes('energy') || simTitle.includes('hess') || simTitle.includes('heat');
           if (tLower.includes('rate') || tLower.includes('reversible') || tLower.includes('equilibrium')) return simTopic.includes('rate') || simTitle.includes('rate') || simTitle.includes('collision') || simTitle.includes('haber') || simTitle.includes('equilibrium');
           if (tLower.includes('electro') || tLower.includes('redox')) return simTopic.includes('electro') || simTitle.includes('electrolysis') || simTitle.includes('plating') || simTitle.includes('discharge') || simTitle.includes('voltaic') || simTitle.includes('electrode');
@@ -518,88 +520,95 @@ const teacherCurriculumService = {
     return topicResources;
   },
 
-  // Read recently taught lessons with Class, Stream, and Badge context
-  async getRecentlyTaught(userId = 'anonymous') {
-    const streams = await this.getMyStreams();
-    const defaultStream = streams[0] || { school_class_name: '', stream_name: '' };
-    const defaultClassName = defaultStream.school_class_name || '';
-    const defaultStreamName = defaultStream.stream_name || '';
+  // ==========================================
+  // Production Teacher Workspace Endpoints
+  // ==========================================
 
-    const recent = [];
+  // 1. Teacher Home / Dashboard
+  async getTeacherDashboard() {
     try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        const prefix = `vlearn_lesson_progress_${userId}_`;
-        if (key && key.startsWith(prefix)) {
-          const topicId = key.replace(prefix, '').replace('_preview', '');
-          const data = JSON.parse(localStorage.getItem(key));
-          if (data && data.lessonTitle) {
-            recent.push({
-              topicId,
-              lessonId: data.lessonId || topicId,
-              lessonTitle: data.lessonTitle,
-              topicName: data.topicName || '',
-              subjectName: data.subjectName || '',
-              className: data.className || defaultClassName,
-              streamName: data.streamName || defaultStreamName,
-              isSchoolLesson: data.isSchoolLesson !== undefined ? data.isSchoolLesson : true,
-              updatedAt: data.lastUpdated || new Date().toISOString(),
-              timeAgo: 'Recently'
-            });
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to parse recent modules:', e);
+      const res = await apiClient.get('/api/organizations/teacher/dashboard/');
+      return res.data;
+    } catch (err) {
+      console.error('Failed to load teacher dashboard:', err);
+      throw err;
     }
-
-    return recent.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   },
 
-  // Backward compatibility alias
-  async getRecentTeachingModules() {
-    return this.getRecentlyTaught();
-  },
-
-  // Teaching Notes (Private lesson-level notes)
-  getTeachingNotes(lessonId) {
+  // 2. My Teaching Workspace (Curriculum grouped by Subject & Class)
+  async getTeachingWorkspace() {
     try {
-      const raw = localStorage.getItem(`vlearn_teacher_notes_${lessonId}`);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {
-      console.warn('Failed to read teaching notes:', e);
+      const res = await apiClient.get('/api/organizations/teacher/workspace/');
+      return res.data;
+    } catch (err) {
+      console.error('Failed to load teaching workspace:', err);
+      throw err;
+    }
+  },
+
+  // 3. Topic Teaching Facilitation Command Center
+  async getTopicWorkspace(streamId, subjectId, topicId) {
+    try {
+      const res = await apiClient.get(`/api/organizations/teacher/topic-workspace/${streamId}/${subjectId}/${topicId}/`);
+      return res.data;
+    } catch (err) {
+      console.error('Failed to load topic workspace:', err);
+      throw err;
+    }
+  },
+
+  // 4. Save Facilitation Progress & Persistent Notes
+  async saveTeachingLog(logData) {
+    try {
+      const res = await apiClient.post('/api/organizations/teacher/teaching-logs/', logData);
+      return res.data;
+    } catch (err) {
+      console.error('Failed to save teaching log:', err);
+      throw err;
+    }
+  },
+
+  // 5. My Class (Supervised Stream & Students)
+  async getMyClassDetails(streamId = null) {
+    try {
+      const url = streamId
+        ? `/api/organizations/teacher/my-class/?stream_id=${streamId}`
+        : '/api/organizations/teacher/my-class/';
+      const res = await apiClient.get(url);
+      return res.data;
+    } catch (err) {
+      console.error('Failed to load class details:', err);
+      throw err;
+    }
+  },
+
+  // Backward compatibility alias for recently taught
+  async getRecentlyTaught(userId = 'anonymous') {
+    try {
+      const dash = await this.getTeacherDashboard();
+      if (dash?.recently_taught && dash.recently_taught.length > 0) {
+        return dash.recently_taught.map(r => ({
+          ...r,
+          topicId: r.topic_id,
+          lessonId: r.lesson_id || r.topic_id,
+          lessonTitle: r.lesson_title || r.topic_name,
+          topicName: r.topic_name,
+          subjectName: r.subject_name,
+          className: r.form_name,
+          streamName: r.stream_name,
+          isSchoolLesson: true,
+          updatedAt: r.last_taught_at,
+          timeAgo: r.time_ago
+        }));
+      }
+    } catch {
+      // Fall through to local fallback
     }
     return [];
   },
 
-  saveTeachingNote(lessonId, noteText, category = 'reminders') {
-    try {
-      const current = this.getTeachingNotes(lessonId);
-      const newNote = {
-        id: Date.now(),
-        text: noteText,
-        category: category,
-        date: 'Just now'
-      };
-      const updated = [newNote, ...current];
-      localStorage.setItem(`vlearn_teacher_notes_${lessonId}`, JSON.stringify(updated));
-      return updated;
-    } catch (e) {
-      console.warn('Failed to save note:', e);
-      return [];
-    }
-  },
-
-  deleteTeachingNote(lessonId, noteId) {
-    try {
-      const current = this.getTeachingNotes(lessonId);
-      const updated = current.filter(n => n.id !== noteId);
-      localStorage.setItem(`vlearn_teacher_notes_${lessonId}`, JSON.stringify(updated));
-      return updated;
-    } catch (e) {
-      console.warn('Failed to delete note:', e);
-      return [];
-    }
+  async getRecentTeachingModules() {
+    return this.getRecentlyTaught();
   }
 };
 

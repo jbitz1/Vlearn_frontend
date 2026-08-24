@@ -16,13 +16,19 @@ const SUBJECT_CONFIG = {
 };
 
 const CHEMISTRY_TOPICS = [
-  { id: 1, title: 'Acids, Bases and Salts' },
-  { id: 2, title: 'Energy Changes in Chemical and Physical Processes' },
-  { id: 3, title: 'Reaction Rates and Reversible Reactions' },
-  { id: 4, title: 'Electrochemistry' },
-  { id: 5, title: 'Metals' },
-  { id: 6, title: 'Organic Chemistry II' },
-  { id: 7, title: 'Radioactivity' }
+  { id: 1, title: 'Gas Laws' },
+  { id: 2, title: 'The Mole: Formulae and Chemical Equations' },
+  { id: 3, title: 'Organic Chemistry I' },
+  { id: 4, title: 'Nitrogen and its Compounds' },
+  { id: 5, title: 'Sulphur and its Compounds' },
+  { id: 6, title: 'Chlorine and its Compounds' },
+  { id: 7, title: 'Acids, Bases and Salts' },
+  { id: 8, title: 'Energy Changes in Chemical and Physical Processes' },
+  { id: 9, title: 'Reaction Rates and Reversible Reactions' },
+  { id: 10, title: 'Electrochemistry' },
+  { id: 11, title: 'Metals' },
+  { id: 12, title: 'Organic Chemistry II' },
+  { id: 13, title: 'Radioactivity' }
 ];
 
 export default function Simulations() {

@@ -1,42 +1,32 @@
-import { useState } from "react";
-import { useSearchParams } from "react-router";
+import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router";
 import AccountTypeSelection from "./Auth/AccountTypeSelection";
 import RegistrationForm from "./Auth/RegistrationForm";
-
-/**
- * SignupPage — thin orchestrator for the two-step registration flow.
- *
- * Step 1: AccountTypeSelection — user picks Student, Teacher, or School.
- * Step 2: RegistrationForm     — user fills in their details for the chosen role.
- *
- * Deep-link support:
- *   /register?role=student  → skips step 1 and opens the form directly.
- *   /register?role=teacher  → same for teacher.
- *   /register?role=school_admin → same for school.
- *   Any other value is ignored and step 1 is shown.
- *
- * Visual continuity:
- *   Both steps share the same outer page shell (bg-custom-bg, gradient overlay,
- *   tilted decorative cards, inner white card). Content swaps in-place; no
- *   route change occurs between steps.
- *
- * The /role-selection route is NOT visited during normal public registration.
- * It is retained as a legacy compatibility route for existing workflows.
- */
 
 const SELF_REGISTERABLE_ROLES = ["student", "teacher", "school_admin"];
 
 function SignupPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const paramRole = searchParams.get("role");
 
-  // Honour ?role= deep link if the value is a valid self-registerable role
-  const initialRole = SELF_REGISTERABLE_ROLES.includes(paramRole) ? paramRole : null;
+  useEffect(() => {
+    if (paramRole === "school_admin") {
+      navigate("/school-signup", { replace: true });
+    }
+  }, [paramRole, navigate]);
+
+  // Honour ?role= deep link if the value is a valid self-registerable role (excluding school_admin which redirects)
+  const initialRole = SELF_REGISTERABLE_ROLES.includes(paramRole) && paramRole !== "school_admin" ? paramRole : null;
 
   const [selectedRole, setSelectedRole] = useState(initialRole);
   const [step, setStep] = useState(initialRole ? "register" : "select");
 
   const handleRoleSelect = (role) => {
+    if (role === "school_admin") {
+      navigate("/school-signup");
+      return;
+    }
     setSelectedRole(role);
     setStep("register");
   };

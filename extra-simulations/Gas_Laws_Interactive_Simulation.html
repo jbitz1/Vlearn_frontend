@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gas Laws — Interactive Lab | Form 3 Chemistry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&family=Spectral+SC:wght@600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e1512;
+    --bg-2:#141d19;
+    --panel:#17211d;
+    --panel-2:#1c2a24;
+    --line: rgba(238,241,234,0.10);
+    --line-strong: rgba(238,241,234,0.22);
+    --paper:#eef1ea;
+    --ink:#eef1ea;
+    --ink-dim:#a9b6ac;
+    --ink-faint:#71807a;
+    --teal:#5fd0c0;
+    --teal-dim: rgba(95,208,192,0.16);
+    --amber:#e6a23c;
+    --amber-dim: rgba(230,162,60,0.16);
+    --coral:#ef7b5f;
+    --coral-dim: rgba(239,123,95,0.16);
+    --violet:#a48ce8;
+    --violet-dim: rgba(164,140,232,0.16);
+    --radius: 10px;
+    --serif: 'Spectral', Georgia, serif;
+    --serif-sc: 'Spectral SC', Georgia, serif;
+    --mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --sans: 'IBM Plex Sans', -apple-system, Segoe UI, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 800px at 15% -10%, rgba(95,208,192,0.06), transparent 60%),
+      radial-gradient(1000px 700px at 110% 10%, rgba(230,162,60,0.05), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    min-height:100vh;
+    padding: 28px 16px 64px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, var(--bg-2), var(--panel));
+    padding: 28px 28px 22px;
+    margin-bottom: 22px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 26px 26px;
+    opacity:0.35;
+    mask-image: radial-gradient(700px 260px at 20% 0%, black, transparent 75%);
+    pointer-events:none;
+  }
+  .eyebrow{
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--teal); margin:0 0 10px; position:relative;
+  }
+  h1.title{
+    font-family:var(--serif); font-weight:600; font-size:clamp(28px,4vw,40px);
+    margin:0 0 8px; letter-spacing:-0.01em; position:relative;
+  }
+  .subtitle{ color:var(--ink-dim); font-size:15px; max-width:60ch; line-height:1.55; position:relative;}
+
+  /* ---------- TABS ---------- */
+  .tabs{
+    display:flex; gap:8px; margin: 20px 0 18px; flex-wrap:wrap;
+    border-bottom:1px solid var(--line); padding-bottom: 0;
+  }
+  .tab{
+    font-family:var(--serif); font-size:15.5px; font-weight:500;
+    background:transparent; border:none; color:var(--ink-faint);
+    padding: 10px 4px 12px; cursor:pointer; position:relative;
+    border-bottom: 2px solid transparent; margin-bottom:-1px;
+    transition: color .15s ease;
+  }
+  .tab .num{font-family:var(--mono); font-size:11px; color:var(--ink-faint); margin-right:8px;}
+  .tab:hover{color:var(--ink);}
+  .tab.active{color:var(--ink); border-bottom-color: var(--accent, var(--teal));}
+  .tab.active .num{color:var(--accent, var(--teal));}
+
+  .panel{display:none;}
+  .panel.active{display:block; animation: fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  /* ---------- CARD SYSTEM ---------- */
+  .card{
+    border:1px solid var(--line); border-radius: var(--radius);
+    background: var(--panel); padding:20px; margin-bottom:16px;
+  }
+  .card-label{
+    font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+    color: var(--ink-faint); margin:0 0 12px; display:flex; align-items:center; gap:8px;
+  }
+  .card-label .dot{width:6px;height:6px;border-radius:50%; background:var(--accent, var(--teal));}
+
+  .stage{
+    display:grid; grid-template-columns: 1.15fr 1fr; gap:16px;
+  }
+  @media (max-width: 760px){ .stage{grid-template-columns: 1fr;} }
+
+  svg{display:block; width:100%; height:auto;}
+
+  /* ---------- READOUTS ---------- */
+  .readouts{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; margin-top:14px;}
+  .readout{
+    background: var(--panel-2); border:1px solid var(--line); border-radius:8px;
+    padding: 10px 12px;
+  }
+  .readout .r-label{font-family:var(--mono); font-size:10.5px; color:var(--ink-faint); letter-spacing:.08em; text-transform:uppercase; display:flex; justify-content:space-between; align-items:center;}
+  .readout .r-value{font-family:var(--mono); font-size:22px; font-weight:600; color:var(--ink); margin-top:4px; display:flex; align-items:baseline; gap:5px;}
+  .readout .r-unit{font-size:13px; color:var(--ink-dim); font-weight:400;}
+  .readout.flash-up .r-value{color: var(--coral);}
+  .readout.flash-down .r-value{color: var(--teal);}
+  .readout.const .r-value{color: var(--violet);}
+  .trend{font-family:var(--mono); font-size:12px;}
+  .trend.up{color:var(--coral);}
+  .trend.down{color:var(--teal);}
+  .trend.flat{color:var(--violet);}
+
+  /* ---------- CONTROLS ---------- */
+  .control-row{ margin-top:16px; }
+  .control-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;}
+  .control-name{font-family:var(--serif); font-size:15px; font-weight:600;}
+  .control-hint{font-family:var(--mono); font-size:11px; color:var(--ink-faint);}
+  input[type=range]{
+    width:100%; -webkit-appearance:none; appearance:none;
+    height:6px; border-radius:4px; background: var(--line-strong); outline:none; margin: 8px 0 4px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%;
+    background: var(--accent, var(--teal)); border:3px solid var(--bg); box-shadow:0 0 0 1px var(--accent, var(--teal));
+    cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px; height:18px; border-radius:50%; background: var(--accent, var(--teal));
+    border:3px solid var(--bg); box-shadow:0 0 0 1px var(--accent, var(--teal)); cursor:pointer;
+  }
+  .btnrow{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+  button.ctrl{
+    font-family:var(--mono); font-size:12px; letter-spacing:.03em;
+    background: var(--panel-2); color:var(--ink); border:1px solid var(--line-strong);
+    padding:8px 12px; border-radius:7px; cursor:pointer; transition: all .15s ease;
+  }
+  button.ctrl:hover{ border-color: var(--accent, var(--teal)); color: var(--accent, var(--teal)); }
+  button.ctrl.primary{ background: var(--accent, var(--teal)); color:#0e1512; border-color:transparent; font-weight:600;}
+  button.ctrl.primary:hover{ opacity:.88; color:#0e1512; }
+
+  /* ---------- EXPLANATION ---------- */
+  .whats-happening{
+    display:flex; gap:12px; align-items:flex-start; margin-top:14px;
+    background: var(--panel-2); border-left:3px solid var(--accent, var(--teal));
+    border-radius: 0 8px 8px 0; padding: 12px 14px;
+  }
+  .wh-icon{font-family:var(--serif); font-weight:700; font-size:13px; color:var(--accent, var(--teal)); flex-shrink:0; margin-top:1px;}
+  .wh-text{font-size:14px; line-height:1.55; color: var(--ink); font-family:var(--sans);}
+  .wh-text b{color:var(--accent, var(--teal)); font-weight:600;}
+
+  .changing-flag{
+    display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px;
+    letter-spacing:.08em; text-transform:uppercase; padding:4px 9px; border-radius:20px;
+    margin-bottom: 10px;
+  }
+  .changing-flag.indep{ background: var(--coral-dim); color:var(--coral); }
+  .changing-flag.dep{ background: var(--teal-dim); color:var(--teal); }
+
+  /* ---------- GRAPH ---------- */
+  .graph-wrap{ margin-top:6px; }
+  .graph-caption{font-family:var(--mono); font-size:11px; color:var(--ink-faint); margin-top:6px; text-align:center;}
+
+  /* ---------- FORMULA ---------- */
+  .formula-box{
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border:1px solid var(--line-strong); border-radius:10px; padding:20px; text-align:center;
+    margin-top: 4px;
+  }
+  .formula-main{ font-family:var(--serif); font-size:28px; font-weight:600; color:var(--ink); letter-spacing:.02em;}
+  .formula-main .eq{color:var(--accent,var(--teal));}
+  .formula-sub{font-family:var(--mono); font-size:12px; color:var(--ink-faint); margin-top:10px; line-height:1.9;}
+  .formula-sub .k{color:var(--ink-dim);}
+
+  .worked{
+    display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:16px;
+  }
+  @media (max-width:600px){.worked{grid-template-columns:1fr;}}
+  .worked .wcol{ background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:12px 14px;}
+  .worked .wcol h4{ font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 8px;}
+  .worked .wcol .wline{font-family:var(--mono); font-size:13.5px; color:var(--ink); margin:3px 0;}
+  .worked .verify{
+    grid-column:1/-1; text-align:center; font-family:var(--mono); font-size:13.5px;
+    background: var(--teal-dim); color:var(--teal); border-radius:8px; padding:10px; margin-top:2px;
+  }
+
+  /* ---------- STEP MODE ---------- */
+  .steps-nav{display:flex; align-items:center; gap:10px; margin-top:6px;}
+  .step-dots{display:flex; gap:6px;}
+  .step-dot{width:7px;height:7px;border-radius:50%; background:var(--line-strong);}
+  .step-dot.active{background: var(--accent,var(--teal));}
+  .step-text{font-size:13.5px; color:var(--ink-dim); line-height:1.5; margin-top:10px; min-height:40px;}
+
+  .toggle-row{display:flex; gap:14px; flex-wrap:wrap; margin-top:12px;}
+  .toggle{ display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11.5px; color:var(--ink-dim); cursor:pointer; user-select:none;}
+  .toggle input{accent-color: var(--accent,var(--teal));}
+
+  footer{ text-align:center; color:var(--ink-faint); font-family:var(--mono); font-size:11px; margin-top:30px; letter-spacing:.04em;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <p class="eyebrow">KLB Secondary Chemistry · Form 3 · Topic 1</p>
+    <h1 class="title">Gas Laws — Interactive Lab</h1>
+    <p class="subtitle">Push the plunger. Heat the flask. Race two gases down a tube. Watch pressure, volume and temperature respond to each other in real time, then see the same numbers land on the formula.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="boyle" data-accent="--teal"><span class="num">01</span>Boyle's Law</button>
+    <button class="tab" data-tab="charles" data-accent="--coral"><span class="num">02</span>Charles' Law</button>
+    <button class="tab" data-tab="graham" data-accent="--violet"><span class="num">03</span>Graham's Law of Diffusion</button>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- BOYLE'S LAW -->
+  <!-- ============================================================ -->
+  <section class="panel active" id="panel-boyle" style="--accent:var(--teal)">
+
+    <div class="card">
+      <p class="card-label"><span class="dot"></span>The Experiment — pushing gas into a smaller space</p>
+      <div class="stage">
+        <div>
+          <svg id="boyleSvg" viewBox="0 0 380 300" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <div>
+          <div class="changing-flag indep">You are changing: Volume</div>
+          <div class="readouts">
+            <div class="readout" id="b-vol-card">
+              <div class="r-label"><span>Volume</span><span class="trend down" id="b-vol-trend">—</span></div>
+              <div class="r-value"><span id="b-vol-val">50.0</span><span class="r-unit">cm³</span></div>
+            </div>
+            <div class="readout" id="b-pres-card">
+              <div class="r-label"><span>Pressure</span><span class="trend up" id="b-pres-trend">—</span></div>
+              <div class="r-value"><span id="b-pres-val">1.00</span><span class="r-unit">atm</span></div>
+            </div>
+            <div class="readout const">
+              <div class="r-label"><span>Temperature</span><span>CONST.</span></div>
+              <div class="r-value"><span id="b-temp-val">25</span><span class="r-unit">°C</span></div>
+            </div>
+          </div>
+
+          <div class="control-row">
+            <div class="control-head">
+              <span class="control-name">Push / pull the plunger</span>
+              <span class="control-hint" id="b-slider-hint">V = 50.0 cm³</span>
+            </div>
+            <input type="range" id="b-slider" min="12" max="50" value="50" step="0.5">
+          </div>
+
+          <div class="whats-happening">
+            <div class="wh-icon">?</div>
+            <div class="wh-text" id="b-explain">Drag the slider to push the plunger down. Watch what happens to the gas.</div>
+          </div>
+
+          <div class="btnrow">
+            <button class="ctrl primary" id="b-play">▶ Auto-cycle</button>
+            <button class="ctrl" id="b-reset">↺ Reset</button>
+            <button class="ctrl" id="b-particles-toggle">⚙ Hide particles</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-label"><span class="dot"></span>Pressure–Volume Graph</p>
+      <div class="stage">
+        <div class="graph-wrap">
+          <svg id="boyleGraph" viewBox="0 0 380 260" xmlns="http://www.w3.org/2000/svg"></svg>
+          <p class="graph-caption">As volume falls, pressure climbs along an inverse curve — never a straight line.</p>
+        </div>
+        <div>
+          <p style="font-family:var(--serif); font-size:15px; font-weight:600; margin:0 0 8px;">The relationship</p>
+          <p style="font-size:14px; color:var(--ink-dim); line-height:1.6; margin:0 0 10px;">
+            Volume <b style="color:var(--teal)">↓</b> → gas particles are squeezed into a smaller space → they hit the walls of the syringe more often → Pressure <b style="color:var(--coral)">↑</b>.
+          </p>
+          <p style="font-size:14px; color:var(--ink-dim); line-height:1.6;">
+            This is an <b style="color:var(--ink)">inverse relationship</b>: pressure and volume move in opposite directions, at constant temperature.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-label"><span class="dot"></span>Boyle's Law &amp; Worked Example</p>
+      <div class="formula-box">
+        <div class="formula-main">P<sub>1</sub>V<sub>1</sub> <span class="eq">=</span> P<sub>2</sub>V<sub>2</sub></div>
+        <div class="formula-sub">
+          <span class="k">P₁</span> = initial pressure &nbsp;·&nbsp; <span class="k">V₁</span> = initial volume &nbsp;·&nbsp; <span class="k">P₂</span> = final pressure &nbsp;·&nbsp; <span class="k">V₂</span> = final volume &nbsp;·&nbsp; temperature and mass of gas held constant
+        </div>
+      </div>
+      <p style="font-size:13.5px; color:var(--ink-faint); margin:14px 0 0; font-family:var(--mono);">"For a fixed mass of gas at constant temperature, pressure is inversely proportional to volume."</p>
+      <div class="worked">
+        <div class="wcol">
+          <h4>Start of drag</h4>
+          <div class="wline">P₁ = 1.00 atm</div>
+          <div class="wline">V₁ = 50.0 cm³</div>
+        </div>
+        <div class="wcol">
+          <h4>Current position</h4>
+          <div class="wline">P₂ = <span id="b-work-p2">1.00</span> atm</div>
+          <div class="wline">V₂ = <span id="b-work-v2">50.0</span> cm³</div>
+        </div>
+        <div class="verify">1.00 × 50.0 &nbsp;=&nbsp; <span id="b-work-p2b">1.00</span> × <span id="b-work-v2b">50.0</span> &nbsp;→&nbsp; <span id="b-work-check">50.0 = 50.0 ✓</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- CHARLES' LAW -->
+  <!-- ============================================================ -->
+  <section class="panel" id="panel-charles" style="--accent:var(--coral)">
+
+    <div class="card">
+      <p class="card-label"><span class="dot"></span>The Experiment — heating a trapped gas at constant pressure</p>
+      <div class="stage">
+        <div>
+          <svg id="charlesSvg" viewBox="0 0 380 300" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <div>
+          <div class="changing-flag indep">You are changing: Temperature</div>
+          <div class="readouts">
+            <div class="readout" id="c-temp-card">
+              <div class="r-label"><span>Temperature</span><span class="trend up" id="c-temp-trend">—</span></div>
+              <div class="r-value"><span id="c-temp-val">25</span><span class="r-unit">°C</span></div>
+            </div>
+            <div class="readout" id="c-vol-card">
+              <div class="r-label"><span>Volume</span><span class="trend up" id="c-vol-trend">—</span></div>
+              <div class="r-value"><span id="c-vol-val">50.0</span><span class="r-unit">cm³</span></div>
+            </div>
+            <div class="readout const">
+              <div class="r-label"><span>Pressure</span><span>CONST.</span></div>
+              <div class="r-value"><span id="c-pres-val">1.00</span><span class="r-unit">atm</span></div>
+            </div>
+          </div>
+
+          <div class="control-row">
+            <div class="control-head">
+              <span class="control-name">Heat / cool the gas</span>
+              <span class="control-hint" id="c-slider-hint">T = 25°C = 298 K</span>
+            </div>
+            <input type="range" id="c-slider" min="-30" max="180" value="25" step="1">
+          </div>
+
+          <div class="whats-happening">
+            <div class="wh-icon">?</div>
+            <div class="wh-text" id="c-explain">Drag the slider to heat the flask. Watch the piston respond.</div>
+          </div>
+
+          <div class="btnrow">
+            <button class="ctrl primary" id="c-play">▶ Auto-cycle</button>
+            <button class="ctrl" id="c-reset">↺ Reset</button>
+            <button class="ctrl" id="c-particles-toggle">⚙ Hide particles</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-label"><span class="dot"></span>Volume–Temperature Graph</p>
+      <div class="stage">
+        <div class="graph-wrap">
+          <svg id="charlesGraph" viewBox="0 0 380 260" xmlns="http://www.w3.org/2000/svg"></svg>
+          <p class="graph-caption">Volume plotted against temperature in <b style="color:var(--ink)">kelvin</b> gives a straight line through 0 K.</p>
+        </div>
+        <div>
+          <p style="font-family:var(--serif); font-size:15px; font-weight:600; margin:0 0 8px;">The relationship</p>
+          <p style="font-size:14px; color:var(--ink-dim); line-height:1.6; margin:0 0 10px;">
+            Temperature <b style="color:var(--coral)">↑</b> → gas particles gain kinetic energy and move faster → they push the piston outward → Volume <b style="color:var(--coral)">↑</b>.
+          </p>
+          <p style="font-size:14px; color:var(--ink-dim); line-height:1.6;">
+            This is a <b style="color:var(--ink)">direct relationship</b>: volume and temperature (in kelvin) rise and fall together, at constant pressure.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-label"><span class="dot"></span>Charles' Law &amp; Worked Example</p>
+      <div class="formula-box">
+        <div class="formula-main">V<sub>1</sub>/T<sub>1</sub> <span class="eq">=</span> V<sub>2</sub>/T<sub>2</sub></div>
+        <div class="formula-sub">
+          <span class="k">V₁,V₂</span> = initial/final volume &nbsp;·&nbsp; <span class="k">T₁,T₂</span> = initial/final temperature <b>in kelvin</b> &nbsp;·&nbsp; T(K) = T(°C) + 273 &nbsp;·&nbsp; pressure and mass of gas held constant
+        </div>
+      </div>
+      <p style="font-size:13.5px; color:var(--ink-faint); margin:14px 0 0; font-family:var(--mono);">"For a fixed mass of gas at constant pressure, volume is directly proportional to its absolute (kelvin) temperature."</p>
+      <div class="worked">
+        <div class="wcol">
+          <h4>Start of drag</h4>
+          <div class="wline">V₁ = 50.0 cm³</div>
+          <div class="wline">T₁ = 298 K (25°C)</div>
+        </div>
+        <div class="wcol">
+          <h4>Current position</h4>
+          <div class="wline">V₂ = <span id="c-work-v2">50.0</span> cm³</div>
+          <div class="wline">T₂ = <span id="c-work-t2">298</span> K (<span id="c-work-t2c">25</span>°C)</div>
+        </div>
+        <div class="verify">50.0 ÷ 298 &nbsp;=&nbsp; <span id="c-work-v2b">50.0</span> ÷ <span id="c-work-t2b">298</span> &nbsp;→&nbsp; <span id="c-work-check">0.168 = 0.168 ✓</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- GRAHAM'S LAW -->
+  <!-- ============================================================ -->
+  <section class="panel" id="panel-graham" style="--accent:var(--violet)">
+
+    <div class="card">
+      <p class="card-label"><span class="dot"></span>The Experiment — two gases racing down a tube</p>
+      <div class="stage">
+        <div>
+          <svg id="grahamSvg" viewBox="0 0 380 220" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <div>
+          <div class="changing-flag indep">You are changing: Molar mass of Gas B</div>
+          <div class="readouts">
+            <div class="readout const">
+              <div class="r-label"><span>Gas A — Ammonia</span><span>NH₃</span></div>
+              <div class="r-value"><span id="g-ma-val">17</span><span class="r-unit">g/mol</span></div>
+            </div>
+            <div class="readout" id="g-mb-card">
+              <div class="r-label"><span>Gas B</span><span id="g-gas-b-name">HCl</span></div>
+              <div class="r-value"><span id="g-mb-val">36.5</span><span class="r-unit">g/mol</span></div>
+            </div>
+            <div class="readout" id="g-ratio-card">
+              <div class="r-label"><span>Rate A ÷ Rate B</span><span class="trend" id="g-ratio-trend">—</span></div>
+              <div class="r-value"><span id="g-ratio-val">1.47</span><span class="r-unit">×</span></div>
+            </div>
+          </div>
+
+          <div class="control-row">
+            <div class="control-head">
+              <span class="control-name">Choose Gas B</span>
+              <span class="control-hint" id="g-slider-hint">Heavier ← → Lighter</span>
+            </div>
+            <input type="range" id="g-slider" min="0" max="4" value="2" step="1">
+          </div>
+
+          <div class="whats-happening">
+            <div class="wh-icon">?</div>
+            <div class="wh-text" id="g-explain">Ammonia (light) and hydrogen chloride (heavy) diffuse from opposite ends. Where they meet, they form a white ring of ammonium chloride.</div>
+          </div>
+
+          <div class="btnrow">
+            <button class="ctrl primary" id="g-play">▶ Release gases</button>
+            <button class="ctrl" id="g-reset">↺ Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-label"><span class="dot"></span>Rate of Diffusion vs 1/√Molar Mass</p>
+      <div class="stage">
+        <div class="graph-wrap">
+          <svg id="grahamGraph" viewBox="0 0 380 260" xmlns="http://www.w3.org/2000/svg"></svg>
+          <p class="graph-caption">Rate of diffusion is directly proportional to 1/√M — a straight line through the origin.</p>
+        </div>
+        <div>
+          <p style="font-family:var(--serif); font-size:15px; font-weight:600; margin:0 0 8px;">The relationship</p>
+          <p style="font-size:14px; color:var(--ink-dim); line-height:1.6; margin:0 0 10px;">
+            Molar mass <b style="color:var(--violet)">↓</b> → particles are lighter, so for the same kinetic energy they move faster → Rate of diffusion <b style="color:var(--violet)">↑</b>.
+          </p>
+          <p style="font-size:14px; color:var(--ink-dim); line-height:1.6;">
+            This is an <b style="color:var(--ink)">inverse-square-root relationship</b> — heavier gases always diffuse more slowly than lighter ones, under the same conditions.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-label"><span class="dot"></span>Graham's Law &amp; Worked Example</p>
+      <div class="formula-box">
+        <div class="formula-main">R<sub>A</sub>/R<sub>B</sub> <span class="eq">=</span> √(M<sub>B</sub>/M<sub>A</sub>)</div>
+        <div class="formula-sub">
+          <span class="k">R</span> = rate of diffusion &nbsp;·&nbsp; <span class="k">M</span> = molar mass &nbsp;·&nbsp; same temperature and pressure for both gases
+        </div>
+      </div>
+      <p style="font-size:13.5px; color:var(--ink-faint); margin:14px 0 0; font-family:var(--mono);">"The rate of diffusion of a gas is inversely proportional to the square root of its molar mass."</p>
+      <div class="worked">
+        <div class="wcol">
+          <h4>Gas A — Ammonia</h4>
+          <div class="wline">M<sub>A</sub> = 17 g/mol</div>
+        </div>
+        <div class="wcol">
+          <h4>Gas B — <span id="g-work-name">HCl</span></h4>
+          <div class="wline">M<sub>B</sub> = <span id="g-work-mb">36.5</span> g/mol</div>
+        </div>
+        <div class="verify">R<sub>A</sub>/R<sub>B</sub> = √(<span id="g-work-mb2">36.5</span>/17) = <span id="g-work-check">1.47</span> &nbsp;→&nbsp; ammonia diffuses <span id="g-work-check2">1.47</span>× faster than <span id="g-work-name2">HCl</span></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>GAS LAWS · INTERACTIVE LAB · BUILT FOR FORM 3 CHEMISTRY REVISION</footer>
+</div>
+
+<script>
+/* ============================================================
+   SHARED HELPERS
+   ============================================================ */
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+function fmt(n, d=2){ return Number(n).toFixed(d); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-'+tab.dataset.tab).classList.add('active');
+  });
+});
+
+/* ============================================================
+   BOYLE'S LAW SIMULATION
+   ============================================================ */
+(function(){
+  const svg = document.getElementById('boyleSvg');
+  const V1 = 50, P1 = 1;
+  let showParticles = true;
+  let particles = [];
+  const NPART = 26;
+
+  // Build static syringe parts once
+  const barrelX = 60, barrelYtop = 40, barrelW = 180, barrelHmax = 200;
+  const wallColor = "#5a6b62";
+
+  function initParticles(){
+    particles = [];
+    for(let i=0;i<NPART;i++){
+      particles.push({
+        x: Math.random(), y: Math.random(),
+        vx: (Math.random()-0.5)*0.014, vy:(Math.random()-0.5)*0.014
+      });
+    }
+  }
+  initParticles();
+
+  function draw(V){
+    svg.innerHTML = "";
+    // fraction of barrel filled by gas (relative to max V=50)
+    const frac = V / V1; // 1 = full, smaller = compressed
+    const gasH = barrelHmax * frac;
+    const gasY = barrelYtop + (barrelHmax - gasH);
+
+    // outer barrel (fixed housing)
+    el('rect',{x:barrelX-4,y:barrelYtop-4,width:barrelW+8,height:barrelHmax+8,rx:10,fill:'none',stroke:wallColor,'stroke-width':2,opacity:0.35}, svg);
+
+    // gas chamber background
+    const gasBg = el('rect',{x:barrelX,y:gasY,width:barrelW,height:gasH,fill:'url(#gasGrad)',rx:4}, svg);
+    const grad = el('linearGradient',{id:'gasGrad',x1:'0',y1:'0',x2:'0',y2:'1'}, svg);
+    el('stop',{offset:'0%','stop-color':'#5fd0c0','stop-opacity':0.16}, grad);
+    el('stop',{offset:'100%','stop-color':'#5fd0c0','stop-opacity':0.05}, grad);
+
+    // particles clipped to gas region
+    const clipId = 'gasClip';
+    const clip = el('clipPath',{id:clipId}, svg);
+    el('rect',{x:barrelX,y:gasY,width:barrelW,height:gasH}, clip);
+    const pg = el('g',{}, svg);
+    pg.setAttribute('clip-path', `url(#${clipId})`);
+    if(showParticles){
+      particles.forEach(p=>{
+        const px = barrelX + p.x*barrelW;
+        const py = gasY + p.y*gasH;
+        el('circle',{cx:px, cy:py, r:3.4, fill:'#5fd0c0', opacity:0.85}, pg);
+      });
+    }
+
+    // barrel outline
+    el('rect',{x:barrelX,y:barrelYtop,width:barrelW,height:barrelHmax,rx:4,fill:'none',stroke:wallColor,'stroke-width':2.5}, svg);
+    // barrel base (closed end, nozzle side) at bottom
+    el('rect',{x:barrelX-10,y:barrelYtop+barrelHmax,width:barrelW+20,height:14,rx:3,fill:'#2a3833',stroke:wallColor,'stroke-width':1.5}, svg);
+    el('rect',{x:barrelX+barrelW/2-6,y:barrelYtop+barrelHmax+14,width:12,height:18,fill:'#2a3833',stroke:wallColor,'stroke-width':1.5}, svg);
+
+    // plunger (top, moves down as V decreases)
+    const plungerY = gasY - 10;
+    el('rect',{x:barrelX-14,y:plungerY-8,width:barrelW+28,height:14,rx:3,fill:'#e6a23c',stroke:'#b97f2b','stroke-width':1.5}, svg);
+    el('rect',{x:barrelX+barrelW/2-5,y:plungerY-70,width:10,height:64,fill:'#8a8f8a'}, svg);
+    el('rect',{x:barrelX+barrelW/2-22,y:plungerY-86,width:44,height:18,rx:4,fill:'#8a8f8a'}, svg);
+    // hand arrow indicator
+    if(V < 49){
+      el('text',{x:barrelX+barrelW/2, y: plungerY-96, 'text-anchor':'middle', fill:'#e6a23c', 'font-family':'IBM Plex Mono', 'font-size':11, 'font-weight':600}, svg).textContent = "PUSH ↓";
+    }
+
+    // labels
+    el('text',{x:barrelX+barrelW+16,y:gasY+gasH/2-6,fill:'#5fd0c0','font-family':'IBM Plex Mono','font-size':11,'font-weight':600}, svg).textContent = 'GAS';
+    el('text',{x:barrelX+barrelW+16,y:gasY+gasH/2+10,fill:'#a9b6ac','font-family':'IBM Plex Mono','font-size':10}, svg).textContent = 'trapped';
+
+    el('text',{x:barrelX-4,y:barrelYtop+barrelHmax+46,fill:'#71807a','font-family':'IBM Plex Mono','font-size':10}, svg).textContent = 'SYRINGE (fixed mass of gas)';
+  }
+
+  function animate(){
+    particles.forEach(p=>{
+      p.x += p.vx; p.y += p.vy;
+      if(p.x<0||p.x>1) p.vx*=-1;
+      if(p.y<0||p.y>1) p.vy*=-1;
+      p.x = clamp(p.x,0,1); p.y = clamp(p.y,0,1);
+    });
+  }
+
+  // Graph
+  const graphSvg = document.getElementById('boyleGraph');
+  function drawGraph(V, P){
+    graphSvg.innerHTML = "";
+    const pad = 44, w = 380, h = 260;
+    const x0 = pad, y0 = h-pad, x1 = w-16, y1 = 20;
+    // axes
+    el('line',{x1:x0,y1:y0,x2:x1,y2:y0,stroke:'#a9b6ac','stroke-width':1.2}, graphSvg);
+    el('line',{x1:x0,y1:y0,x2:x0,y2:y1,stroke:'#a9b6ac','stroke-width':1.2}, graphSvg);
+    el('text',{x:(x0+x1)/2,y:h-8,'text-anchor':'middle',fill:'#a9b6ac','font-family':'IBM Plex Mono','font-size':10}, graphSvg).textContent = 'Volume (cm³)';
+    const ylab = el('text',{x:14,y:(y0+y1)/2,'text-anchor':'middle',fill:'#a9b6ac','font-family':'IBM Plex Mono','font-size':10, transform:`rotate(-90 14 ${(y0+y1)/2})`}, graphSvg);
+    ylab.textContent = 'Pressure (atm)';
+
+    const Vmax = 55, Pmax = 4.5;
+    const sx = v => x0 + (v/Vmax)*(x1-x0);
+    const sy = p => y0 - (p/Pmax)*(y0-y1);
+
+    // inverse curve P = P1V1/V
+    let d = "";
+    for(let v=10; v<=Vmax; v+=1){
+      const p = (P1*V1)/v;
+      const X = sx(v), Y = sy(clamp(p,0,Pmax));
+      d += (v===10 ? "M":"L") + X.toFixed(1) + "," + Y.toFixed(1) + " ";
+    }
+    el('path',{d:d, fill:'none', stroke:'#5fd0c0', 'stroke-width':2, opacity:0.55}, graphSvg);
+
+    // current point
+    el('circle',{cx:sx(V), cy:sy(clamp(P,0,Pmax)), r:6, fill:'#e6a23c', stroke:'#0e1512', 'stroke-width':2}, graphSvg);
+    el('line',{x1:sx(V), y1:sy(clamp(P,0,Pmax)), x2:sx(V), y2:y0, stroke:'#e6a23c','stroke-width':1, 'stroke-dasharray':'3,3', opacity:0.5}, graphSvg);
+    el('line',{x1:x0, y1:sy(clamp(P,0,Pmax)), x2:sx(V), y2:sy(clamp(P,0,Pmax)), stroke:'#e6a23c','stroke-width':1, 'stroke-dasharray':'3,3', opacity:0.5}, graphSvg);
+  }
+
+  const slider = document.getElementById('b-slider');
+  const volVal = document.getElementById('b-vol-val');
+  const presVal = document.getElementById('b-pres-val');
+  const volTrend = document.getElementById('b-vol-trend');
+  const presTrend = document.getElementById('b-pres-trend');
+  const volCard = document.getElementById('b-vol-card');
+  const presCard = document.getElementById('b-pres-card');
+  const explainEl = document.getElementById('b-explain');
+  const sliderHint = document.getElementById('b-slider-hint');
+
+  let lastV = V1;
+  function update(){
+    const V = parseFloat(slider.value);
+    const P = (P1*V1)/V;
+    volVal.textContent = fmt(V,1);
+    presVal.textContent = fmt(P,2);
+    sliderHint.textContent = `V = ${fmt(V,1)} cm³`;
+
+    if(V < lastV - 0.01){
+      volTrend.textContent = '↓ falling'; volTrend.className='trend down';
+      presTrend.textContent = '↑ rising'; presTrend.className='trend up';
+      volCard.className = 'readout flash-down';
+      presCard.className = 'readout flash-up';
+      explainEl.innerHTML = `You pushed the gas into a <b>smaller space</b>. Volume decreased to ${fmt(V,1)} cm³, so particles collide with the walls more often — pressure rose to ${fmt(P,2)} atm.`;
+    } else if(V > lastV + 0.01){
+      volTrend.textContent = '↑ rising'; volTrend.className='trend up';
+      presTrend.textContent = '↓ falling'; presTrend.className='trend down';
+      volCard.className = 'readout flash-up';
+      presCard.className = 'readout flash-down';
+      explainEl.innerHTML = `You pulled the plunger back. Volume increased to ${fmt(V,1)} cm³, giving particles more room — pressure fell to ${fmt(P,2)} atm.`;
+    }
+    lastV = V;
+
+    document.getElementById('b-work-p2').textContent = fmt(P,2);
+    document.getElementById('b-work-v2').textContent = fmt(V,1);
+    document.getElementById('b-work-p2b').textContent = fmt(P,2);
+    document.getElementById('b-work-v2b').textContent = fmt(V,1);
+    document.getElementById('b-work-check').textContent = `${fmt(P1*V1,1)} = ${fmt(P*V,1)} ✓`;
+
+    draw(V);
+    drawGraph(V,P);
+  }
+  slider.addEventListener('input', update);
+
+  document.getElementById('b-reset').addEventListener('click', ()=>{
+    slider.value = 50; lastV = 50; update();
+  });
+  document.getElementById('b-particles-toggle').addEventListener('click', function(){
+    showParticles = !showParticles;
+    this.textContent = showParticles ? '⚙ Hide particles' : '⚙ Show particles';
+    update();
+  });
+
+  let playing = false, playDir = -1, playTimer = null;
+  document.getElementById('b-play').addEventListener('click', function(){
+    playing = !playing;
+    this.textContent = playing ? '⏸ Pause' : '▶ Auto-cycle';
+    if(playing){
+      playTimer = setInterval(()=>{
+        let v = parseFloat(slider.value) + playDir*0.6;
+        if(v<=12){ v=12; playDir=1; }
+        if(v>=50){ v=50; playDir=-1; }
+        slider.value = v;
+        update();
+      }, 40);
+    } else {
+      clearInterval(playTimer);
+    }
+  });
+
+  function loop(){
+    if(showParticles){ animate(); draw(parseFloat(slider.value)); }
+    requestAnimationFrame(loop);
+  }
+  update();
+  loop();
+})();
+
+/* ============================================================
+   CHARLES' LAW SIMULATION
+   ============================================================ */
+(function(){
+  const svg = document.getElementById('charlesSvg');
+  const T1C = 25, V1 = 50; // baseline
+  const T1K = T1C + 273;
+  let showParticles = true;
+  let particles = [];
+  const NPART = 24;
+
+  function initParticles(){
+    particles = [];
+    for(let i=0;i<NPART;i++){
+      particles.push({ x:Math.random(), y:Math.random(), vx:(Math.random()-0.5)*0.01, vy:(Math.random()-0.5)*0.01 });
+    }
+  }
+  initParticles();
+
+  const barrelX = 90, barrelYtop = 30, barrelW = 120, barrelHmax = 160;
+  const wallColor = "#5a6b62";
+
+  function volAt(Tc){
+    const Tk = Tc+273;
+    return V1 * (Tk/T1K);
+  }
+
+  function draw(Tc, speedFactor){
+    svg.innerHTML="";
+    const V = volAt(Tc);
+    const frac = clamp(V / (V1*1.7), 0.18, 1); // visual scaling so it doesn't overflow
+    const gasH = barrelHmax * frac;
+    const gasY = barrelYtop + (barrelHmax - gasH);
+
+    // flask/beaker under the cylinder representing heat source
+    const heat = clamp((Tc+30)/210, 0, 1);
+    const flameColor = Tc >= 25 ? '#ef7b5f' : '#5fd0c0';
+
+    // cylinder housing
+    el('rect',{x:barrelX-4,y:barrelYtop-4,width:barrelW+8,height:barrelHmax+8,rx:10,fill:'none',stroke:wallColor,'stroke-width':2,opacity:0.35}, svg);
+
+    const grad = el('linearGradient',{id:'gasGradC',x1:'0',y1:'0',x2:'0',y2:'1'}, svg);
+    el('stop',{offset:'0%','stop-color':flameColor,'stop-opacity':0.18}, grad);
+    el('stop',{offset:'100%','stop-color':flameColor,'stop-opacity':0.05}, grad);
+    el('rect',{x:barrelX,y:gasY,width:barrelW,height:gasH,fill:'url(#gasGradC)',rx:4}, svg);
+
+    const clip = el('clipPath',{id:'gasClipC'}, svg);
+    el('rect',{x:barrelX,y:gasY,width:barrelW,height:gasH}, clip);
+    const pg = el('g',{}, svg); pg.setAttribute('clip-path','url(#gasClipC)');
+    if(showParticles){
+      particles.forEach(p=>{
+        const px = barrelX + p.x*barrelW;
+        const py = gasY + p.y*gasH;
+        el('circle',{cx:px,cy:py,r:3.4,fill:flameColor,opacity:0.85}, pg);
+      });
+    }
+
+    el('rect',{x:barrelX,y:barrelYtop,width:barrelW,height:barrelHmax,rx:4,fill:'none',stroke:wallColor,'stroke-width':2.5}, svg);
+    // base
+    el('rect',{x:barrelX-10,y:barrelYtop+barrelHmax,width:barrelW+20,height:10,rx:3,fill:'#2a3833',stroke:wallColor,'stroke-width':1.5}, svg);
+
+    // free piston on top, position reflects volume
+    const plungerY = gasY - 8;
+    el('rect',{x:barrelX-10,y:plungerY-8,width:barrelW+20,height:12,rx:3,fill:'#ef7b5f',stroke:'#b95b43','stroke-width':1.5}, svg);
+    if(Tc > T1C+2){
+      el('text',{x:barrelX+barrelW/2, y: plungerY-20, 'text-anchor':'middle', fill:'#ef7b5f', 'font-family':'IBM Plex Mono', 'font-size':11,'font-weight':600}, svg).textContent = "PISTON RISES ↑";
+    } else if(Tc < T1C-2){
+      el('text',{x:barrelX+barrelW/2, y: plungerY-20, 'text-anchor':'middle', fill:'#5fd0c0', 'font-family':'IBM Plex Mono', 'font-size':11,'font-weight':600}, svg).textContent = "PISTON FALLS ↓";
+    }
+
+    // heat source: beaker with flame/ice below
+    const by = barrelYtop+barrelHmax+16;
+    el('rect',{x:barrelX+10,y:by,width:barrelW-20,height:26,rx:3,fill:'none',stroke:wallColor,'stroke-width':2}, svg);
+    if(Tc >= T1C){
+      // flame
+      const flameH = 14 + heat*22;
+      el('path',{d:`M ${barrelX+barrelW/2} ${by+26} q -10 -${flameH*0.6} 0 -${flameH} q 10 ${flameH*0.4} 0 ${flameH} Z`, fill:'#e6a23c', opacity:0.5+heat*0.5}, svg);
+    } else {
+      // ice/cool tint
+      el('rect',{x:barrelX+14,y:by+4,width:barrelW-28,height:18,fill:'#5fd0c0',opacity:0.25}, svg);
+    }
+    el('text',{x:barrelX-4,y:by+46,fill:'#71807a','font-family':'IBM Plex Mono','font-size':10}, svg).textContent = Tc>=T1C ? 'HEAT SOURCE' : 'COOLING';
+
+    el('text',{x:barrelX+barrelW+14,y:gasY+gasH/2,fill:flameColor,'font-family':'IBM Plex Mono','font-size':11,'font-weight':600}, svg).textContent = 'GAS';
+  }
+
+  function animate(Tc){
+    const speed = clamp(0.006 + (Tc+30)/210 * 0.03, 0.005, 0.05);
+    particles.forEach(p=>{
+      const dir = Math.sign(p.vx||1);
+      p.x += (Math.abs(p.vx)||0.01) * Math.sign(p.vx||1) * (speed/0.02);
+      p.y += (Math.abs(p.vy)||0.01) * Math.sign(p.vy||1) * (speed/0.02);
+      if(p.x<0||p.x>1) p.vx = -Math.abs(p.vx||0.01)*Math.sign(p.x-0.5);
+      if(p.y<0||p.y>1) p.vy = -Math.abs(p.vy||0.01)*Math.sign(p.y-0.5);
+      p.x = clamp(p.x,0,1); p.y = clamp(p.y,0,1);
+    });
+  }
+
+  const graphSvg = document.getElementById('charlesGraph');
+  function drawGraph(Tc, V){
+    graphSvg.innerHTML="";
+    const pad=44, w=380, h=260;
+    const x0=pad, y0=h-pad, x1=w-16, y1=20;
+    el('line',{x1:x0,y1:y0,x2:x1,y2:y0,stroke:'#a9b6ac','stroke-width':1.2}, graphSvg);
+    el('line',{x1:x0,y1:y0,x2:x0,y2:y1,stroke:'#a9b6ac','stroke-width':1.2}, graphSvg);
+    el('text',{x:(x0+x1)/2,y:h-8,'text-anchor':'middle',fill:'#a9b6ac','font-family':'IBM Plex Mono','font-size':10}, graphSvg).textContent = 'Temperature (K)';
+    const ylab = el('text',{x:14,y:(y0+y1)/2,'text-anchor':'middle',fill:'#a9b6ac','font-family':'IBM Plex Mono','font-size':10, transform:`rotate(-90 14 ${(y0+y1)/2})`}, graphSvg);
+    ylab.textContent = 'Volume (cm³)';
+
+    const Tmax = 480, Vmax = 90;
+    const sx = t => x0 + (t/Tmax)*(x1-x0);
+    const sy = v => y0 - (v/Vmax)*(y0-y1);
+
+    // direct line V = (V1/T1K) * T, through origin
+    const k = V1/T1K;
+    let d = `M ${sx(0)},${sy(0)} L ${sx(Tmax)},${sy(clamp(k*Tmax,0,Vmax))}`;
+    el('path',{d, fill:'none', stroke:'#ef7b5f','stroke-width':2, opacity:0.55}, graphSvg);
+    // dashed extrapolation marker at 0K
+    el('circle',{cx:sx(0), cy:sy(0), r:3, fill:'none', stroke:'#71807a','stroke-width':1}, graphSvg);
+    el('text',{x:sx(0)+4,y:sy(0)-6,fill:'#71807a','font-family':'IBM Plex Mono','font-size':9}, graphSvg).textContent = '0 K';
+
+    const Tk = Tc+273;
+    el('circle',{cx:sx(Tk), cy:sy(clamp(V,0,Vmax)), r:6, fill:'#e6a23c', stroke:'#0e1512','stroke-width':2}, graphSvg);
+    el('line',{x1:sx(Tk),y1:sy(clamp(V,0,Vmax)),x2:sx(Tk),y2:y0, stroke:'#e6a23c','stroke-width':1,'stroke-dasharray':'3,3',opacity:0.5}, graphSvg);
+    el('line',{x1:x0,y1:sy(clamp(V,0,Vmax)),x2:sx(Tk),y2:sy(clamp(V,0,Vmax)), stroke:'#e6a23c','stroke-width':1,'stroke-dasharray':'3,3',opacity:0.5}, graphSvg);
+  }
+
+  const slider = document.getElementById('c-slider');
+  const tempVal = document.getElementById('c-temp-val');
+  const volVal = document.getElementById('c-vol-val');
+  const tempTrend = document.getElementById('c-temp-trend');
+  const volTrend = document.getElementById('c-vol-trend');
+  const tempCard = document.getElementById('c-temp-card');
+  const volCard = document.getElementById('c-vol-card');
+  const explainEl = document.getElementById('c-explain');
+  const sliderHint = document.getElementById('c-slider-hint');
+
+  let lastT = T1C;
+  function update(){
+    const Tc = parseFloat(slider.value);
+    const Tk = Tc+273;
+    const V = volAt(Tc);
+    tempVal.textContent = fmt(Tc,0);
+    volVal.textContent = fmt(V,1);
+    sliderHint.textContent = `T = ${fmt(Tc,0)}°C = ${fmt(Tk,0)} K`;
+
+    if(Tc > lastT + 0.4){
+      tempTrend.textContent='↑ heating'; tempTrend.className='trend up';
+      volTrend.textContent='↑ expanding'; volTrend.className='trend up';
+      tempCard.className='readout flash-up'; volCard.className='readout flash-up';
+      explainEl.innerHTML = `You heated the gas to ${fmt(Tc,0)}°C (${fmt(Tk,0)} K). Particles move faster and push harder on the piston — volume expanded to ${fmt(V,1)} cm³.`;
+    } else if(Tc < lastT - 0.4){
+      tempTrend.textContent='↓ cooling'; tempTrend.className='trend down';
+      volTrend.textContent='↓ shrinking'; volTrend.className='trend down';
+      tempCard.className='readout flash-down'; volCard.className='readout flash-down';
+      explainEl.innerHTML = `You cooled the gas to ${fmt(Tc,0)}°C (${fmt(Tk,0)} K). Particles slow down and push less on the piston — volume shrank to ${fmt(V,1)} cm³.`;
+    }
+    lastT = Tc;
+
+    document.getElementById('c-work-v2').textContent = fmt(V,1);
+    document.getElementById('c-work-t2').textContent = fmt(Tk,0);
+    document.getElementById('c-work-t2c').textContent = fmt(Tc,0);
+    document.getElementById('c-work-v2b').textContent = fmt(V,1);
+    document.getElementById('c-work-t2b').textContent = fmt(Tk,0);
+    document.getElementById('c-work-check').textContent = `${fmt(V1/T1K,3)} = ${fmt(V/Tk,3)} ✓`;
+
+    draw(Tc);
+    drawGraph(Tc, V);
+  }
+  slider.addEventListener('input', update);
+
+  document.getElementById('c-reset').addEventListener('click', ()=>{ slider.value=25; lastT=25; update(); });
+  document.getElementById('c-particles-toggle').addEventListener('click', function(){
+    showParticles = !showParticles;
+    this.textContent = showParticles ? '⚙ Hide particles' : '⚙ Show particles';
+    update();
+  });
+
+  let playing=false, dir=1, timer=null;
+  document.getElementById('c-play').addEventListener('click', function(){
+    playing=!playing;
+    this.textContent = playing ? '⏸ Pause' : '▶ Auto-cycle';
+    if(playing){
+      timer = setInterval(()=>{
+        let t = parseFloat(slider.value)+dir*3;
+        if(t>=180){t=180; dir=-1;}
+        if(t<=-30){t=-30; dir=1;}
+        slider.value=t; update();
+      }, 45);
+    } else clearInterval(timer);
+  });
+
+  function loop(){
+    const Tc = parseFloat(slider.value);
+    if(showParticles){ animate(Tc); draw(Tc); }
+    requestAnimationFrame(loop);
+  }
+  update();
+  loop();
+})();
+
+/* ============================================================
+   GRAHAM'S LAW SIMULATION
+   ============================================================ */
+(function(){
+  const svg = document.getElementById('grahamSvg');
+  const MA = 17; // ammonia
+  const gases = [
+    {name:'Hydrogen', M:2},
+    {name:'Methane (CH₄)', M:16},
+    {name:'HCl', M:36.5},
+    {name:'Carbon(IV) oxide', M:44},
+    {name:'Sulphur(IV) oxide', M:64},
+  ];
+  let progress = 0; // 0 to 1 animation of the race
+  let running = false;
+  let animTimer = null;
+
+  const tubeX0 = 30, tubeX1 = 350, tubeY = 110, tubeLen = tubeX1-tubeX0;
+
+  function ringPos(MB){
+    // distance travelled inversely prop to sqrt(M); meeting point from A's end:
+    const rA = 1/Math.sqrt(MA);
+    const rB = 1/Math.sqrt(MB);
+    return rA/(rA+rB); // fraction of tube length from A's (left) end
+  }
+
+  function draw(MB, gasName, prog){
+    svg.innerHTML = "";
+    // tube
+    el('rect',{x:tubeX0,y:tubeY-14,width:tubeLen,height:28,rx:6,fill:'none',stroke:'#5a6b62','stroke-width':2.5}, svg);
+    // cotton wool plugs at ends
+    el('circle',{cx:tubeX0+6,cy:tubeY,r:9,fill:'#eef1ea',opacity:0.85}, svg);
+    el('circle',{cx:tubeX1-6,cy:tubeY,r:9,fill:'#eef1ea',opacity:0.85}, svg);
+
+    el('text',{x:tubeX0-6,y:tubeY-24,'text-anchor':'start',fill:'#5fd0c0','font-family':'IBM Plex Mono','font-size':11,'font-weight':600}, svg).textContent = 'NH₃ (aq)';
+    el('text',{x:tubeX1+6,y:tubeY-24,'text-anchor':'end',fill:'#a48ce8','font-family':'IBM Plex Mono','font-size':11,'font-weight':600}, svg).textContent = gasName;
+
+    const meet = ringPos(MB); // fraction from left at full progress
+
+    // gas fronts advancing proportional to their rate, both start moving at progress 0
+    const rA = 1/Math.sqrt(MA), rB = 1/Math.sqrt(MB);
+    const norm = Math.max(rA,rB);
+    const frontA = clamp(prog * (rA/norm), 0, meet);
+    const frontB = clamp(prog * (rB/norm), 0, 1-meet);
+
+    // gas A cloud (from left, teal)
+    el('rect',{x:tubeX0+10,y:tubeY-11,width: frontA*tubeLen, height:22, fill:'#5fd0c0', opacity:0.35}, svg);
+    // gas B cloud (from right, violet)
+    el('rect',{x: tubeX1-10-frontB*tubeLen, y:tubeY-11, width: frontB*tubeLen, height:22, fill:'#a48ce8', opacity:0.35}, svg);
+
+    // ring forms once fronts overlap
+    if(prog >= 0.98){
+      const ringX = tubeX0 + meet*tubeLen;
+      el('circle',{cx:ringX, cy:tubeY, r:7, fill:'#eef1ea'}, svg);
+      el('circle',{cx:ringX, cy:tubeY, r:7, fill:'none', stroke:'#eef1ea', 'stroke-width':2, opacity:0.6}, svg);
+      el('text',{x:ringX, y:tubeY+34, 'text-anchor':'middle', fill:'#eef1ea','font-family':'IBM Plex Mono','font-size':10,'font-weight':600}, svg).textContent = 'white ring — NH₄Cl';
+      el('line',{x1:ringX,y1:tubeY+8,x2:ringX,y2:tubeY+22,stroke:'#eef1ea','stroke-width':1}, svg);
+    }
+
+    // ruler ticks + distance labels
+    el('line',{x1:tubeX0,y1:tubeY+40,x2:tubeX1,y2:tubeY+40,stroke:'#71807a','stroke-width':1}, svg);
+    el('text',{x:tubeX0,y:tubeY+54,'text-anchor':'start',fill:'#71807a','font-family':'IBM Plex Mono','font-size':9}, svg).textContent = '0 cm';
+    el('text',{x:tubeX1,y:tubeY+54,'text-anchor':'end',fill:'#71807a','font-family':'IBM Plex Mono','font-size':9}, svg).textContent = '30 cm';
+    el('text',{x:(tubeX0+tubeX1)/2,y:tubeY+54,'text-anchor':'middle',fill:'#e6a23c','font-family':'IBM Plex Mono','font-size':9}, svg).textContent = `meets at ${fmt(meet*30,1)} cm from NH₃ end`;
+
+    // particles racing (small dots at the front)
+    if(prog>0 && prog<1){
+      for(let i=0;i<5;i++){
+        el('circle',{cx: tubeX0+10+frontA*tubeLen - i*5, cy: tubeY-6+Math.sin(prog*10+i)*4, r:2, fill:'#5fd0c0'}, svg);
+        el('circle',{cx: tubeX1-10-frontB*tubeLen + i*5, cy: tubeY+6+Math.cos(prog*10+i)*4, r:2, fill:'#a48ce8'}, svg);
+      }
+    }
+  }
+
+  const graphSvg = document.getElementById('grahamGraph');
+  function drawGraph(MB){
+    graphSvg.innerHTML="";
+    const pad=44,w=380,h=260;
+    const x0=pad,y0=h-pad,x1=w-16,y1=20;
+    el('line',{x1:x0,y1:y0,x2:x1,y2:y0,stroke:'#a9b6ac','stroke-width':1.2}, graphSvg);
+    el('line',{x1:x0,y1:y0,x2:x0,y2:y1,stroke:'#a9b6ac','stroke-width':1.2}, graphSvg);
+    el('text',{x:(x0+x1)/2,y:h-8,'text-anchor':'middle',fill:'#a9b6ac','font-family':'IBM Plex Mono','font-size':10}, graphSvg).textContent = '1 / √M';
+    const ylab = el('text',{x:14,y:(y0+y1)/2,'text-anchor':'middle',fill:'#a9b6ac','font-family':'IBM Plex Mono','font-size':10, transform:`rotate(-90 14 ${(y0+y1)/2})`}, graphSvg);
+    ylab.textContent = 'Relative rate';
+
+    const Xmax = 0.75, Ymax = 0.75;
+    const sx = v => x0 + (v/Xmax)*(x1-x0);
+    const sy = v => y0 - (v/Ymax)*(y0-y1);
+    // line y = k*x through origin, k=1 (rate defined relative to 1/sqrt(M) directly)
+    el('path',{d:`M ${sx(0)},${sy(0)} L ${sx(Xmax)},${sy(Xmax)}`, fill:'none', stroke:'#a48ce8','stroke-width':2, opacity:0.5}, graphSvg);
+
+    // plot all reference gases
+    gases.forEach(g=>{
+      const xv = 1/Math.sqrt(g.M);
+      el('circle',{cx:sx(xv),cy:sy(xv),r: g.M===MB?6:3.5, fill: g.M===MB? '#e6a23c':'#3d4a44', stroke: g.M===MB? '#0e1512':'none','stroke-width': g.M===MB?2:0}, graphSvg);
+      el('text',{x:sx(xv), y:sy(xv)-10, 'text-anchor':'middle', fill: g.M===MB?'#e6a23c':'#71807a', 'font-family':'IBM Plex Mono','font-size':8.5}, graphSvg).textContent = g.name.split(' ')[0];
+    });
+    // ammonia point
+    const xa = 1/Math.sqrt(MA);
+    el('circle',{cx:sx(xa),cy:sy(xa),r:5, fill:'#5fd0c0'}, graphSvg);
+    el('text',{x:sx(xa), y:sy(xa)-10, 'text-anchor':'middle', fill:'#5fd0c0','font-family':'IBM Plex Mono','font-size':8.5}, graphSvg).textContent = 'NH₃';
+  }
+
+  const slider = document.getElementById('g-slider');
+  const explainEl = document.getElementById('g-explain');
+  function currentGas(){ return gases[parseInt(slider.value)]; }
+
+  function update(){
+    const g = currentGas();
+    document.getElementById('g-gas-b-name').textContent = g.name;
+    document.getElementById('g-mb-val').textContent = fmt(g.M,1);
+    const ratio = Math.sqrt(g.M/MA);
+    document.getElementById('g-ratio-val').textContent = fmt(ratio,2);
+    const trendEl = document.getElementById('g-ratio-trend');
+    trendEl.textContent = ratio>1.6 ? 'A much faster' : (ratio>1.05? 'A faster':'A ≈ B');
+    trendEl.className = 'trend ' + (ratio>1.05 ? 'up' : 'flat');
+
+    document.getElementById('g-work-name').textContent = g.name;
+    document.getElementById('g-work-name2').textContent = g.name;
+    document.getElementById('g-work-mb').textContent = fmt(g.M,1);
+    document.getElementById('g-work-mb2').textContent = fmt(g.M,1);
+    document.getElementById('g-work-check').textContent = fmt(ratio,2);
+    document.getElementById('g-work-check2').textContent = fmt(ratio,2);
+
+    explainEl.innerHTML = `Ammonia (M=17) is lighter than ${g.name} (M=${fmt(g.M,1)}), so ammonia's particles move faster and travel further before meeting — the white ring forms closer to the ${g.name} end.`;
+
+    draw(g.M, g.name, progress);
+    drawGraph(g.M);
+  }
+  slider.addEventListener('input', ()=>{ progress=0; update(); });
+
+  document.getElementById('g-reset').addEventListener('click', ()=>{ progress=0; running=false; clearInterval(animTimer); document.getElementById('g-play').textContent='▶ Release gases'; update(); });
+
+  document.getElementById('g-play').addEventListener('click', function(){
+    if(running){ running=false; clearInterval(animTimer); this.textContent='▶ Release gases'; return; }
+    progress = 0; running = true; this.textContent = '⏸ Racing...';
+    const btn = this;
+    animTimer = setInterval(()=>{
+      progress += 0.02;
+      if(progress>=1){ progress=1; running=false; clearInterval(animTimer); btn.textContent='↻ Release again'; }
+      update();
+    }, 40);
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>

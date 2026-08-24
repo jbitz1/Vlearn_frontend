@@ -23,14 +23,16 @@ export function SchoolTeachersPage() {
   const [invitedTokenInfo, setInvitedTokenInfo] = useState(null);
 
   // Modals
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
-  // Invite Form
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [intendedClassId, setIntendedClassId] = useState('');
-  const [intendedStreamId, setIntendedStreamId] = useState('');
-  const [intendedSubjectId, setIntendedSubjectId] = useState('');
+  // Add Teacher Form
+  const [teacherName, setTeacherName] = useState('');
+  const [teacherPhone, setTeacherPhone] = useState('');
+  const [teacherEmail, setTeacherEmail] = useState('');
+  const [teacherTsc, setTeacherTsc] = useState('');
+  const [teacherSpecialties, setTeacherSpecialties] = useState('');
+  const [sendInviteNow, setSendInviteNow] = useState(false);
 
   // Assign Form
   const [assignTeacherId, setAssignTeacherId] = useState('');
@@ -39,11 +41,11 @@ export function SchoolTeachersPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Invite Teacher
-  const handleInviteTeacher = async (e) => {
+  // Add Teacher to Roster
+  const handleAddTeacher = async (e) => {
     e.preventDefault();
-    if (!inviteEmail) {
-      setStatusMessage({ type: 'error', text: 'Email address is required.' });
+    if (!teacherName.trim() || !teacherPhone.trim()) {
+      setStatusMessage({ type: 'error', text: 'Teacher Name and Phone Number are required.' });
       return;
     }
 
@@ -52,32 +54,28 @@ export function SchoolTeachersPage() {
     setInvitedTokenInfo(null);
 
     try {
-      const invData = await schoolAdminService.inviteTeacher({
+      const result = await schoolAdminService.addTeacher({
         school_id: school.id,
-        email: inviteEmail.trim(),
-        role: 'teacher',
-        intended_class_id: intendedClassId ? parseInt(intendedClassId) : null,
-        intended_stream_id: intendedStreamId ? parseInt(intendedStreamId) : null,
-        intended_subject_id: intendedSubjectId ? parseInt(intendedSubjectId) : null,
+        name: teacherName.trim(),
+        phone: teacherPhone.trim(),
+        email: teacherEmail.trim() || undefined,
+        tsc_number: teacherTsc.trim() || undefined,
+        specialties: teacherSpecialties.trim() || undefined,
+        send_invite: sendInviteNow
       });
 
       setStatusMessage({
         type: 'success',
-        text: `Invitation created successfully for ${inviteEmail}!`,
+        text: `Teacher ${teacherName} added to school staff roster!${sendInviteNow ? ' Platform invitation dispatched.' : ''}`,
       });
 
-      if (invData.raw_token) {
-        setInvitedTokenInfo({
-          email: inviteEmail,
-          raw_token: invData.raw_token,
-        });
-      }
-
-      setInviteEmail('');
-      setIntendedClassId('');
-      setIntendedStreamId('');
-      setIntendedSubjectId('');
-      setIsInviteModalOpen(false);
+      setTeacherName('');
+      setTeacherPhone('');
+      setTeacherEmail('');
+      setTeacherTsc('');
+      setTeacherSpecialties('');
+      setSendInviteNow(false);
+      setIsAddModalOpen(false);
 
       await refreshData();
     } catch (err) {
@@ -85,10 +83,27 @@ export function SchoolTeachersPage() {
         err.response?.data?.detail ||
         err.response?.data?.non_field_errors?.[0] ||
         (typeof err.response?.data === 'string' ? err.response.data : null) ||
-        'Failed to issue teacher invitation.';
+        'Failed to add teacher to school roster.';
       setStatusMessage({ type: 'error', text: detail });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Dispatch Invitation / Enable Platform Access
+  const handleSendInvite = async (membershipId, phone) => {
+    try {
+      await schoolAdminService.sendTeacherInvite(membershipId);
+      setStatusMessage({
+        type: 'success',
+        text: `Platform invitation SMS dispatched to ${phone || 'teacher'}!`,
+      });
+      await refreshData();
+    } catch (err) {
+      setStatusMessage({
+        type: 'error',
+        text: err.response?.data?.detail || 'Failed to dispatch platform invitation.',
+      });
     }
   };
 
@@ -177,7 +192,7 @@ export function SchoolTeachersPage() {
       {/* Page Header */}
       <PageHeader
         title="Teachers"
-        subtitle="Manage teaching staff and academic assignments"
+        subtitle="Manage teaching staff roster, platform access, and academic assignments"
         actions={
           <>
             <button
@@ -188,10 +203,10 @@ export function SchoolTeachersPage() {
             </button>
 
             <button
-              onClick={() => setIsInviteModalOpen(true)}
+              onClick={() => setIsAddModalOpen(true)}
               className="bg-custom-blue text-white hover:bg-blue-700 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
             >
-              <UserPlus className="w-4 h-4" /> Invite Teacher
+              <UserPlus className="w-4 h-4" /> Add Teacher
             </button>
           </>
         }
@@ -247,13 +262,13 @@ export function SchoolTeachersPage() {
                 className="p-4 rounded-3xl border border-gray-100 bg-white shadow-xs flex items-center justify-between text-xs"
               >
                 <div>
-                  <p className="font-bold text-gray-900">{inv.email}</p>
+                  <p className="font-bold text-gray-900">{inv.phone_number || inv.email}</p>
                   <p className="text-[11px] text-gray-400 font-medium">
                     Expires: {inv.expires_at ? new Date(inv.expires_at).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
                 <button
-                  onClick={() => handleRevokeInvitation(inv.id, inv.email)}
+                  onClick={() => handleRevokeInvitation(inv.id, inv.email || inv.phone_number)}
                   className="text-red-600 hover:bg-red-50 font-bold px-2.5 py-1 rounded-xl transition-colors"
                 >
                   Revoke
@@ -275,7 +290,7 @@ export function SchoolTeachersPage() {
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search teacher name or email..."
+              placeholder="Search teacher name, phone or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-custom-blue"
@@ -294,17 +309,17 @@ export function SchoolTeachersPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-gray-100 text-xs uppercase font-bold text-gray-400">
-                    <th className="py-3 px-4">Teacher Name</th>
-                    <th className="py-3 px-4">Email</th>
+                    <th className="py-3 px-4">Teacher Name & Phone</th>
+                    <th className="py-3 px-4">Email / TSC</th>
                     <th className="py-3 px-4">Assigned Subjects & Streams</th>
-                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Platform Access</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 text-xs font-medium text-gray-700">
                   {filteredTeachers.map((t) => {
                     const name = t.user_detail?.first_name
-                      ? `${t.user_detail.first_name} ${t.user_detail.last_name || ''}`
+                      ? `${t.user_detail.first_name} ${t.user_detail.last_name || ''}`.trim()
                       : t.user_detail?.username || 'Teacher';
 
                     const teacherUserId = t.user || t.user_detail?.id;
@@ -314,8 +329,16 @@ export function SchoolTeachersPage() {
 
                     return (
                       <tr key={t.id} className="hover:bg-gray-50/80 transition-colors">
-                        <td className="py-3.5 px-4 font-bold text-gray-900">{name}</td>
-                        <td className="py-3.5 px-4 text-gray-600">{t.user_detail?.email}</td>
+                        <td className="py-3.5 px-4">
+                          <p className="font-bold text-gray-900">{name}</p>
+                          <p className="text-[11px] text-gray-500 font-mono">{t.user_detail?.phone_number || 'No phone'}</p>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <p className="text-gray-600">{t.user_detail?.email || <span className="italic text-gray-400">No email</span>}</p>
+                          {t.user_detail?.tsc_number && (
+                            <p className="text-[11px] text-gray-400">TSC: {t.user_detail.tsc_number}</p>
+                          )}
+                        </td>
                         <td className="py-3.5 px-4">
                           {assignments.length === 0 ? (
                             <span className="text-gray-400 italic">No assignments</span>
@@ -341,24 +364,34 @@ export function SchoolTeachersPage() {
                           )}
                         </td>
                         <td className="py-3.5 px-4">
-                          <span
-                            className={`inline-block text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border ${
-                              t.state === 'ACTIVE'
-                                ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                                : t.state === 'SUSPENDED'
-                                ? 'bg-red-100 text-red-800 border-red-200'
-                                : 'bg-gray-100 text-gray-700 border-gray-200'
-                            }`}
-                          >
-                            {t.state}
-                          </span>
+                          {t.has_platform_access ? (
+                            <span className="inline-block text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              Access Active
+                            </span>
+                          ) : t.invitation_status === 'PENDING' ? (
+                            <span className="inline-block text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                              Invite Pending
+                            </span>
+                          ) : (
+                            <span className="inline-block text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                              Roster Member
+                            </span>
+                          )}
                         </td>
                         <td className="py-3.5 px-4 text-right">
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end items-center gap-2">
+                            {!t.has_platform_access && (
+                              <button
+                                onClick={() => handleSendInvite(t.id, t.user_detail?.phone_number)}
+                                className="text-[11px] bg-blue-50 text-custom-blue hover:bg-blue-100 font-bold px-3 py-1.5 rounded-xl border border-blue-200 transition-colors min-h-[32px] cursor-pointer"
+                              >
+                                {t.invitation_status === 'PENDING' ? 'Re-send SMS' : 'Enable Access'}
+                              </button>
+                            )}
                             {t.state !== 'ACTIVE' && (
                               <button
                                 onClick={() => handleTransitionState(t.id, 'ACTIVE')}
-                                className="text-[11px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold px-3 py-1.5 rounded-xl border border-emerald-200 transition-colors min-h-[36px] cursor-pointer"
+                                className="text-[11px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold px-3 py-1.5 rounded-xl border border-emerald-200 transition-colors min-h-[32px] cursor-pointer"
                               >
                                 Activate
                               </button>
@@ -366,7 +399,7 @@ export function SchoolTeachersPage() {
                             {t.state === 'ACTIVE' && (
                               <button
                                 onClick={() => handleTransitionState(t.id, 'SUSPENDED')}
-                                className="text-[11px] bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold px-3 py-1.5 rounded-xl border border-amber-200 transition-colors min-h-[36px] cursor-pointer"
+                                className="text-[11px] bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold px-3 py-1.5 rounded-xl border border-amber-200 transition-colors min-h-[32px] cursor-pointer"
                               >
                                 Suspend
                               </button>
@@ -384,7 +417,7 @@ export function SchoolTeachersPage() {
             <div className="block md:hidden space-y-3">
               {filteredTeachers.map((t) => {
                 const name = t.user_detail?.first_name
-                  ? `${t.user_detail.first_name} ${t.user_detail.last_name || ''}`
+                  ? `${t.user_detail.first_name} ${t.user_detail.last_name || ''}`.trim()
                   : t.user_detail?.username || 'Teacher';
 
                 const teacherUserId = t.user || t.user_detail?.id;
@@ -397,19 +430,19 @@ export function SchoolTeachersPage() {
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="font-bold text-gray-900 text-sm">{name}</p>
-                        <p className="text-gray-500 text-xs">{t.user_detail?.email}</p>
+                        <p className="text-gray-500 text-xs font-mono">{t.user_detail?.phone_number || t.user_detail?.email}</p>
                       </div>
-                      <span
-                        className={`inline-block text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
-                          t.state === 'ACTIVE'
-                            ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                            : t.state === 'SUSPENDED'
-                            ? 'bg-red-100 text-red-800 border-red-200'
-                            : 'bg-gray-100 text-gray-700 border-gray-200'
-                        }`}
-                      >
-                        {t.state}
-                      </span>
+                      <div>
+                        {t.has_platform_access ? (
+                          <span className="inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                            Roster Only
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Assignments */}
@@ -440,21 +473,29 @@ export function SchoolTeachersPage() {
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex justify-end pt-2 border-t border-gray-100">
+                    <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                      {!t.has_platform_access && (
+                        <button
+                          onClick={() => handleSendInvite(t.id, t.user_detail?.phone_number)}
+                          className="text-xs bg-blue-50 text-custom-blue hover:bg-blue-100 font-bold px-3 py-1.5 rounded-xl border border-blue-200 cursor-pointer"
+                        >
+                          Enable Access
+                        </button>
+                      )}
                       {t.state !== 'ACTIVE' && (
                         <button
                           onClick={() => handleTransitionState(t.id, 'ACTIVE')}
-                          className="w-full sm:w-auto text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold px-4 py-2 rounded-xl border border-emerald-200 transition-colors min-h-[44px] cursor-pointer flex items-center justify-center"
+                          className="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold px-3 py-1.5 rounded-xl border border-emerald-200 cursor-pointer"
                         >
-                          Activate Teacher
+                          Activate
                         </button>
                       )}
                       {t.state === 'ACTIVE' && (
                         <button
                           onClick={() => handleTransitionState(t.id, 'SUSPENDED')}
-                          className="w-full sm:w-auto text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold px-4 py-2 rounded-xl border border-amber-200 transition-colors min-h-[44px] cursor-pointer flex items-center justify-center"
+                          className="text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold px-3 py-1.5 rounded-xl border border-amber-200 cursor-pointer"
                         >
-                          Suspend Teacher
+                          Suspend
                         </button>
                       )}
                     </div>
@@ -466,92 +507,102 @@ export function SchoolTeachersPage() {
         )}
       </section>
 
-      {/* Modal: Invite Teacher */}
-      {isInviteModalOpen && (
+      {/* Modal: Add Teacher to Roster */}
+      {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-xl border border-gray-100">
             <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-              <h3 className="font-extrabold text-gray-900 text-lg">Invite Teacher</h3>
-              <button onClick={() => setIsInviteModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <h3 className="font-extrabold text-gray-900 text-lg">Add Teacher to Staff Roster</h3>
+              <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleInviteTeacher} className="space-y-4">
+            <form onSubmit={handleAddTeacher} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Teacher Email</label>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Teacher Full Name *</label>
                 <input
-                  type="email"
-                  placeholder="teacher@school.com"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-custom-blue focus:outline-none"
+                  type="text"
+                  placeholder="e.g. Samuel Mwangi"
+                  value={teacherName}
+                  onChange={(e) => setTeacherName(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-custom-blue focus:outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Target Class (Optional)</label>
-                <select
-                  value={intendedClassId}
-                  onChange={(e) => setIntendedClassId(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-custom-blue focus:outline-none"
-                >
-                  <option value="">-- Optional Class --</option>
-                  {classes.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Phone Number *</label>
+                <input
+                  type="tel"
+                  placeholder="07XX XXX XXX"
+                  value={teacherPhone}
+                  onChange={(e) => setTeacherPhone(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-custom-blue focus:outline-none"
+                  required
+                />
+                <p className="text-[10px] text-gray-400 mt-0.5">Primary identifier used for invitation and login authentication.</p>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Target Stream (Optional)</label>
-                <select
-                  value={intendedStreamId}
-                  onChange={(e) => setIntendedStreamId(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-custom-blue focus:outline-none"
-                >
-                  <option value="">-- Optional Stream --</option>
-                  {streams.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.class_name || 'Class'} — {s.name}
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Email Address (Optional)</label>
+                <input
+                  type="email"
+                  placeholder="teacher@school.com"
+                  value={teacherEmail}
+                  onChange={(e) => setTeacherEmail(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-custom-blue focus:outline-none"
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Target Subject (Optional)</label>
-                <select
-                  value={intendedSubjectId}
-                  onChange={(e) => setIntendedSubjectId(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-custom-blue focus:outline-none"
-                >
-                  <option value="">-- Optional Subject --</option>
-                  {subjects.map((sub) => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.name} ({sub.code})
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">TSC Number (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. TSC123456"
+                  value={teacherTsc}
+                  onChange={(e) => setTeacherTsc(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-custom-blue focus:outline-none"
+                />
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Subject Specialties (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Mathematics, Chemistry"
+                  value={teacherSpecialties}
+                  onChange={(e) => setTeacherSpecialties(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-custom-blue focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-2">
+                <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sendInviteNow}
+                    onChange={(e) => setSendInviteNow(e.target.checked)}
+                    className="rounded border-gray-300 text-custom-blue focus:ring-custom-blue"
+                  />
+                  <span>Dispatch SMS platform invitation immediately</span>
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setIsInviteModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-custom-blue text-white hover:bg-blue-700 shadow-sm disabled:opacity-50"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-custom-blue text-white hover:bg-blue-700 shadow-sm disabled:opacity-50 cursor-pointer"
                 >
-                  {isSubmitting ? 'Sending...' : 'Send Invitation'}
+                  {isSubmitting ? 'Saving...' : 'Add Teacher'}
                 </button>
               </div>
             </form>

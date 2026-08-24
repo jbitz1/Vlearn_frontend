@@ -1,19 +1,23 @@
-import { Outlet, Navigate } from "react-router";
-import SchoolAdminSideNav from "../../Components/School/SchoolAdminSideNav";
+import { useContext } from "react";
+import { Navigate } from "react-router";
+import SchoolLayout from "../../Components/School/SchoolLayout";
 import { SchoolProvider, useSchoolContext } from "../../Context/SchoolContext";
+import UserContext from "../../Context/UserContext";
 
 function SchoolGate({ children }) {
   const { school, isLoading } = useSchoolContext();
+  const { user } = useContext(UserContext) || {};
+  const isPlatformAdmin = user?.role === 'platform_admin' || user?.is_superuser;
   
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-custom-blue/30 border-t-custom-blue rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
       </div>
     );
   }
   
-  if (!school) {
+  if (!school && !isPlatformAdmin) {
     return <Navigate to="/school-onboarding" replace />;
   }
   
@@ -24,12 +28,7 @@ function SchoolDashboardOutlet() {
   return (
     <SchoolProvider>
       <SchoolGate>
-        <div className="flex bg-gray-50 min-h-screen">
-          <SchoolAdminSideNav />
-          <main className="w-full md:ml-64 p-6 md:p-10 max-w-7xl mx-auto space-y-8">
-            <Outlet />
-          </main>
-        </div>
+        <SchoolLayout />
       </SchoolGate>
     </SchoolProvider>
   );

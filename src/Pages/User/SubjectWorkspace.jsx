@@ -373,34 +373,75 @@ export const SubjectWorkspace = () => {
 
       {/* Modal for Experiment Video */}
       {selectedExperiment && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl overflow-hidden">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-base sm:text-xl font-bold text-gray-900 truncate">{selectedExperiment.title}</h3>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 text-white rounded-3xl max-w-5xl w-full p-5 sm:p-7 shadow-2xl overflow-hidden relative my-auto">
+            {/* Header Bar */}
+            <div className="flex justify-between items-center pb-4 mb-4 border-b border-slate-800">
+              <div className="flex items-center gap-2.5 pr-6">
+                <PlayCircle className="text-red-500 w-5 h-5 shrink-0" />
+                <h3 className="text-base sm:text-xl font-bold text-white truncate">{selectedExperiment.title}</h3>
+              </div>
               <button
                 onClick={() => setSelectedExperiment(null)}
-                className="text-gray-400 hover:text-gray-700 text-lg font-bold p-2 cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
+                className="text-slate-400 hover:text-white text-lg font-bold p-2 rounded-full hover:bg-slate-800 transition-colors cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center shrink-0"
               >
                 ✕
               </button>
             </div>
-            <div className="aspect-video bg-black rounded-xl sm:rounded-2xl overflow-hidden mb-3 relative">
-              <ReactPlayer
-                url={selectedExperiment.playback_url || selectedExperiment.video_url || selectedExperiment.videoLink}
-                controls
-                width="100%"
-                height="100%"
-                playing
-              />
-            </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-3">
-              <p className="text-gray-600 text-xs sm:text-sm max-w-xl">{selectedExperiment.description}</p>
-              <button
-                onClick={() => navigate(`/coursedetails/${selectedExperiment.id}`)}
-                className="px-4 py-2.5 bg-custom-blue text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-1.5 shrink-0 w-full sm:w-auto min-h-[44px]"
-              >
-                <ExternalLink className="w-3.5 h-3.5" /> Full Practical Page
-              </button>
+
+            {/* Side-by-Side Responsive Grid: Video Priority (lg:col-span-7 vs lg:col-span-5) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left: Video Player */}
+              <div className="lg:col-span-7 bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-lg">
+                <div className="relative aspect-video w-full">
+                  {selectedExperiment.cloudflare_video_id ? (
+                    <iframe
+                      src={`https://iframe.videodelivery.net/${selectedExperiment.cloudflare_video_id}`}
+                      className="w-full h-full"
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <ReactPlayer
+                      url={selectedExperiment.playback_url || selectedExperiment.video_url || selectedExperiment.videoLink}
+                      controls
+                      width="100%"
+                      height="100%"
+                      playing
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Right: Instructions & Explanations Panel */}
+              <div className="lg:col-span-5 flex flex-col justify-between space-y-4 bg-slate-950/80 border border-slate-800/90 rounded-2xl p-4 sm:p-5">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold tracking-wider text-slate-400 uppercase">
+                    <BookOpen className="w-4 h-4 text-custom-blue" />
+                    <span>Experiment Overview</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+                    {selectedExperiment.description || 'Observe the practical chemical demonstration and note key reactions and experimental results.'}
+                  </p>
+                </div>
+
+                <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-xs space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-teal-300 font-semibold font-mono text-[11px]">
+                    <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+                    <span>Focus Note</span>
+                  </div>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    Observe the apparatus arrangement, reagents used, and physical observation endpoints as demonstrated.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => navigate(`/coursedetails/${selectedExperiment.id}`)}
+                  className="w-full py-2.5 px-4 bg-custom-blue hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md min-h-[44px]"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> Full Practical Page
+                </button>
+              </div>
             </div>
           </div>
         </div>

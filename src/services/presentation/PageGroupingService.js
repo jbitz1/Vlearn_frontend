@@ -12,6 +12,23 @@ import { PresentationNormalizer } from './PresentationNormalizer';
 
 export class PageGroupingService {
   /**
+   * Cleans raw title strings from generic/robotic prefixes.
+   */
+  static formatCleanPageTitle(raw, fallback) {
+    if (!raw || raw === '---' || String(raw).startsWith('---')) return fallback;
+    const clean = String(raw)
+      .replace(/^#+\s*/, '')
+      .replace(/\*\*/g, '')
+      .replace(/^-\s*/, '')
+      .replace(/^Module\s*\d+(\.\d+)?:\s*/i, '')
+      .replace(/^Concept\s*\d*[:\s\-]*/i, '')
+      .replace(/^Core Concept\s*\d*[:\s\-]*/i, '')
+      .replace(/^Key Concept\s*\d*[:\s\-]*/i, '')
+      .trim();
+    return clean || fallback;
+  }
+
+  /**
    * Groups blocks into pages respecting pedagogical bounds.
    */
   static groupIntoPages(blocks = []) {
@@ -28,11 +45,16 @@ export class PageGroupingService {
       const pageMap = {};
       sortedBlocks.forEach((block) => {
         const pageNum = block.page_number || 1;
+        const fallbackTitle = block.title || `Part ${pageNum}`;
+        const cleanTitle = this.formatCleanPageTitle(
+          block.page_title || block.metadata?.concept_group || fallbackTitle,
+          fallbackTitle
+        );
         if (!pageMap[pageNum]) {
           pageMap[pageNum] = {
             pageNum,
-            pageTitle: block.page_title || block.metadata?.concept_group || `Concept ${pageNum}`,
-            conceptGroup: block.metadata?.concept_group || `Concept ${pageNum}`,
+            pageTitle: cleanTitle,
+            conceptGroup: cleanTitle,
             layoutTemplate: block.metadata?.layout_template || 'DiscoveryLayout',
             blocks: [],
           };
@@ -53,7 +75,10 @@ export class PageGroupingService {
     const MAX_COGNITIVE_LOAD = 10;
 
     sortedBlocks.forEach((block) => {
-      const blockConcept = block.metadata?.concept_group || block.page_title || 'Core Material';
+      const blockConcept = this.formatCleanPageTitle(
+        block.metadata?.concept_group || block.page_title || block.title || 'Core Material',
+        'Core Material'
+      );
       const blockLayout = block.metadata?.layout_template || 'DiscoveryLayout';
       const blockLoad = this.estimateBlockCognitiveLoad(block);
 
@@ -64,10 +89,11 @@ export class PageGroupingService {
       ) && currentBlocks.length >= 2;
 
       if (currentBlocks.length > 0 && (conceptShift || loadExceeded || isMajorMilestone)) {
+        const pageTitle = currentConcept || currentBlocks[0]?.title || `Part ${pages.length + 1}`;
         pages.push({
           pageNum: pages.length + 1,
-          pageTitle: currentConcept || `Concept ${pages.length + 1}`,
-          conceptGroup: currentConcept || `Concept ${pages.length + 1}`,
+          pageTitle,
+          conceptGroup: pageTitle,
           layoutTemplate: currentLayout,
           blocks: currentBlocks,
         });
@@ -82,10 +108,11 @@ export class PageGroupingService {
     });
 
     if (currentBlocks.length > 0) {
+      const pageTitle = currentConcept || currentBlocks[0]?.title || `Part ${pages.length + 1}`;
       pages.push({
         pageNum: pages.length + 1,
-        pageTitle: currentConcept || `Concept ${pages.length + 1}`,
-        conceptGroup: currentConcept || `Concept ${pages.length + 1}`,
+        pageTitle,
+        conceptGroup: pageTitle,
         layoutTemplate: currentLayout,
         blocks: currentBlocks,
       });

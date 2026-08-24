@@ -161,7 +161,7 @@ export const studentCurriculumService = {
           const simTopic = (s.topic || '').toLowerCase();
           const simTitle = (s.title || '').toLowerCase();
           if (tLower.includes('acid') || tLower.includes('base') || tLower.includes('salt')) return simTopic.includes('acid') || simTitle.includes('acid') || simTitle.includes('solubility');
-          if (tLower.includes('gas law')) return simTopic.includes('gas') || simTitle.includes('charles');
+          if (tLower.includes('gas law')) return simTopic.includes('gas') || simTitle.includes('gas') || simTitle.includes('charles') || simTitle.includes('boyle') || simTitle.includes('graham') || simTitle.includes('diffusion');
           if (tLower.includes('energy') || tLower.includes('heat') || tLower.includes('therm')) return simTopic.includes('energy') || simTitle.includes('hess') || simTitle.includes('heat');
           if (tLower.includes('rate') || tLower.includes('reversible') || tLower.includes('equilibrium')) return simTopic.includes('rate') || simTitle.includes('rate') || simTitle.includes('collision') || simTitle.includes('haber') || simTitle.includes('equilibrium');
           if (tLower.includes('electro') || tLower.includes('redox')) return simTopic.includes('electro') || simTitle.includes('electrolysis') || simTitle.includes('plating') || simTitle.includes('discharge') || simTitle.includes('voltaic') || simTitle.includes('electrode');
@@ -352,7 +352,8 @@ export const studentCurriculumService = {
     let startedTopics = 0;
 
     topics.forEach(topic => {
-      const topicProg = this.getTopicProgress(topic.id, userId);
+      const lessonCount = topic.lesson_count || (topic.lessons ? topic.lessons.length : 0) || 0;
+      const topicProg = this.getTopicProgress(topic.id, userId, lessonCount);
       totalPct += topicProg.pct;
       if (topicProg.isCompleted) completedTopics++;
       if (topicProg.isStarted) startedTopics++;
@@ -436,7 +437,11 @@ export const studentCurriculumService = {
             key &&
             (key.startsWith('vlearn_lesson_progress_') ||
              key.startsWith('vlearn_subject_access_') ||
+             key.startsWith('vlearn_topic_access_') ||
+             key.startsWith('vlearn_recent_') ||
              key.includes('lesson_progress') ||
+             key.includes('subject_access') ||
+             key.includes('topic_access') ||
              key.includes('_progress_'))
           ) {
             keysToRemove.push(key);
@@ -450,7 +455,7 @@ export const studentCurriculumService = {
   }
 };
 
-const PROGRESS_RESET_EPOCH = '2026_08_12_02';
+const PROGRESS_RESET_EPOCH = '2026_08_18_01';
 
 try {
   if (typeof window !== 'undefined' && window.localStorage) {

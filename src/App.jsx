@@ -20,6 +20,10 @@ import Dashboard from "./Pages/User/Dashboard";
 import ContactUs from "../src/Pages/ContactUs";
 import Login from "./Components/Login";
 import Signup from "./Components/Signup";
+import SchoolSignUp from './Pages/Auth/SchoolSignUp';
+import OTPVerification from './Pages/Auth/OTPVerification';
+import CreatePassword from './Pages/Auth/CreatePassword';
+import PhoneLogin from './Pages/Auth/PhoneLogin';
 import RoleSelection from "./Pages/Auth/RoleSelection";
 import CourseDetail from "./Pages/User/CourseDetail";
 import User from "./Pages/User/User";
@@ -49,6 +53,9 @@ import NotFound from "./Pages/NotFound";
 import CurriculumBuilder from "./Pages/Admin/CurriculumBuilder";
 import IngestionSandbox from "./Pages/Admin/IngestionSandbox";
 import RequireRole from "./component-library/account-management/authentication/RequireRole";
+import MyClassPage from "./Pages/Teacher/MyClassPage";
+import KCSEHistory from "./Pages/School/KCSEHistory";
+import AcademicYearTransition from "./Pages/School/AcademicYearTransition";
 import TeacherDashboardOutlet from "./Pages/Teacher/TeacherDashboardOutlet";
 import TeacherDashboard from "./Pages/Teacher/TeacherDashboard";
 import TeacherSubjectsView from "./Pages/Teacher/TeacherSubjectsView";
@@ -63,13 +70,19 @@ import AcademicStructurePage from "./Pages/School/AcademicStructurePage";
 import SchoolTeachersPage from "./Pages/School/SchoolTeachersPage";
 import SchoolStudentsPage from "./Pages/School/SchoolStudentsPage";
 import SchoolSubscriptionPage from "./Pages/School/SchoolSubscriptionPage";
+import AssessmentList from "./Pages/Teacher/AssessmentList";
+import AssessmentEntry from "./Pages/Teacher/AssessmentEntry";
+import StreamPerformance from "./Pages/Performance/StreamPerformance";
+import SchoolPerformance from "./Pages/Performance/SchoolPerformance";
+import FormPerformance from "./Pages/Performance/FormPerformance";
+import StudentPerformance from "./Pages/Performance/StudentPerformance";
 
 
 function App() {
     const studentRoutes = {
         path: "student",
         element: (
-            <RequireRole allowedRoles={["student", "platform_admin"]}>
+            <RequireRole allowedRoles={["student", "school_admin", "platform_admin"]}>
                 <DashboardOutlet />
             </RequireRole>
         ),
@@ -162,19 +175,29 @@ function App() {
     const teacherRoutes = {
         path: "teacher",
         element: (
-            <RequireRole allowedRoles={["teacher", "platform_admin"]}>
+            <RequireRole allowedRoles={["teacher", "school_admin", "platform_admin"]}>
                 <TeacherDashboardOutlet />
             </RequireRole>
         ),
         children: [
             { index: true, element: <TeacherDashboard /> },
-            { path: "subjects", element: <TeacherSubjectsView /> },
+            { path: "dashboard", element: <TeacherDashboard /> },
+            { path: "my-class", element: <MyClassPage /> },
+            { path: "my-teaching", element: <TeacherSubjectWorkspace /> },
+            { path: "subjects", element: <Navigate to="/teacher/my-teaching" replace /> },
             { path: "subject/:subjectId", element: <TeacherSubjectWorkspace /> },
+            { path: "topic-workspace/:streamId/:subjectId/:topicId", element: <TeacherTopicWorkspace /> },
+            { path: "topic-workspace/:topicId", element: <TeacherTopicWorkspace /> },
             { path: "topic/:topicId", element: <TeacherTopicWorkspace /> },
             { path: "classes", element: <TeacherClassesView /> },
             { path: "class/:streamId", element: <TeacherClassDetail /> },
             { path: "profile", element: <TeacherProfile /> },
             { path: "user", element: <TeacherProfile /> },
+            { path: "assessments", element: <AssessmentEntry /> },
+            { path: "assessments-list", element: <AssessmentList /> },
+            { path: "assessments/:examId/entry", element: <AssessmentEntry /> },
+            { path: "performance", element: <StreamPerformance /> },
+            { path: "students", element: <MyClassPage /> },
         ],
     };
 
@@ -187,14 +210,26 @@ function App() {
         ),
         children: [
             { index: true, element: <Navigate to="dashboard" replace /> },
-            { path: "dashboard", element: <SubscriptionRestricted><SchoolDashboard /></SubscriptionRestricted> },
-            { path: "academic-structure", element: <SubscriptionRestricted><AcademicStructurePage /></SubscriptionRestricted> },
-            { path: "teachers", element: <SubscriptionRestricted><SchoolTeachersPage /></SubscriptionRestricted> },
-            { path: "students", element: <SubscriptionRestricted><SchoolStudentsPage /></SubscriptionRestricted> },
+            { path: "dashboard", element: <SchoolDashboard /> },
+            { path: "classes", element: <AcademicStructurePage /> },
+            { path: "academic-structure", element: <Navigate to="/school/classes" replace /> },
+            { path: "teachers", element: <SchoolTeachersPage /> },
+            { path: "students", element: <SchoolStudentsPage /> },
+            { path: "subjects", element: <AcademicStructurePage /> },
+            { path: "assessments", element: <AssessmentList /> },
+            { path: "assessments/new", element: <AssessmentEntry /> },
             { path: "subscription", element: <SchoolSubscriptionPage /> },
-            { path: "classes", element: <Navigate to="/school/academic-structure" replace /> },
+            { path: "performance", element: <SchoolPerformance /> },
+            { path: "final-exams", element: <KCSEHistory /> },
+            { path: "kcse", element: <Navigate to="/school/final-exams" replace /> },
+            { path: "reports", element: <SchoolPerformance /> },
+            { path: "settings", element: <AcademicYearTransition /> },
+            { path: "year-transition", element: <Navigate to="/school/settings" replace /> },
+            { path: "performance/form/:formId", element: <FormPerformance /> },
+            { path: "performance/stream/:streamId", element: <StreamPerformance /> },
+            { path: "performance/student/:studentId", element: <StudentPerformance /> },
             { path: "analytics", element: <Navigate to="/school/dashboard" replace /> },
-            { path: "school", element: <Navigate to="/school/academic-structure" replace /> },
+            { path: "school", element: <Navigate to="/school/classes" replace /> },
         ],
     };
 
@@ -264,6 +299,22 @@ function App() {
                 {
                     path: "register",
                     element: <Signup />,
+                },
+                {
+                    path: "school-signup",
+                    element: <SchoolSignUp />,
+                },
+                {
+                    path: "verify-otp",
+                    element: <OTPVerification />,
+                },
+                {
+                    path: "create-password",
+                    element: <CreatePassword />,
+                },
+                {
+                    path: "phone-login",
+                    element: <PhoneLogin />,
                 },
                 {
                     path: "subscription",

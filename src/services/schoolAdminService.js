@@ -87,6 +87,16 @@ export const schoolAdminService = {
     return response.data.results || response.data || [];
   },
 
+  async addTeacher(data) {
+    const response = await apiClient.post('/api/organizations/memberships/add-teacher/', data);
+    return response.data;
+  },
+
+  async sendTeacherInvite(membershipId) {
+    const response = await apiClient.post(`/api/organizations/memberships/${membershipId}/send-invite/`);
+    return response.data;
+  },
+
   async inviteTeacher(data) {
     const response = await apiClient.post('/api/organizations/invitations/', data);
     return response.data;
@@ -131,6 +141,24 @@ export const schoolAdminService = {
       assignment_id: assignmentId,
     });
     return response.data;
+  },
+
+  async bulkUploadStudents(formData) {
+    const response = await apiClient.post('/api/organizations/bulk-upload/students/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  async bulkUploadTeachers(formData) {
+    const response = await apiClient.post('/api/organizations/bulk-upload/teachers/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  getTemplateDownloadUrl(type = 'student') {
+    return `/api/organizations/download-template/?type=${type}`;
   },
 
   // Curriculum reference data
