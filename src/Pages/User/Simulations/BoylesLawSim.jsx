@@ -11,6 +11,7 @@ export default function BoylesLawSim({ config = {}, onTelemetry }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playDir, setPlayDir] = useState(-1);
   const [lastVolume, setLastVolume] = useState(50.0);
+  const [mobileView, setMobileView] = useState('both'); // 'both', 'syringe', 'graph'
   const [practiceAns, setPracticeAns] = useState('');
   const [practiceStatus, setPracticeStatus] = useState(null); // 'correct' | 'incorrect' | null
   const [showSolution, setShowSolution] = useState(false);
@@ -113,24 +114,24 @@ export default function BoylesLawSim({ config = {}, onTelemetry }) {
     }
   };
 
-  // Syringe geometry
-  const barrelX = 70;
-  const barrelYtop = 40;
-  const barrelW = 160;
-  const barrelHmax = 190;
+  // Syringe geometry (expanded vertically for desktop)
+  const barrelX = 65;
+  const barrelYtop = 35;
+  const barrelW = 170;
+  const barrelHmax = 240;
   const frac = volume / V1; // 1 = full, 0.24 = max compression
   const gasH = barrelHmax * frac;
   const gasY = barrelYtop + (barrelHmax - gasH);
-  const plungerY = gasY - 10;
+  const plungerY = gasY - 12;
 
-  // Graph geometry
-  const pad = 44;
-  const gw = 340;
-  const gh = 230;
+  // Graph geometry (expanded vertically for desktop)
+  const pad = 48;
+  const gw = 380;
+  const gh = 340;
   const x0 = pad;
   const y0 = gh - pad;
-  const x1 = gw - 16;
-  const y1 = 20;
+  const x1 = gw - 20;
+  const y1 = 25;
   const Vmax = 55;
   const Pmax = 4.5;
   const sx = (v) => x0 + (v / Vmax) * (x1 - x0);
@@ -165,8 +166,30 @@ export default function BoylesLawSim({ config = {}, onTelemetry }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 items-stretch">
-          <div className="lg:col-span-4 flex flex-col justify-between bg-slate-950/90 rounded-2xl p-4 border border-slate-800/90 shadow-inner">
+        {/* Mobile View Mode Switcher (Visible only on < lg screens) */}
+        <div className="flex lg:hidden items-center justify-center gap-1.5 p-1 bg-slate-950/90 rounded-2xl border border-slate-800 mb-4 w-full">
+          <button
+            onClick={() => setMobileView('both')}
+            className={`flex-1 py-2 px-2 text-xs font-mono font-medium rounded-xl transition-all cursor-pointer text-center ${mobileView === 'both' ? 'bg-teal-500 text-white font-bold shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            ⇄ Dual View
+          </button>
+          <button
+            onClick={() => setMobileView('syringe')}
+            className={`flex-1 py-2 px-2 text-xs font-mono font-medium rounded-xl transition-all cursor-pointer text-center ${mobileView === 'syringe' ? 'bg-teal-500 text-white font-bold shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            🧪 Syringe
+          </button>
+          <button
+            onClick={() => setMobileView('graph')}
+            className={`flex-1 py-2 px-2 text-xs font-mono font-medium rounded-xl transition-all cursor-pointer text-center ${mobileView === 'graph' ? 'bg-teal-500 text-white font-bold shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            📈 P–V Graph
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-5 items-stretch">
+          <div className={`${mobileView === 'graph' ? 'hidden lg:flex' : mobileView === 'both' ? 'col-span-1 lg:col-span-4' : 'col-span-1 sm:col-span-2 lg:col-span-4'} flex flex-col justify-between bg-slate-950/90 rounded-2xl p-3 sm:p-5 border border-slate-800/90 shadow-inner lg:min-h-[480px]`}>
             <div className="flex items-center justify-between pb-2 border-b border-slate-800/60 mb-2">
               <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">
                 1. Syringe Apparatus
@@ -176,8 +199,8 @@ export default function BoylesLawSim({ config = {}, onTelemetry }) {
               </span>
             </div>
 
-            <div className="flex items-center justify-center my-auto py-1">
-              <svg viewBox="0 0 340 280" className="w-full max-w-[300px] h-auto select-none">
+            <div className="flex items-center justify-center my-auto py-2 h-[260px] sm:h-[320px] lg:h-[360px]">
+              <svg viewBox="0 0 340 370" className="w-full max-w-[300px] sm:max-w-[340px] lg:max-w-none h-full select-none">
                 <defs>
                   <linearGradient id="boyleGasGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#2dd4bf" stopOpacity="0.35" />
@@ -194,14 +217,14 @@ export default function BoylesLawSim({ config = {}, onTelemetry }) {
                   const markY = barrelYtop + (barrelHmax - barrelHmax * markFrac);
                   return (
                     <g key={v}>
-                      <line x1={barrelX + 4} y1={markY} x2={barrelX + 16} y2={markY} stroke="#64748b" strokeWidth="1" />
-                      <text x={barrelX + 22} y={markY + 3.5} fill="#94a3b8" fontSize="9" fontFamily="monospace">{v} mL</text>
+                      <line x1={barrelX + 4} y1={markY} x2={barrelX + 18} y2={markY} stroke="#64748b" strokeWidth="1.2" />
+                      <text x={barrelX + 24} y={markY + 3.5} fill="#94a3b8" fontSize="9.5" fontFamily="monospace">{v} mL</text>
                     </g>
                   );
                 })}
-                <path d={`M ${barrelX + barrelW / 2 - 12} ${barrelYtop + barrelHmax + 4} L ${barrelX + barrelW / 2 + 12} ${barrelYtop + barrelHmax + 4} L ${barrelX + barrelW / 2 + 6} ${barrelYtop + barrelHmax + 28} L ${barrelX + barrelW / 2 - 6} ${barrelYtop + barrelHmax + 28} Z`} fill="#475569" stroke="#334155" />
-                <circle cx={barrelX + barrelW / 2} cy={barrelYtop + barrelHmax + 28} r="6" fill="#ef4444" />
-                <text x={barrelX + barrelW / 2} y={barrelYtop + barrelHmax + 44} textAnchor="middle" fill="#94a3b8" fontSize="9" fontFamily="monospace">SEALED CAP</text>
+                <path d={`M ${barrelX + barrelW / 2 - 14} ${barrelYtop + barrelHmax + 4} L ${barrelX + barrelW / 2 + 14} ${barrelYtop + barrelHmax + 4} L ${barrelX + barrelW / 2 + 7} ${barrelYtop + barrelHmax + 30} L ${barrelX + barrelW / 2 - 7} ${barrelYtop + barrelHmax + 30} Z`} fill="#475569" stroke="#334155" />
+                <circle cx={barrelX + barrelW / 2} cy={barrelYtop + barrelHmax + 30} r="7" fill="#ef4444" />
+                <text x={barrelX + barrelW / 2} y={barrelYtop + barrelHmax + 48} textAnchor="middle" fill="#94a3b8" fontSize="9.5" fontFamily="monospace" fontWeight="bold">SEALED CAP</text>
                 {showParticles && (
                   <g clipPath="url(#boyleGasClip)">
                     {particlesRef.current.map((p, idx) => (
@@ -209,17 +232,17 @@ export default function BoylesLawSim({ config = {}, onTelemetry }) {
                         key={idx}
                         cx={barrelX + p.x * barrelW}
                         cy={gasY + p.y * gasH}
-                        r="3.5"
+                        r="3.8"
                         fill="#5eead4"
                         opacity="0.9"
                       />
                     ))}
                   </g>
                 )}
-                <rect x={barrelX} y={plungerY} width={barrelW} height={12} rx="2" fill="#0ea5e9" stroke="#38bdf8" strokeWidth="1.5" />
-                <rect x={barrelX + barrelW / 2 - 6} y={plungerY - 36} width={12} height={36} fill="#64748b" />
-                <rect x={barrelX + barrelW / 2 - 28} y={plungerY - 44} width={56} height={8} rx="3" fill="#0ea5e9" />
-                {trend === 'compressing' && <text x={barrelX + barrelW / 2} y={plungerY - 50} textAnchor="middle" fill="#f59e0b" fontFamily="monospace" fontSize="10" fontWeight="bold">PUSH ↓</text>}
+                <rect x={barrelX} y={plungerY} width={barrelW} height={14} rx="3" fill="#0ea5e9" stroke="#38bdf8" strokeWidth="1.5" />
+                <rect x={barrelX + barrelW / 2 - 7} y={plungerY - 40} width={14} height={40} fill="#64748b" />
+                <rect x={barrelX + barrelW / 2 - 32} y={plungerY - 50} width={64} height={10} rx="4" fill="#0ea5e9" />
+                {trend === 'compressing' && <text x={barrelX + barrelW / 2} y={plungerY - 56} textAnchor="middle" fill="#f59e0b" fontFamily="monospace" fontSize="11" fontWeight="bold">PUSH ↓</text>}
               </svg>
             </div>
             <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 text-[11px] font-mono text-center text-slate-400">
@@ -227,23 +250,23 @@ export default function BoylesLawSim({ config = {}, onTelemetry }) {
             </div>
           </div>
 
-          <div className="lg:col-span-4 flex flex-col justify-between bg-slate-950/90 rounded-2xl p-4 border border-slate-800/90 shadow-inner">
+          <div className={`${mobileView === 'syringe' ? 'hidden lg:flex' : mobileView === 'both' ? 'col-span-1 lg:col-span-4' : 'col-span-1 sm:col-span-2 lg:col-span-4'} flex flex-col justify-between bg-slate-950/90 rounded-2xl p-3 sm:p-5 border border-slate-800/90 shadow-inner lg:min-h-[480px]`}>
             <div className="flex items-center justify-between pb-2 border-b border-slate-800/60 mb-2">
               <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">2. Live P–V Isotherm Graph</span>
               <span className="text-[10px] font-mono bg-teal-500/10 text-teal-300 px-2 py-0.5 rounded border border-teal-500/20">P ∝ 1/V</span>
             </div>
-            <div className="flex items-center justify-center my-auto py-1">
-              <svg viewBox={`0 0 ${gw} ${gh}`} className="w-full max-w-[320px] h-auto">
+            <div className="flex items-center justify-center my-auto py-2 h-[260px] sm:h-[320px] lg:h-[360px]">
+              <svg viewBox={`0 0 ${gw} ${gh}`} className="w-full max-w-[320px] sm:max-w-[360px] lg:max-w-none h-full select-none">
                 <line x1={x0} y1={y0} x2={x1} y2={y0} stroke="#64748b" strokeWidth="1.5" />
                 <line x1={x0} y1={y0} x2={x0} y2={y1} stroke="#64748b" strokeWidth="1.5" />
-                <text x={(x0 + x1) / 2} y={gh - 8} textAnchor="middle" fill="#94a3b8" fontSize="9.5" fontFamily="monospace">Volume V (cm³)</text>
-                <text x={12} y={(y0 + y1) / 2} textAnchor="middle" fill="#94a3b8" fontSize="9.5" fontFamily="monospace" transform={`rotate(-90 12 ${(y0 + y1) / 2})`}>Pressure P (atm)</text>
-                {[10, 20, 30, 40, 50].map((v) => <text key={v} x={sx(v)} y={y0 + 14} textAnchor="middle" fill="#64748b" fontSize="8.5" fontFamily="monospace">{v}</text>)}
-                {[1, 2, 3, 4].map((p) => <text key={p} x={x0 - 8} y={sy(p) + 3} textAnchor="end" fill="#64748b" fontSize="8.5" fontFamily="monospace">{p}</text>)}
+                <text x={(x0 + x1) / 2} y={gh - 8} textAnchor="middle" fill="#94a3b8" fontSize="10.5" fontFamily="monospace">Volume V (cm³)</text>
+                <text x={14} y={(y0 + y1) / 2} textAnchor="middle" fill="#94a3b8" fontSize="10.5" fontFamily="monospace" transform={`rotate(-90 14 ${(y0 + y1) / 2})`}>Pressure P (atm)</text>
+                {[10, 20, 30, 40, 50].map((v) => <text key={v} x={sx(v)} y={y0 + 16} textAnchor="middle" fill="#64748b" fontSize="9" fontFamily="monospace">{v}</text>)}
+                {[1, 2, 3, 4].map((p) => <text key={p} x={x0 - 8} y={sy(p) + 3.5} textAnchor="end" fill="#64748b" fontSize="9" fontFamily="monospace">{p}</text>)}
                 <path d={curvePath} fill="none" stroke="#2dd4bf" strokeWidth="2.5" opacity="0.8" />
                 <line x1={sx(volume)} y1={sy(Math.min(pressure, Pmax))} x2={sx(volume)} y2={y0} stroke="#f59e0b" strokeWidth="1.2" strokeDasharray="3 3" opacity="0.7" />
                 <line x1={x0} y1={sy(Math.min(pressure, Pmax))} x2={sx(volume)} y2={sy(Math.min(pressure, Pmax))} stroke="#f59e0b" strokeWidth="1.2" strokeDasharray="3 3" opacity="0.7" />
-                <circle cx={sx(volume)} cy={sy(Math.min(pressure, Pmax))} r="6" fill="#f59e0b" stroke="#0f172a" strokeWidth="2" />
+                <circle cx={sx(volume)} cy={sy(Math.min(pressure, Pmax))} r="6.5" fill="#f59e0b" stroke="#0f172a" strokeWidth="2" />
               </svg>
             </div>
             <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-2 text-[10px] font-mono text-center text-amber-300">
@@ -251,7 +274,7 @@ export default function BoylesLawSim({ config = {}, onTelemetry }) {
             </div>
           </div>
 
-          <div className="lg:col-span-4 flex flex-col justify-between space-y-3 bg-slate-950/70 rounded-2xl p-4 border border-slate-800/70">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-4 flex flex-col justify-between space-y-4 bg-slate-950/70 rounded-2xl p-3.5 sm:p-5 border border-slate-800/70 lg:min-h-[480px]">
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex flex-col justify-between text-center">
                 <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400">Volume</span>

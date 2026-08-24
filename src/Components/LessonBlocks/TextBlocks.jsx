@@ -10,6 +10,11 @@ const ensureMathDelimiters = (str) => {
   if (typeof str !== 'string' || !str) return str;
   let text = str.replace(/\\+\$/g, '$');
 
+  // Clean any accidental control characters
+  text = text.replace(/[\x0c\u000c]/g, '\\f').replace(/[\x0b\u000b]/g, '\\v').replace(/[\x08\u0008]/g, '\\b').replace(/[\x07\u0007]/g, '\\a');
+  text = text.replace(/(?<!\\)frac\{/g, '\\frac{');
+  text = text.replace(/(\s)imes\b/g, '$1\\times');
+
   // 1. Convert parenthetical math expressions like ((\Delta H^\circ_c)) into ($...$)
   text = text.replace(/\(\((\s*\\[a-zA-Z]+[^\(\)]*?)\)\)/g, '($$$1$$)');
   text = text.replace(/\(\((\s*\^[0-9]+_[0-9]+[^\(\)]*?)\)\)/g, '($$$1$$)');
@@ -29,8 +34,18 @@ const ensureMathDelimiters = (str) => {
   // 3. Remove isolated dollar signs around operators inside equations
   text = text.replace(/\$(?:\\rightarrow|\\rightleftharpoons|\\leftarrow|\\Delta|\\pm|\\times|\\approx)\$/g, (m) => m.slice(1, -1));
 
-  // 4. Split content by existing display math ($$ ... $$) and inline math ($ ... $) blocks
-  // to avoid EVER altering or double-wrapping content that is already inside math mode!
+  // 4. Unwrap accidental prose trapped inside $...$
+  const proseRegex = /\b(?:the|and|that|have|for|not|with|you|this|but|his|from|they|say|her|she|will|one|all|would|there|their|what|out|about|who|get|which|when|make|can|like|time|just|know|take|into|year|your|good|some|could|them|see|other|than|then|now|look|only|come|its|over|think|also|back|after|use|two|how|our|work|first|well|way|even|new|want|because|any|these|give|day|most|inverse|relationship|cut|half|double|doubles|doubling|pressure|volume|temperature)\b/i;
+  text = text.replace(/\$([^\$\n]+)\$/g, (full, inner) => {
+    const words = inner.match(/[a-zA-Z]{3,}/g) || [];
+    const proseCount = words.filter(w => proseRegex.test(w)).length;
+    if (proseCount >= 2) {
+      return inner;
+    }
+    return full;
+  });
+
+  // 5. Split content by existing display math ($$ ... $$) and inline math ($ ... $) blocks
   const segments = text.split(/(\$\$[\s\S]*?\$\$|\$[^\$\n]+?\$)/g);
 
   const processed = segments.map((segment, idx) => {
@@ -47,6 +62,9 @@ const ensureMathDelimiters = (str) => {
     // Even index = regular markdown text outside math
     const lines = segment.split('\n');
     const processedLines = lines.map(line => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('```') || trimmed.startsWith('#')) return line;
+
       // Normalize unicode square roots and math operators before equation check
       let cleanTrimmed = trimmed
         .replace(/√\(([^\)]+)\)/g, '\\sqrt{$1}')
@@ -79,26 +97,32 @@ const ensureMathDelimiters = (str) => {
 
       // In regular prose, normalize unicode square roots
       let p = line
-        .replace(/√\(([^\)]+)\)/g, '$\\sqrt{$1}$')
-        .replace(/(?<![\$\w])√([0-9a-zA-Z]+)/g, '$\\sqrt{$1}$');
+        .replace(/√\(([^\)]+)\)/g, (_, expr) => `$\\sqrt{${expr}}$`)
+        .replace(/(?<![\$\w])√([0-9a-zA-Z]+)/g, (_, expr) => `$\\sqrt{${expr}}$`);
 
       // Replace unbracketed LaTeX fractions or square roots in prose
       p = p.replace(/(?<!\$)\\(?:frac|sqrt)\{(?:[^{}]+|\{[^{}]*\})*\}(?:\{(?:[^{}]+|\{[^{}]*\})*\})?(?!\$)/g, (m) => `$${m}$`);
 
       // Replace unbracketed math operators in prose
-      p = p.replace(/(?<![\$\\])\\(times|approx|implies|propto|pm|mp|div|le|ge|leq|geq|neq|ne|cdot|Delta)\b(?!\$)/g, '$$\\$1$$');
+      p = p.replace(/(?<![\$\\])\\(times|approx|implies|propto|pm|mp|div|le|ge|leq|geq|neq|ne|cdot|Delta)\b(?!\$)/g, (_, op) => `$\\${op}$`);
 
-      // Replace un-delimited variable subscripts like V_1, T_1, P_1, t_2, R_A, M_r, M_B
-      p = p.replace(/(?<![\$\w\\])\b([a-zA-Z])_([0-9a-zA-Z]+)\b(?![\$\w])/g, '$$$1_$2$$');
+      // Replace formulas like P_1V_1 = P_2V_2 or C_1V_1 = C_2V_2 in prose
+      p = p.replace(/(?<![\$\w\\])(?:[a-zA-Z]_[0-9a-zA-Z]+)(?:\s*(?:[=+\-*\/]|\\times)\s*(?:[a-zA-Z]_[0-9a-zA-Z]+|[0-9]+(?:\.[0-9]+)?))+(?![\$\w])/g, (m) => `$${m}$`);
+
+      // Replace remaining single un-delimited variable subscripts like V_1, T_1, P_1, t_2, R_A, M_r, M_B
+      p = p.replace(/(?<![\$\w\\])\b([a-zA-Z])_([0-9a-zA-Z]+)\b(?![\$\w])/g, (_, v, sub) => `$${v}_${sub}$`);
 
       // Inline standalone chemical formulas like \text{NaOH} or \text{SO}_2
       p = p.replace(/(?<!\$)(?:\\text\{[a-zA-Z0-9_\(\)\+\-\s]+\}(?:[_\^]\{[^\}]+\})?\s*)+(?!\$)/g, (m) => `$${m.trim()}$`);
 
       // Replace isolated un-delimited Greek symbols in prose
-      p = p.replace(/(?<![\$\\])\\(rho|alpha|beta|gamma|theta|lambda|pi|mu|sigma|omega|Phi)\b(?!\$)/g, '$$\\$1$$');
+      p = p.replace(/(?<![\$\\])\\(rho|alpha|beta|gamma|theta|lambda|pi|mu|sigma|omega|Phi)\b(?!\$)/g, (_, sym) => `$\\${sym}$`);
 
       // Replace isolated un-delimited degree notations like ^\circ or ^\circ\text{C}
       p = p.replace(/(?<![\$\\])\^\\circ(?:\\text\{C\})?/g, (m) => `$${m}$`);
+
+      // Fuse adjacent inline math blocks: e.g. $P_1$$V_1$ -> $P_1V_1$
+      p = p.replace(/\$\s*\$/g, '');
 
       return p;
     });
@@ -142,6 +166,12 @@ const MD = ({ children, className = '' }) => {
           ul: ({ node, ...props }) => <ul className="list-disc list-outside ml-6 sm:ml-8 mb-4 sm:mb-6 space-y-2 text-gray-800 font-sans text-base sm:text-lg md:text-xl" {...props} />,
           ol: ({ node, ...props }) => <ol className="list-decimal list-outside ml-6 sm:ml-8 mb-4 sm:mb-6 space-y-2 text-gray-800 font-sans text-base sm:text-lg md:text-xl" {...props} />,
           li: ({ node, ...props }) => <li className="text-gray-800 font-sans text-base sm:text-lg md:text-xl leading-relaxed pl-1" {...props} />,
+          img: ({ node, ...props }) => (
+            <figure className="my-6 sm:my-8 text-center">
+              <img className="rounded-2xl border border-slate-200 shadow-lg max-h-[400px] object-cover mx-auto w-full max-w-2xl bg-slate-900/5" {...props} />
+              {props.alt && <figcaption className="text-xs sm:text-sm text-slate-500 mt-2 font-sans italic">{props.alt}</figcaption>}
+            </figure>
+          ),
         }}
       >
         {content}

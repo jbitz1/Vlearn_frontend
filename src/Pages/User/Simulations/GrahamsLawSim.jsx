@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, CheckCircle2, HelpCircle, Wind, Layers, ArrowRight } from 'lucide-react';
 
 const GASES_B = [
-  { name: 'Hydrogen', formula: 'H₂', M: 2.0, color: '#ec4899', desc: 'Ultra-light gas' },
-  { name: 'Methane', formula: 'CH₄', M: 16.0, color: '#38bdf8', desc: 'Slightly lighter than NH₃' },
-  { name: 'Hydrogen Chloride', formula: 'HCl', M: 36.5, color: '#a855f7', desc: 'Classic KLB experiment — forms NH₄Cl' },
-  { name: 'Carbon Dioxide', formula: 'CO₂', M: 44.0, color: '#fb923c', desc: 'Heavier than air' },
-  { name: 'Sulphur Dioxide', formula: 'SO₂', M: 64.0, color: '#facc15', desc: 'Heavy dense gas' },
-  { name: 'Chlorine', formula: 'Cl₂', M: 71.0, color: '#a3e635', desc: 'Very heavy halogen gas' },
+  { name: 'Hydrogen Chloride', formula: 'HCl', M: 36.5, color: '#a855f7', desc: 'Classic laboratory diffusion — forms NH₄Cl' },
+  { name: 'Sulphur(IV) Oxide', formula: 'SO₂', M: 64.0, color: '#f59e0b', desc: 'Heavy pungent industrial gas' },
+  { name: 'Carbon(IV) Oxide', formula: 'CO₂', M: 44.0, color: '#06b6d4', desc: 'Dense greenhouse gas' },
+  { name: 'Oxygen', formula: 'O₂', M: 32.0, color: '#3b82f6', desc: 'Atmospheric diatomic gas' },
+  { name: 'Methane', formula: 'CH₄', M: 16.0, color: '#10b981', desc: 'Light marsh / natural gas' },
+  { name: 'Hydrogen', formula: 'H₂', M: 2.0, color: '#ec4899', desc: 'Lightest known element' },
 ];
 
 export default function GrahamsLawSim({ config = {}, onTelemetry }) {
@@ -79,25 +79,25 @@ export default function GrahamsLawSim({ config = {}, onTelemetry }) {
     }
   };
 
-  // Tube visual geometry
+  // Tube visual geometry (expanded vertically for desktop)
   const tubeW = 580;
-  const tubeH = 46;
+  const tubeH = 64;
   const tubeX = 50;
-  const tubeY = 50;
+  const tubeY = 55;
 
   // Current progress positions
   const posA = tubeX + progress * meetFraction * tubeW;
   const posB = tubeX + tubeW - progress * (1 - meetFraction) * tubeW;
   const meetX = tubeX + meetFraction * tubeW;
 
-  // Graph geometry
-  const pad = 44;
-  const gw = 320;
-  const gh = 220;
+  // Graph geometry (expanded vertically for desktop)
+  const pad = 48;
+  const gw = 380;
+  const gh = 320;
   const x0 = pad;
   const y0 = gh - pad;
-  const x1 = gw - 16;
-  const y1 = 20;
+  const x1 = gw - 20;
+  const y1 = 25;
   const Xmax = 0.75;
   const Ymax = 0.75;
   const sx = (v) => x0 + (v / Xmax) * (x1 - x0);
@@ -127,7 +127,7 @@ export default function GrahamsLawSim({ config = {}, onTelemetry }) {
 
         {/* Expansive Horizontal Diffusion Tube Viewport */}
         <div className="bg-slate-950/90 rounded-2xl p-4 sm:p-6 border border-slate-800/90 shadow-inner flex flex-col items-center justify-center">
-          <svg viewBox="0 0 680 140" className="w-full max-w-[680px] h-auto select-none">
+          <svg viewBox="0 0 680 170" className="w-full max-w-[760px] h-[150px] sm:h-[180px] lg:h-[220px] select-none">
             <defs>
               <linearGradient id="gasAGrad" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor="#2dd4bf" stopOpacity="0.85" />
@@ -254,7 +254,7 @@ export default function GrahamsLawSim({ config = {}, onTelemetry }) {
         {/* 2-Column Unified Sub-Grid: Gas Selector & Controls | Live Rate vs 1/√M Graph */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           {/* Left: Gas B Selector, Action Buttons & Telemetry (lg:col-span-7) */}
-          <div className="lg:col-span-7 flex flex-col justify-between space-y-4 bg-slate-950/70 rounded-2xl p-4 sm:p-5 border border-slate-800/70">
+          <div className="lg:col-span-7 flex flex-col justify-between space-y-4 bg-slate-950/70 rounded-2xl p-4 sm:p-5 border border-slate-800/70 lg:min-h-[420px]">
             {/* Gas B Selector Chips */}
             <div className="space-y-2">
               <span className="text-[11px] font-mono text-slate-300 font-bold uppercase tracking-wider">
@@ -286,36 +286,36 @@ export default function GrahamsLawSim({ config = {}, onTelemetry }) {
               <button
                 onClick={handleStartRelease}
                 disabled={isDiffusing}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-md"
+                className="flex-1 py-3 px-4 rounded-xl bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-md"
               >
-                <Play className="w-3.5 h-3.5 fill-current" />
+                <Play className="w-4 h-4 fill-current" />
                 {progress >= 1 ? 'Race Again' : isDiffusing ? 'Diffusing Along Tube...' : 'Release Both Gases'}
               </button>
               <button
                 onClick={handleReset}
-                className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <RotateCcw className="w-3.5 h-3.5" /> Reset Tube
+                <RotateCcw className="w-4 h-4" /> Reset Tube
               </button>
             </div>
 
             {/* Live Metrics Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 font-mono text-xs">
-              <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 flex flex-col justify-between">
+              <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
                 <span className="text-[9px] uppercase text-slate-400">Gas A: NH₃</span>
-                <span className="text-sm font-bold text-teal-300 mt-0.5">
+                <span className="text-sm font-bold text-teal-300 mt-1">
                   M<sub>A</sub> = 17.0 g/mol
                 </span>
               </div>
-              <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 flex flex-col justify-between">
+              <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
                 <span className="text-[9px] uppercase text-slate-400">Gas B: {selectedGasB.name}</span>
-                <span className="text-sm font-bold text-purple-300 mt-0.5">
+                <span className="text-sm font-bold text-purple-300 mt-1">
                   M<sub>B</sub> = {MB.toFixed(1)} g/mol
                 </span>
               </div>
-              <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 flex flex-col justify-between">
+              <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
                 <span className="text-[9px] uppercase text-slate-400">Rate Ratio</span>
-                <span className="text-sm font-bold text-amber-400 mt-0.5">
+                <span className="text-sm font-bold text-amber-400 mt-1">
                   R(NH₃) / R({selectedGasB.formula}) = {rateRatio.toFixed(2)}×
                 </span>
               </div>
@@ -323,7 +323,7 @@ export default function GrahamsLawSim({ config = {}, onTelemetry }) {
           </div>
 
           {/* Right: Live Rate vs 1/√M Graph (lg:col-span-5) */}
-          <div className="lg:col-span-5 flex flex-col justify-between bg-slate-950/70 rounded-2xl p-4 border border-slate-800/70 shadow-inner">
+          <div className="lg:col-span-5 flex flex-col justify-between bg-slate-950/70 rounded-2xl p-4 sm:p-5 border border-slate-800/70 shadow-inner lg:min-h-[420px]">
             <div className="flex items-center justify-between pb-2 border-b border-slate-800/60 mb-2">
               <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">
                 Live Rate vs. 1/√(Molar Mass)
@@ -333,14 +333,14 @@ export default function GrahamsLawSim({ config = {}, onTelemetry }) {
               </span>
             </div>
 
-            <div className="flex items-center justify-center my-auto py-1">
-              <svg viewBox={`0 0 ${gw} ${gh}`} className="w-full max-w-[300px] h-auto">
+            <div className="flex items-center justify-center my-auto py-2 h-[260px] sm:h-[300px] lg:h-[340px]">
+              <svg viewBox={`0 0 ${gw} ${gh}`} className="w-full max-w-[320px] sm:max-w-[360px] lg:max-w-none h-full select-none">
                 <line x1={x0} y1={y0} x2={x1} y2={y0} stroke="#64748b" strokeWidth="1.5" />
                 <line x1={x0} y1={y0} x2={x0} y2={y1} stroke="#64748b" strokeWidth="1.5" />
-                <text x={(x0 + x1) / 2} y={gh - 8} textAnchor="middle" fill="#94a3b8" fontSize="9.5" fontFamily="monospace">
+                <text x={(x0 + x1) / 2} y={gh - 8} textAnchor="middle" fill="#94a3b8" fontSize="10.5" fontFamily="monospace">
                   1 / √(Molar Mass)
                 </text>
-                <text x={12} y={(y0 + y1) / 2} textAnchor="middle" fill="#94a3b8" fontSize="9.5" fontFamily="monospace" transform={`rotate(-90 12 ${(y0 + y1) / 2})`}>
+                <text x={14} y={(y0 + y1) / 2} textAnchor="middle" fill="#94a3b8" fontSize="10.5" fontFamily="monospace" transform={`rotate(-90 14 ${(y0 + y1) / 2})`}>
                   Relative Rate
                 </text>
 

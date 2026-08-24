@@ -11,6 +11,7 @@ export default function CharlesLawGuidedSim({ config = {}, onTelemetry }) {
   const [playDir, setPlayDir] = useState(1);
   const [showParticles, setShowParticles] = useState(true);
   const [lastTemp, setLastTemp] = useState(25);
+  const [mobileView, setMobileView] = useState('both'); // 'both', 'chamber', 'graph'
   const [currentStep, setCurrentStep] = useState(0); // 0 to 6
   const [predictedChoice, setPredictedChoice] = useState(null);
   const [practiceAns, setPracticeAns] = useState('');
@@ -116,25 +117,25 @@ export default function CharlesLawGuidedSim({ config = {}, onTelemetry }) {
     }
   };
 
-  // Cylinder/Piston geometry
-  const barrelX = 80;
-  const barrelYtop = 30;
-  const barrelW = 140;
-  const barrelHmax = 160;
-  const frac = Math.max(0.18, Math.min(1.0, volume / (V1 * 1.7)));
+  // Cylinder/Piston geometry (expanded vertically for desktop)
+  const barrelX = 70;
+  const barrelYtop = 35;
+  const barrelW = 160;
+  const barrelHmax = 240;
+  const frac = Math.max(0.16, Math.min(1.0, volume / (V1 * 1.7)));
   const gasH = barrelHmax * frac;
   const gasY = barrelYtop + (barrelHmax - gasH);
-  const pistonY = gasY - 10;
+  const pistonY = gasY - 12;
   const flameColor = tempC >= 25 ? '#f97316' : '#38bdf8';
 
-  // Graph geometry
-  const pad = 44;
-  const gw = 340;
-  const gh = 230;
+  // Graph geometry (expanded vertically for desktop)
+  const pad = 48;
+  const gw = 380;
+  const gh = 340;
   const x0 = pad;
   const y0 = gh - pad;
-  const x1 = gw - 16;
-  const y1 = 20;
+  const x1 = gw - 20;
+  const y1 = 25;
   const Tmax = 480; // K
   const VmaxG = 85; // cm3
   const sx = (t) => x0 + (t / Tmax) * (x1 - x0);
@@ -165,10 +166,32 @@ export default function CharlesLawGuidedSim({ config = {}, onTelemetry }) {
           </div>
         </div>
 
+        {/* Mobile View Mode Switcher (Visible only on < lg screens) */}
+        <div className="flex lg:hidden items-center justify-center gap-1.5 p-1 bg-slate-950/90 rounded-2xl border border-slate-800 mb-4 w-full">
+          <button
+            onClick={() => setMobileView('both')}
+            className={`flex-1 py-2 px-2 text-xs font-mono font-medium rounded-xl transition-all cursor-pointer text-center ${mobileView === 'both' ? 'bg-orange-500 text-white font-bold shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            ⇄ Dual View
+          </button>
+          <button
+            onClick={() => setMobileView('chamber')}
+            className={`flex-1 py-2 px-2 text-xs font-mono font-medium rounded-xl transition-all cursor-pointer text-center ${mobileView === 'chamber' ? 'bg-orange-500 text-white font-bold shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            🔥 Chamber
+          </button>
+          <button
+            onClick={() => setMobileView('graph')}
+            className={`flex-1 py-2 px-2 text-xs font-mono font-medium rounded-xl transition-all cursor-pointer text-center ${mobileView === 'graph' ? 'bg-orange-500 text-white font-bold shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            📈 V–T Graph
+          </button>
+        </div>
+
         {/* 3-Column Unified Responsive Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 items-stretch">
-          {/* Column 1: Cylinder Apparatus & Bunsen/Ice Bath (lg:col-span-4) */}
-          <div className="lg:col-span-4 flex flex-col justify-between bg-slate-950/90 rounded-2xl p-4 border border-slate-800/90 shadow-inner">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-5 items-stretch">
+          {/* Column 1: Cylinder Apparatus & Bunsen/Ice Bath */}
+          <div className={`${mobileView === 'graph' ? 'hidden lg:flex' : mobileView === 'both' ? 'col-span-1 lg:col-span-4' : 'col-span-1 sm:col-span-2 lg:col-span-4'} flex flex-col justify-between bg-slate-950/90 rounded-2xl p-3 sm:p-5 border border-slate-800/90 shadow-inner lg:min-h-[480px]`}>
             <div className="flex items-center justify-between pb-2 border-b border-slate-800/60 mb-2">
               <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">
                 1. Thermal Chamber
@@ -178,8 +201,8 @@ export default function CharlesLawGuidedSim({ config = {}, onTelemetry }) {
               </span>
             </div>
 
-            <div className="flex items-center justify-center my-auto py-1">
-              <svg viewBox="0 0 300 270" className="w-full max-w-[280px] h-auto select-none">
+            <div className="flex items-center justify-center my-auto py-2 h-[260px] sm:h-[320px] lg:h-[360px]">
+              <svg viewBox="0 0 300 370" className="w-full max-w-[280px] sm:max-w-[340px] lg:max-w-none h-full select-none">
                 <defs>
                   <linearGradient id="charlesGasGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={flameColor} stopOpacity="0.35" />
@@ -221,7 +244,7 @@ export default function CharlesLawGuidedSim({ config = {}, onTelemetry }) {
                         key={idx}
                         cx={barrelX + p.x * barrelW}
                         cy={gasY + p.y * gasH}
-                        r="3.2"
+                        r="3.5"
                         fill={flameColor}
                         opacity="0.85"
                       />
@@ -282,24 +305,24 @@ export default function CharlesLawGuidedSim({ config = {}, onTelemetry }) {
 
                 {/* Heat Source or Ice Bath */}
                 {tempC >= 25 ? (
-                  <g transform={`translate(${barrelX + barrelW / 2}, ${barrelYtop + barrelHmax + 20})`}>
+                  <g transform={`translate(${barrelX + barrelW / 2}, ${barrelYtop + barrelHmax + 22})`}>
                     <path
-                      d="M -18 18 Q -10 -4 0 -18 Q 10 -4 18 18 Q 0 10 -18 18 Z"
+                      d="M -22 22 Q -12 -5 0 -22 Q 12 -5 22 22 Q 0 12 -22 22 Z"
                       fill="#f97316"
                       opacity="0.9"
                     />
                     <path
-                      d="M -10 18 Q -4 4 0 -8 Q 4 4 10 18 Q 0 14 -10 18 Z"
+                      d="M -12 22 Q -5 5 0 -10 Q 5 5 12 22 Q 0 16 -12 22 Z"
                       fill="#facc15"
                     />
-                    <text x="0" y="32" textAnchor="middle" fill="#fdba74" fontSize="9" fontFamily="monospace">
+                    <text x="0" y="36" textAnchor="middle" fill="#fdba74" fontSize="10" fontFamily="monospace" fontWeight="bold">
                       BUNSEN FLAME 🔥
                     </text>
                   </g>
                 ) : (
-                  <g transform={`translate(${barrelX + barrelW / 2}, ${barrelYtop + barrelHmax + 18})`}>
-                    <rect x="-35" y="0" width="70" height="20" rx="4" fill="#0284c7" opacity="0.6" />
-                    <text x="0" y="14" textAnchor="middle" fill="#e0f2fe" fontSize="9" fontFamily="monospace">
+                  <g transform={`translate(${barrelX + barrelW / 2}, ${barrelYtop + barrelHmax + 20})`}>
+                    <rect x="-42" y="0" width="84" height="24" rx="5" fill="#0284c7" opacity="0.6" />
+                    <text x="0" y="16" textAnchor="middle" fill="#e0f2fe" fontSize="10" fontFamily="monospace" fontWeight="bold">
                       ICE BATH ❄️
                     </text>
                   </g>
@@ -312,8 +335,8 @@ export default function CharlesLawGuidedSim({ config = {}, onTelemetry }) {
             </div>
           </div>
 
-          {/* Column 2: Live V-T Graph with Absolute Zero Extrapolation (lg:col-span-4) */}
-          <div className="lg:col-span-4 flex flex-col justify-between bg-slate-950/90 rounded-2xl p-4 border border-slate-800/90 shadow-inner">
+          {/* Column 2: Live V-T Graph with Absolute Zero Extrapolation */}
+          <div className={`${mobileView === 'chamber' ? 'hidden lg:flex' : mobileView === 'both' ? 'col-span-1 lg:col-span-4' : 'col-span-1 sm:col-span-2 lg:col-span-4'} flex flex-col justify-between bg-slate-950/90 rounded-2xl p-3 sm:p-5 border border-slate-800/90 shadow-inner lg:min-h-[480px]`}>
             <div className="flex items-center justify-between pb-2 border-b border-slate-800/60 mb-2">
               <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">
                 2. Live V–T Graph (Kelvin)
@@ -323,15 +346,15 @@ export default function CharlesLawGuidedSim({ config = {}, onTelemetry }) {
               </span>
             </div>
 
-            <div className="flex items-center justify-center my-auto py-1">
-              <svg viewBox={`0 0 ${gw} ${gh}`} className="w-full max-w-[320px] h-auto">
+            <div className="flex items-center justify-center my-auto py-2 h-[260px] sm:h-[320px] lg:h-[360px]">
+              <svg viewBox={`0 0 ${gw} ${gh}`} className="w-full max-w-[320px] sm:max-w-[360px] lg:max-w-none h-full select-none">
                 <line x1={x0} y1={y0} x2={x1} y2={y0} stroke="#64748b" strokeWidth="1.5" />
                 <line x1={x0} y1={y0} x2={x0} y2={y1} stroke="#64748b" strokeWidth="1.5" />
 
-                <text x={(x0 + x1) / 2} y={gh - 8} textAnchor="middle" fill="#94a3b8" fontSize="9.5" fontFamily="monospace">
+                <text x={(x0 + x1) / 2} y={gh - 8} textAnchor="middle" fill="#94a3b8" fontSize="10.5" fontFamily="monospace">
                   Temperature T (Kelvin)
                 </text>
-                <text x={12} y={(y0 + y1) / 2} textAnchor="middle" fill="#94a3b8" fontSize="9.5" fontFamily="monospace" transform={`rotate(-90 12 ${(y0 + y1) / 2})`}>
+                <text x={14} y={(y0 + y1) / 2} textAnchor="middle" fill="#94a3b8" fontSize="10.5" fontFamily="monospace" transform={`rotate(-90 14 ${(y0 + y1) / 2})`}>
                   Volume V (cm³)
                 </text>
 
@@ -346,13 +369,13 @@ export default function CharlesLawGuidedSim({ config = {}, onTelemetry }) {
                 />
 
                 {/* Origin Tick / 0 K mark */}
-                <text x={sx(0)} y={y0 + 14} textAnchor="middle" fill="#ef4444" fontSize="8" fontFamily="monospace" fontWeight="bold">
+                <text x={sx(0)} y={y0 + 16} textAnchor="middle" fill="#ef4444" fontSize="9" fontFamily="monospace" fontWeight="bold">
                   0K
                 </text>
-                <text x={sx(273)} y={y0 + 14} textAnchor="middle" fill="#64748b" fontSize="8" fontFamily="monospace">
+                <text x={sx(273)} y={y0 + 16} textAnchor="middle" fill="#64748b" fontSize="9" fontFamily="monospace">
                   273K
                 </text>
-                <text x={sx(373)} y={y0 + 14} textAnchor="middle" fill="#64748b" fontSize="8" fontFamily="monospace">
+                <text x={sx(373)} y={y0 + 16} textAnchor="middle" fill="#64748b" fontSize="9" fontFamily="monospace">
                   373K
                 </text>
 
@@ -378,7 +401,7 @@ export default function CharlesLawGuidedSim({ config = {}, onTelemetry }) {
                 <circle
                   cx={sx(tempK)}
                   cy={sy(volume)}
-                  r="6"
+                  r="6.5"
                   fill="#38bdf8"
                   stroke="#0f172a"
                   strokeWidth="2"
@@ -391,8 +414,8 @@ export default function CharlesLawGuidedSim({ config = {}, onTelemetry }) {
             </div>
           </div>
 
-          {/* Column 3: Controls & Telemetry Deck (lg:col-span-4) */}
-          <div className="lg:col-span-4 flex flex-col justify-between space-y-3 bg-slate-950/70 rounded-2xl p-4 border border-slate-800/70">
+          {/* Column 3: Controls & Telemetry Deck */}
+          <div className="col-span-1 sm:col-span-2 lg:col-span-4 flex flex-col justify-between space-y-4 bg-slate-950/70 rounded-2xl p-3.5 sm:p-5 border border-slate-800/70 lg:min-h-[480px]">
             {/* Live Readouts */}
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex flex-col justify-between text-center">
