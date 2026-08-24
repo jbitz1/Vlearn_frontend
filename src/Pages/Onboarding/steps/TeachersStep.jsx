@@ -3,8 +3,15 @@ import { Plus, Upload, Trash2, Download, AlertCircle, CheckCircle2 } from 'lucid
 import apiClient from '../../../config/apiClient';
 import FileUploader from '../../../Components/ui/FileUploader';
 
-const TeachersStep = ({ teachers = [], schoolId, updateData }) => {
+const DEFAULT_SUBJECT_LIST = [
+  'Mathematics', 'English', 'Kiswahili', 'Biology', 'Chemistry', 'Physics',
+  'Geography', 'History & Government', 'Christian Religious Education',
+  'Agriculture', 'Business Studies', 'Computer Studies'
+];
+
+const TeachersStep = ({ teachers = [], schoolId, subjects = [], updateData }) => {
   const teacherList = Array.isArray(teachers) ? teachers : [];
+  const availableSubjectsList = subjects && subjects.length > 0 ? subjects : DEFAULT_SUBJECT_LIST;
   const [activeTab, setActiveTab] = useState('manual'); // 'manual' or 'import'
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResults, setUploadResults] = useState(null);
@@ -313,14 +320,49 @@ const TeachersStep = ({ teachers = [], schoolId, updateData }) => {
                         className="w-full mt-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:border-primary bg-white text-slate-800"
                       />
                     </div>
-                    <div className="col-span-1 sm:col-span-2 lg:col-span-4">
-                      <label className="text-xs font-semibold text-slate-600">Subject Specialties (Optional)</label>
-                      <input
-                        value={t.specialties || ''}
-                        onChange={e => handleTeacherChange(i, 'specialties', e.target.value)}
-                        placeholder="e.g. Mathematics, Physics"
-                        className="w-full mt-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:border-primary bg-white text-slate-800"
-                      />
+                    <div className="col-span-1 sm:col-span-2 lg:col-span-4 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-slate-600">Subject Specialties (Optional)</label>
+                        <span className="text-[11px] text-slate-400">Select the subjects this teacher specializes in</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {(() => {
+                          const currentSpecs = typeof t.specialties === 'string'
+                            ? t.specialties.split(',').map(s => s.trim()).filter(Boolean)
+                            : (Array.isArray(t.specialties) ? t.specialties : []);
+
+                          return availableSubjectsList.map(subjName => {
+                            const isChecked = currentSpecs.some(s => s.toLowerCase() === subjName.toLowerCase());
+                            return (
+                              <button
+                                key={subjName}
+                                type="button"
+                                onClick={() => {
+                                  let next;
+                                  if (isChecked) {
+                                    next = currentSpecs.filter(s => s.toLowerCase() !== subjName.toLowerCase());
+                                  } else {
+                                    next = [...currentSpecs, subjName];
+                                  }
+                                  handleTeacherChange(i, 'specialties', next.join(', '));
+                                }}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                                  isChecked
+                                    ? 'border-primary bg-primary/10 text-primary shadow-xs'
+                                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
+                                }`}
+                              >
+                                <div className={`w-3.5 h-3.5 rounded flex items-center justify-center ${
+                                  isChecked ? 'bg-primary text-white' : 'border border-slate-300'
+                                }`}>
+                                  {isChecked && <CheckCircle2 size={11} strokeWidth={3} className="text-white" />}
+                                </div>
+                                <span>{subjName}</span>
+                              </button>
+                            );
+                          });
+                        })()}
+                      </div>
                     </div>
                   </div>
                 </div>

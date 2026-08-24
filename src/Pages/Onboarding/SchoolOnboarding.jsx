@@ -36,7 +36,7 @@ const STEPS = [
   { num: 3, label: 'Teachers' },
   { num: 4, label: 'Structure' },
   { num: 5, label: 'Students' },
-  { num: 6, label: 'Assignments' },
+  { num: 6, label: 'Teaching Setup' },
   { num: 7, label: 'Exams' },
   { num: 8, label: 'Review' },
 ];
@@ -245,27 +245,29 @@ export default function SchoolOnboarding() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
       {/* Top Banner Header */}
-      <header className="bg-navy text-white px-6 py-4 flex items-center justify-between shadow-md">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white">
-            <GraduationCap size={18} />
+      <header className="bg-navy text-white px-4 sm:px-6 lg:px-8 py-3.5 shadow-md">
+        <div className="max-w-5xl xl:max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-xs">
+              <GraduationCap size={18} />
+            </div>
+            <span className="font-bold font-heading text-sm sm:text-base tracking-tight truncate">
+              VizLearn — School Setup
+              {wizardData.schoolProfile.name ? ` · ${wizardData.schoolProfile.name}` : ''}
+            </span>
           </div>
-          <span className="font-bold font-heading text-base tracking-tight">
-            VizLearn — School Setup
-            {wizardData.schoolProfile.name ? ` · ${wizardData.schoolProfile.name}` : ''}
-          </span>
+          <button
+            onClick={handleSaveAndContinue}
+            className="text-xs text-white/70 hover:text-white transition-colors cursor-pointer shrink-0"
+          >
+            {isSaving ? 'Saving...' : 'Save & continue later'}
+          </button>
         </div>
-        <button
-          onClick={handleSaveAndContinue}
-          className="text-xs text-white/70 hover:text-white transition-colors cursor-pointer"
-        >
-          {isSaving ? 'Saving...' : 'Save & continue later'}
-        </button>
       </header>
 
       {/* Horizontal Stepper Progress */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4 overflow-x-auto shadow-sm">
-        <div className="flex items-center justify-center gap-0 min-w-max mx-auto max-w-4xl">
+      <div className="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-4 overflow-x-auto shadow-sm">
+        <div className="flex items-center justify-between min-w-max mx-auto max-w-5xl xl:max-w-6xl px-2">
           {STEPS.map((s, idx) => (
             <div key={s.num} className="flex items-center">
               <button
@@ -286,7 +288,7 @@ export default function SchoolOnboarding() {
                 </span>
               </button>
               {idx < STEPS.length - 1 && (
-                <div className={`w-8 h-0.5 mb-4 mx-1.5 transition-colors ${currentStep > s.num ? 'bg-success' : 'bg-slate-200'}`} />
+                <div className={`flex-1 min-w-[12px] max-w-[48px] h-0.5 mb-4 mx-1 sm:mx-2 transition-colors ${currentStep > s.num ? 'bg-success' : 'bg-slate-200'}`} />
               )}
             </div>
           ))}
@@ -294,8 +296,8 @@ export default function SchoolOnboarding() {
       </div>
 
       {/* Main Form Content */}
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+      <main className="w-full max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 lg:p-10 transition-all">
           {currentStep === 1 && (
             <SchoolProfileStep 
               data={wizardData.schoolProfile} 
@@ -312,6 +314,9 @@ export default function SchoolOnboarding() {
             <TeachersStep 
               teachers={wizardData.teachers} 
               schoolId={wizardData.schoolProfile.id}
+              subjects={(wizardData.subjects && wizardData.subjects.length > 0)
+                ? wizardData.subjects.map(sId => SUBJECT_MAP[sId] || sId)
+                : Object.values(SUBJECT_MAP)}
               updateData={(data) => updateSectionData('teachers', data)} 
             />
           )}
@@ -333,7 +338,9 @@ export default function SchoolOnboarding() {
             <TeacherAssignmentsStep 
               data={wizardData.teacherAssignments}
               schoolId={wizardData.schoolProfile.id}
-              subjects={wizardData.subjects.map(sId => SUBJECT_MAP[sId] || sId)}
+              subjects={(wizardData.subjects && wizardData.subjects.length > 0)
+                ? wizardData.subjects.map(sId => SUBJECT_MAP[sId] || sId)
+                : Object.values(SUBJECT_MAP)}
               teachers={wizardData.teachers}
               formsAndStreams={wizardData.formsStreams}
               updateData={(data) => updateSectionData('teacherAssignments', data)} 

@@ -136,10 +136,10 @@ export const TeacherTopicWorkspace = () => {
       {/* Header with Navigation */}
       <header className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm">
         <button
-          onClick={() => navigate(`/teacher/subject/${subject.id}`)}
+          onClick={() => navigate(`/teacher/my-teaching`)}
           className="flex items-center text-xs font-bold text-slate-400 hover:text-navy mb-4 transition-colors cursor-pointer"
         >
-          <ChevronLeft className="w-4 h-4 mr-1" /> Back to {subject.name}
+          <ChevronLeft className="w-4 h-4 mr-1" /> Back to My Teaching
         </button>
 
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">

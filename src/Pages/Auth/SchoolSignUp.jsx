@@ -119,169 +119,235 @@ const SchoolSignUp = () => {
   const availableSubcounties = COUNTY_SUBCOUNTIES[formData.county] || [];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20">
-            <GraduationCap className="w-5 h-5 text-white" />
+    <div className="min-h-screen bg-slate-50/70 flex items-center justify-center p-4 sm:p-6 lg:p-10">
+      <div className="w-full max-w-5xl xl:max-w-6xl">
+        {/* Top Branding Header */}
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-md shadow-primary/20 text-white">
+              <GraduationCap className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="font-black font-heading text-navy text-2xl tracking-tight block">VizLearn</span>
+              <span className="text-xs text-slate-400 font-semibold">Institutional Onboarding Portal</span>
+            </div>
           </div>
-          <span className="font-bold font-heading text-navy text-xl tracking-tight">VizLearn</span>
+          <Link
+            to="/login"
+            className="text-xs font-bold text-slate-600 hover:text-primary transition-colors px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:border-slate-300"
+          >
+            Already registered? Sign In
+          </Link>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-          <h2 className="text-2xl font-bold font-heading text-navy mb-1">Register Your School</h2>
-          <p className="text-sm text-slate-500 mb-8">Set up your school on VizLearn. No email required — just your phone number.</p>
+        {/* Main Card */}
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 lg:p-10">
+          <div className="border-b border-slate-100 pb-5 mb-8">
+            <h2 className="text-2xl sm:text-3xl font-black font-heading text-navy tracking-tight">Register Your School</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Set up your institution on VizLearn. Instant registration with SMS verification — get started in minutes.
+            </p>
+          </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm border border-red-200">
+            <div className="mb-8 p-4 bg-red-50 text-red-600 rounded-2xl text-sm border border-red-200 font-medium">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">School Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">School Name *</label>
-                  <input
-                    required
-                    name="schoolName"
-                    value={formData.schoolName}
-                    onChange={handleChange}
-                    placeholder="e.g. Nairobi Academy Secondary School"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
-                  />
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Left Column: School Information (7 cols on desktop) */}
+              <div className="lg:col-span-7 space-y-5">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-navy font-heading">
+                    1. School Information & Location
+                  </h3>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">School Type *</label>
-                  <select
-                    required
-                    name="schoolType"
-                    value={formData.schoolType}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white transition-colors"
-                  >
-                    {SCHOOL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Curriculum *</label>
-                  <select
-                    required
-                    name="curriculum"
-                    value={formData.curriculum}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white transition-colors"
-                  >
-                    {CURRICULA.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">County *</label>
-                  <select
-                    required
-                    name="county"
-                    value={formData.county}
-                    onChange={handleCountyChange}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white transition-colors"
-                  >
-                    {COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sub-County *</label>
-                  {availableSubcounties.length > 0 ? (
-                    <select
-                      required
-                      name="subCounty"
-                      value={formData.subCounty}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white transition-colors"
-                    >
-                      {availableSubcounties.map(sc => <option key={sc} value={sc}>{sc}</option>)}
-                    </select>
-                  ) : (
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Official School Name *</label>
                     <input
                       required
-                      name="subCounty"
-                      value={formData.subCounty}
+                      name="schoolName"
+                      value={formData.schoolName}
                       onChange={handleChange}
-                      placeholder="e.g. Westlands"
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary transition-colors"
+                      placeholder="e.g. Nairobi Academy High School"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-50/30 focus:bg-white transition-all text-navy font-medium"
                     />
-                  )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 mb-1.5">School Category *</label>
+                      <select
+                        required
+                        name="schoolType"
+                        value={formData.schoolType}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white transition-colors text-navy font-medium cursor-pointer"
+                      >
+                        {SCHOOL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 mb-1.5">Curriculum *</label>
+                      <select
+                        required
+                        name="curriculum"
+                        value={formData.curriculum}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white transition-colors text-navy font-medium cursor-pointer"
+                      >
+                        {CURRICULA.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 mb-1.5">County *</label>
+                      <select
+                        required
+                        name="county"
+                        value={formData.county}
+                        onChange={handleCountyChange}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white transition-colors text-navy font-medium cursor-pointer"
+                      >
+                        {COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 mb-1.5">Sub-County *</label>
+                      {availableSubcounties.length > 0 ? (
+                        <select
+                          required
+                          name="subCounty"
+                          value={formData.subCounty}
+                          onChange={handleChange}
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-white transition-colors text-navy font-medium cursor-pointer"
+                        >
+                          {availableSubcounties.map(sc => <option key={sc} value={sc}>{sc}</option>)}
+                        </select>
+                      ) : (
+                        <input
+                          required
+                          name="subCounty"
+                          value={formData.subCounty}
+                          onChange={handleChange}
+                          placeholder="e.g. Westlands"
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary text-navy font-medium"
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5">School Official Telephone *</label>
+                    <input
+                      required
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      placeholder="07XX XXX XXX or 020 XXX XXXX"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-slate-50/30 focus:bg-white text-navy font-medium"
+                    />
+                  </div>
                 </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">School Contact *</label>
-                  <input
-                    required
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="07XX XXX XXX"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary transition-colors"
-                  />
+              </div>
+
+              {/* Right Column: Administrator Account & Platform Highlights (5 cols on desktop) */}
+              <div className="lg:col-span-5 space-y-5">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-accent" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-navy font-heading">
+                    2. Primary Administrator
+                  </h3>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Principal / Admin Full Name *</label>
+                    <input
+                      required
+                      name="adminName"
+                      value={formData.adminName}
+                      onChange={handleChange}
+                      placeholder="e.g. Dr. Jane Mutua"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-slate-50/30 focus:bg-white text-navy font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5">Admin Mobile Phone * (For SMS OTP)</label>
+                    <input
+                      required
+                      type="tel"
+                      name="adminPhone"
+                      value={formData.adminPhone}
+                      onChange={handleChange}
+                      placeholder="07XX XXX XXX"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-slate-50/30 focus:bg-white text-navy font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                      Administrator Email <span className="text-slate-400 font-normal">(Optional)</span>
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="principal@school.ac.ke"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary bg-slate-50/30 focus:bg-white text-navy font-medium"
+                    />
+                  </div>
+
+                  {/* Highlights Card */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
+                      What to expect next
+                    </span>
+                    <ul className="text-xs text-slate-600 space-y-1.5 font-medium">
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
+                        <span>Instant 6-digit SMS verification code</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
+                        <span>Interactive 8-step teaching & structure setup</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
+                        <span>Full KCSE and CBC subject support</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Administrator Details</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Administrator Name *</label>
-                  <input
-                    required
-                    name="adminName"
-                    value={formData.adminName}
-                    onChange={handleChange}
-                    placeholder="Full name"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Administrator Phone *</label>
-                  <input
-                    required
-                    type="tel"
-                    name="adminPhone"
-                    value={formData.adminPhone}
-                    onChange={handleChange}
-                    placeholder="07XX XXX XXX"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                    Email <span className="text-slate-400 font-normal">(optional)</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="admin@school.ac.ke"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary transition-colors"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-2">
+            {/* Bottom Actions */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-100">
               <Link
                 to="/login"
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors text-center"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors text-center cursor-pointer"
               >
-                Back to Login
+                ← Back to Login
               </Link>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 py-2.5 rounded-xl bg-navy text-white text-sm font-semibold font-heading hover:bg-navy-700 active:scale-[0.98] transition-all disabled:opacity-50"
+                className="w-full sm:w-auto px-8 py-3 rounded-xl bg-navy text-white text-sm font-bold font-heading hover:bg-navy-700 active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer shadow-md shadow-navy/10"
               >
-                {loading ? 'Requesting Verification...' : 'Create School →'}
+                {loading ? 'Requesting SMS Verification...' : 'Continue to Verification →'}
               </button>
             </div>
           </form>

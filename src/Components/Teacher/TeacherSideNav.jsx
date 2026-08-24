@@ -44,9 +44,9 @@ const TeacherSideNav = () => {
   }
 
   const navItems = [
-    { icon: Home, text: 'Home', path: '/teacher' },
+    { icon: Home, text: 'Dashboard', path: '/teacher' },
     { icon: BookOpen, text: 'My Teaching', path: '/teacher/my-teaching' },
-    { icon: User, text: 'My Class', path: '/teacher/my-class' },
+    { icon: User, text: 'My Classes', path: '/teacher/my-class' },
     { icon: ClipboardList, text: 'Assessments', path: '/teacher/assessments' },
     { icon: TrendingUp, text: 'Performance', path: '/teacher/performance' },
     { icon: User, text: 'Profile', path: '/teacher/profile' },

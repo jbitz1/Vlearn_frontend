@@ -72,6 +72,7 @@ import SchoolStudentsPage from "./Pages/School/SchoolStudentsPage";
 import SchoolSubscriptionPage from "./Pages/School/SchoolSubscriptionPage";
 import AssessmentList from "./Pages/Teacher/AssessmentList";
 import AssessmentEntry from "./Pages/Teacher/AssessmentEntry";
+import TeacherPerformance from "./Pages/Teacher/TeacherPerformance";
 import StreamPerformance from "./Pages/Performance/StreamPerformance";
 import SchoolPerformance from "./Pages/Performance/SchoolPerformance";
 import FormPerformance from "./Pages/Performance/FormPerformance";
@@ -186,6 +187,7 @@ function App() {
             { path: "my-teaching", element: <TeacherSubjectWorkspace /> },
             { path: "subjects", element: <Navigate to="/teacher/my-teaching" replace /> },
             { path: "subject/:subjectId", element: <TeacherSubjectWorkspace /> },
+            { path: "subject/:subjectId/stream/:streamId", element: <TeacherSubjectWorkspace /> },
             { path: "topic-workspace/:streamId/:subjectId/:topicId", element: <TeacherTopicWorkspace /> },
             { path: "topic-workspace/:topicId", element: <TeacherTopicWorkspace /> },
             { path: "topic/:topicId", element: <TeacherTopicWorkspace /> },
@@ -196,7 +198,7 @@ function App() {
             { path: "assessments", element: <AssessmentEntry /> },
             { path: "assessments-list", element: <AssessmentList /> },
             { path: "assessments/:examId/entry", element: <AssessmentEntry /> },
-            { path: "performance", element: <StreamPerformance /> },
+            { path: "performance", element: <TeacherPerformance /> },
             { path: "students", element: <MyClassPage /> },
         ],
     };

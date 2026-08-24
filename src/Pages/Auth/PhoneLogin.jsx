@@ -73,14 +73,14 @@ const PhoneLogin = () => {
       </div>
 
       {/* Right Panel */}
-      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 bg-white">
-        <div className="w-full max-w-sm mx-auto">
+      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-16 xl:px-24 bg-white py-12">
+        <div className="w-full max-w-md mx-auto">
           <div className="lg:hidden mb-8">
-            <h1 className="text-3xl font-heading font-bold text-primary">VLearn</h1>
+            <h1 className="text-3xl font-heading font-bold text-primary">VizLearn</h1>
           </div>
           
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome back</h2>
-          <p className="text-slate-500 mb-8">Sign in to your VLearn account</p>
+          <h2 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 mb-2">Welcome back</h2>
+          <p className="text-slate-500 mb-8 text-sm">Sign in to your VizLearn institutional account</p>
 
           <form onSubmit={handleSubmit}>
             {error && <div className="mb-4 p-3 bg-danger-light text-danger rounded-xl text-sm">{error}</div>}

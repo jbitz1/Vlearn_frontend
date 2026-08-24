@@ -90,69 +90,99 @@ const CreatePassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center gap-2 mb-8">
-          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-white">
-            <GraduationCap className="w-5 h-5" />
+    <div className="min-h-screen bg-slate-50/70 flex items-center justify-center p-4 sm:p-6 lg:p-10">
+      <div className="w-full max-w-lg lg:max-w-xl">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-white shadow-md shadow-primary/20">
+            <GraduationCap className="w-6 h-6" />
           </div>
-          <span className="font-bold font-heading text-navy text-lg">VizLearn</span>
+          <div>
+            <span className="font-black font-heading text-navy text-2xl tracking-tight block">VizLearn</span>
+            <span className="text-xs text-slate-400 font-semibold">Administrator Account Security</span>
+          </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-          <div className="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center mx-auto mb-4">
-            <Check className="w-7 h-7 text-green-600" />
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 lg:p-10">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-5">
+            <Check className="w-8 h-8 stroke-[3]" />
           </div>
 
-          <h2 className="text-xl font-bold font-heading text-navy text-center mb-1">Create Password</h2>
-          <p className="text-xs text-slate-500 text-center mb-6">
-            Set a secure password to protect your school administrator account.
+          <h2 className="text-2xl font-black font-heading text-navy text-center mb-1">Create Admin Password</h2>
+          <p className="text-xs sm:text-sm text-slate-500 text-center mb-8">
+            Set a secure password for your administrator account to access and manage your school.
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Password</label>
+              <label className="block text-xs font-bold text-slate-600 mb-1.5">New Password *</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => { setPassword(e.target.value); setError(''); }}
                 placeholder="Min. 8 characters"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-50/30 focus:bg-white transition-all text-navy font-medium"
               />
               {password && (
-                <div className="mt-2 space-y-1">
-                  <div className="flex gap-1">
+                <div className="mt-2.5 space-y-1.5">
+                  <div className="flex gap-1.5">
                     {[1, 2, 3, 4].map(i => (
                       <div
                         key={i}
-                        className={`h-1 flex-1 rounded-full transition-colors ${i <= strength ? strengthColors[strength] : 'bg-slate-200'}`}
+                        className={`h-1.5 flex-1 rounded-full transition-colors ${i <= strength ? strengthColors[strength] : 'bg-slate-100'}`}
                       />
                     ))}
                   </div>
-                  <p className="text-xs text-slate-500">{strengthLabels[strength]}</p>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400 font-semibold">Password Strength:</span>
+                    <span className="font-bold text-navy">{strengthLabels[strength]}</span>
+                  </div>
                 </div>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Confirm Password</label>
+              <label className="block text-xs font-bold text-slate-600 mb-1.5">Confirm Password *</label>
               <input
                 type="password"
                 value={confirm}
                 onChange={e => { setConfirm(e.target.value); setError(''); }}
                 placeholder="Repeat your password"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-50/30 focus:bg-white transition-all text-navy font-medium"
               />
             </div>
 
-            {error && <p className="text-xs text-red-600 text-center font-medium">{error}</p>}
+            {/* Password Criteria Grid */}
+            <div className="grid grid-cols-2 gap-2 pt-1 text-[11px] font-semibold text-slate-500">
+              <div className={`flex items-center gap-1.5 ${password.length >= 8 ? 'text-emerald-600 font-bold' : ''}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${password.length >= 8 ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                <span>At least 8 characters</span>
+              </div>
+              <div className={`flex items-center gap-1.5 ${/[A-Z]/.test(password) ? 'text-emerald-600 font-bold' : ''}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${/[A-Z]/.test(password) ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                <span>Uppercase letter</span>
+              </div>
+              <div className={`flex items-center gap-1.5 ${/[0-9]/.test(password) ? 'text-emerald-600 font-bold' : ''}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${/[0-9]/.test(password) ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                <span>At least one number</span>
+              </div>
+              <div className={`flex items-center gap-1.5 ${/[^A-Za-z0-9]/.test(password) ? 'text-emerald-600 font-bold' : ''}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${/[^A-Za-z0-9]/.test(password) ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                <span>Special character</span>
+              </div>
+            </div>
+
+            {error && (
+              <div className="p-3.5 bg-red-50 text-red-600 rounded-xl text-xs sm:text-sm border border-red-200 font-medium text-center">
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-xl bg-navy text-white text-sm font-semibold font-heading hover:bg-navy-700 active:scale-[0.98] transition-all mt-2 disabled:opacity-50"
+              className="w-full py-3.5 rounded-xl bg-navy text-white text-sm font-bold font-heading hover:bg-navy-700 active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer shadow-md shadow-navy/10 mt-2"
             >
-              {loading ? 'Setting up...' : 'Continue to School Setup →'}
+              {loading ? 'Finalizing Setup...' : 'Complete Registration & Go to School Setup →'}
             </button>
           </form>
         </div>

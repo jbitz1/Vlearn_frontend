@@ -46,7 +46,7 @@ const SubjectsStep = ({ selectedSubjects = [], updateData }) => {
       <h2 className="text-xl font-bold font-heading text-navy">Select Subjects</h2>
       <p className="text-sm text-slate-500">Choose all subjects offered at your school. You can add custom subjects below.</p>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-2">
         {SUBJECT_LIST.map(s => {
           const active = selected.includes(s.id);
           return (
@@ -63,7 +63,7 @@ const SubjectsStep = ({ selectedSubjects = [], updateData }) => {
               <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${active ? 'bg-primary' : 'border border-slate-300'}`}>
                 {active && <Check size={11} className="text-white stroke-[3]" />}
               </div>
-              <span>{s.name}</span>
+              <span className="truncate">{s.name}</span>
             </button>
           );
         })}

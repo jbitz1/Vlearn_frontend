@@ -582,6 +582,17 @@ const teacherCurriculumService = {
     }
   },
 
+  // 6. Teacher Performance (Subject and Supervised Stream)
+  async getTeacherPerformance() {
+    try {
+      const res = await apiClient.get('/api/organizations/teacher/performance/');
+      return res.data;
+    } catch (err) {
+      console.error('Failed to load teacher performance:', err);
+      throw err;
+    }
+  },
+
   // Backward compatibility alias for recently taught
   async getRecentlyTaught(userId = 'anonymous') {
     try {

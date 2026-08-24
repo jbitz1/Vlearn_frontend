@@ -88,7 +88,7 @@ export default function TeacherDashboard() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-black uppercase tracking-wider rounded-full">
-                Teaching Workspace
+                Dashboard
               </span>
               {activeSchool?.name && (
                 <span className="text-slate-400 text-xs font-semibold flex items-center gap-1">
@@ -98,19 +98,19 @@ export default function TeacherDashboard() {
             </div>
             <h1 className="text-3xl font-black text-navy">Welcome back, {teacherDisplayName}</h1>
             <p className="text-slate-500 font-medium text-sm mt-1">
-              Here is your teaching schedule, active lessons, and classroom performance for today.
+              Here are your teaching assignments, active lessons, and classroom performance for today.
             </p>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/teacher/my-teaching')}
-              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-navy font-bold rounded-xl text-sm transition-colors"
+              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-navy font-bold rounded-xl text-sm transition-colors cursor-pointer"
             >
-              Curriculum Explorer
+              My Teaching
             </button>
             <button
               onClick={() => navigate('/teacher/assessments')}
-              className="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-sm shadow-md shadow-primary/20 transition-all"
+              className="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-sm shadow-md shadow-primary/20 transition-all cursor-pointer"
             >
               Assessments
             </button>
@@ -120,38 +120,37 @@ export default function TeacherDashboard() {
 
       {/* Hero: Continue Teaching */}
       {continue_teaching && (
-        <section className="bg-gradient-to-br from-navy via-[#0A2540] to-primary rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute right-0 top-0 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <section className="bg-white border-2 border-primary/20 rounded-3xl p-6 md:p-8 shadow-xs relative overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-white/20 backdrop-blur text-white text-xs font-black uppercase tracking-wider rounded-lg flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-accent-yellow" /> Continue Teaching
+                <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-black uppercase tracking-wider rounded-lg flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" /> Continue Teaching
                 </span>
-                <span className="text-white/70 text-xs font-bold">
-                  {continue_teaching.form_name} • {continue_teaching.stream_name}
+                <span className="text-slate-500 text-xs font-bold">
+                  {continue_teaching.form_name} · {continue_teaching.stream_name}
                 </span>
               </div>
-              <h2 className="text-2xl md:text-3xl font-black tracking-tight">
+              <h2 className="text-2xl md:text-3xl font-black text-navy tracking-tight">
                 {continue_teaching.topic_name}
               </h2>
-              <p className="text-white/80 font-medium text-sm leading-relaxed">
-                Subject: <span className="text-white font-bold">{continue_teaching.subject_name}</span>
+              <p className="text-slate-600 font-medium text-sm leading-relaxed">
+                Subject: <span className="text-navy font-bold">{continue_teaching.subject_name}</span>
                 {continue_teaching.last_position && (
-                  <> • Stopped at: <span className="bg-white/10 px-2 py-0.5 rounded text-white font-bold">{continue_teaching.last_position}</span></>
+                  <> • Stopped at: <span className="bg-slate-100 px-2.5 py-0.5 rounded-md text-navy font-bold">{continue_teaching.last_position}</span></>
                 )}
               </p>
               {continue_teaching.notes && (
-                <div className="bg-white/10 border border-white/15 rounded-xl p-3 text-xs text-white/90 font-medium italic">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 font-medium italic">
                   "{continue_teaching.notes}"
                 </div>
               )}
             </div>
             <button
               onClick={() => navigate(`/teacher/topic-workspace/${continue_teaching.stream_id}/${continue_teaching.subject_id}/${continue_teaching.topic_id}`)}
-              className="px-6 py-4 bg-white text-navy hover:bg-slate-100 font-black rounded-2xl text-sm shadow-lg flex items-center justify-center gap-2 shrink-0 transition-transform active:scale-95 cursor-pointer"
+              className="px-6 py-3.5 bg-primary hover:bg-primary-dark text-white font-black rounded-xl text-sm shadow-md shadow-primary/20 flex items-center justify-center gap-2 shrink-0 transition-colors cursor-pointer"
             >
-              <Play className="w-4 h-4 fill-navy" /> Resume Facilitation
+              <Play className="w-4 h-4 fill-white" /> Resume Teaching
             </button>
           </div>
         </section>
@@ -361,7 +360,7 @@ export default function TeacherDashboard() {
                       onClick={() => navigate(`/teacher/topic-workspace/${item.stream_id}/${item.subject_id}/${item.topic_id}`)}
                       className="px-4 py-2 bg-navy hover:bg-primary text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
-                      Open Workspace <ChevronRight className="w-3.5 h-3.5" />
+                      Teach Topic <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   ) : (
                     <button
@@ -378,10 +377,10 @@ export default function TeacherDashboard() {
         )}
       </section>
 
-      {/* Recently Facilitated Timeline */}
+      {/* Recently Taught Timeline */}
       {recently_taught.length > 0 && (
         <section className="space-y-4">
-          <h2 className="text-2xl font-black text-navy">Recently Facilitated Lessons</h2>
+          <h2 className="text-2xl font-black text-navy">Recently Taught Lessons</h2>
           <div className="bg-white rounded-3xl border border-slate-200 divide-y divide-slate-100 overflow-hidden shadow-xs">
             {recently_taught.map((log) => (
               <div key={log.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
@@ -412,7 +411,7 @@ export default function TeacherDashboard() {
                     onClick={() => navigate(`/teacher/topic-workspace/${log.stream_id}/${log.subject_id}/${log.topic_id}`)}
                     className="px-4 py-2 bg-slate-100 hover:bg-navy hover:text-white text-navy font-bold rounded-xl text-xs transition-colors cursor-pointer"
                   >
-                    Open Workspace
+                    Continue Lesson
                   </button>
                 </div>
               </div>

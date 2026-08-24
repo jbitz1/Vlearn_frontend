@@ -164,83 +164,80 @@ const FormsStreamsStep = ({ data = {}, curriculum = '', updateData }) => {
           )}
         </div>
       ) : (
-        <div className="space-y-3 pt-2">
-          {forms.map((form) => (
-            <div key={form} className="p-4 rounded-xl border border-slate-200 bg-white">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm text-navy font-heading">{form}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveForm(form)}
-                    className="text-xs text-slate-300 hover:text-red-500 transition-colors cursor-pointer"
-                    title={`Remove ${getTermSingular().toLowerCase()}`}
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-                {addingStreamTo !== form && (
-                  <button 
-                    type="button"
-                    onClick={() => setAddingStreamTo(form)}
-                    className="text-xs text-primary font-medium hover:underline cursor-pointer"
-                  >
-                    + Add Stream
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-2 items-center">
-                {(streams[form] || []).map((st) => (
-                  <span 
-                    key={st} 
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-primary-light text-primary text-xs font-semibold font-heading"
-                  >
-                    {st}
-                    <button 
-                      type="button"
-                      onClick={() => handleRemoveStream(form, st)} 
-                      className="hover:text-primary-dark cursor-pointer ml-0.5"
-                    >
-                      <X size={12} />
-                    </button>
-                  </span>
-                ))}
-
-                {addingStreamTo === form && (
-                  <div className="inline-flex items-center gap-1.5">
-                    <input
-                      type="text"
-                      placeholder="e.g. North, A, 7B"
-                      value={newStreamName}
-                      onChange={e => setNewStreamName(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleAddStream(form)}
-                      className="px-2.5 py-1 text-xs rounded-lg border border-primary focus:outline-none w-32"
-                      autoFocus
-                    />
+        <div className="space-y-4 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {forms.map((form) => (
+              <div key={form} className="p-5 rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-navy font-heading">{form}</span>
                     <button
                       type="button"
-                      onClick={() => handleAddStream(form)}
-                      className="px-2 py-1 bg-primary text-white text-xs rounded-lg font-semibold cursor-pointer"
+                      onClick={() => handleRemoveForm(form)}
+                      className="text-xs text-slate-300 hover:text-red-500 transition-colors cursor-pointer"
+                      title={`Remove ${getTermSingular().toLowerCase()}`}
                     >
-                      Add
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setAddingStreamTo(null); setNewStreamName(''); }}
-                      className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
-                    >
-                      Cancel
+                      <X size={13} />
                     </button>
                   </div>
-                )}
+                  {addingStreamTo !== form && (
+                    <button 
+                      type="button"
+                      onClick={() => setAddingStreamTo(form)}
+                      className="text-xs text-primary font-bold hover:underline cursor-pointer"
+                    >
+                      + Add Stream
+                    </button>
+                  )}
+                </div>
 
-                {(streams[form] || []).length === 0 && addingStreamTo !== form && (
-                  <span className="text-xs text-slate-400 italic">No streams yet</span>
-                )}
+                <div className="flex flex-wrap gap-2 items-center min-h-[36px]">
+                  {(streams[form] || []).map((st) => (
+                    <span 
+                      key={st}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-navy shadow-2xs"
+                    >
+                      {st}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveStream(form, st)}
+                        className="text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
+                        title="Remove stream"
+                      >
+                        <X size={11} />
+                      </button>
+                    </span>
+                  ))}
+
+                  {addingStreamTo === form && (
+                    <form onSubmit={(e) => handleAddStreamSubmit(e, form)} className="inline-flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        placeholder="e.g. North"
+                        value={newStreamName}
+                        onChange={e => setNewStreamName(e.target.value)}
+                        className="w-28 px-2.5 py-1 text-xs font-semibold rounded-lg border border-primary focus:outline-none bg-white text-slate-800"
+                        autoFocus
+                      />
+                      <button
+                        type="submit"
+                        className="px-2.5 py-1 bg-primary text-white text-xs font-semibold rounded-lg hover:bg-primary-dark cursor-pointer"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setAddingStreamTo(null); setNewStreamName(''); }}
+                        className="px-1.5 py-1 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
+                      >
+                        <X size={13} />
+                      </button>
+                    </form>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
 
           {isAddingForm ? (
             <form onSubmit={handleAddFormSubmit} className="flex items-center gap-2 p-4 rounded-xl border border-slate-200 bg-white">
@@ -274,7 +271,7 @@ const FormsStreamsStep = ({ data = {}, curriculum = '', updateData }) => {
                 setIsAddingForm(true);
                 setNewFormName(getDefaultNextLevelName());
               }} 
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-slate-300 text-sm text-slate-600 hover:border-primary hover:text-primary transition-colors cursor-pointer font-medium pt-2 w-full justify-center sm:justify-start"
+              className="flex items-center gap-2 px-4 py-3 rounded-2xl border-2 border-dashed border-slate-300 text-xs text-slate-600 hover:border-primary hover:text-primary transition-colors cursor-pointer font-bold w-full justify-center sm:justify-start"
             >
               <Plus size={15} /> Add Another {getTermSingular()}
             </button>

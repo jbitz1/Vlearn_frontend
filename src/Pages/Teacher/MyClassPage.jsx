@@ -81,14 +81,20 @@ export default function MyClassPage() {
     );
   }
 
-  if (!classData?.is_class_teacher && (!classData?.supervised_streams || classData.supervised_streams.length === 0)) {
+  const allStreams = [
+    ...(classData?.supervised_streams || []),
+    ...(classData?.taught_streams || [])
+  ];
+  const streamOptions = Array.from(new Map(allStreams.map(s => [s.id, s])).values());
+
+  if (!classData?.selected_stream && streamOptions.length === 0) {
     return (
       <div className="max-w-xl mx-auto my-12 bg-white border border-slate-200 rounded-3xl p-10 text-center space-y-4">
         <Users className="w-12 h-12 text-slate-300 mx-auto" />
-        <h2 className="text-2xl font-black text-navy">No Supervised Class Assigned</h2>
+        <h2 className="text-2xl font-black text-navy">No Assigned Classes Found</h2>
         <p className="text-sm text-slate-500 leading-relaxed">
-          You are currently not assigned as a Class Teacher for any stream in {activeSchool?.name || 'your school'}. 
-          Class teachers are designated by the school administration to supervise student rosters and track overall stream performance.
+          You are currently not assigned to teach or supervise any classes in {activeSchool?.name || 'your school'}. 
+          Contact your school administrator to assign streams.
         </p>
         <button
           onClick={() => navigate('/teacher/dashboard')}
@@ -100,7 +106,14 @@ export default function MyClassPage() {
     );
   }
 
-  const { selected_stream, students = [], subject_teachers = [], topic_performance = [], attention_students = [], supervised_streams = [] } = classData;
+  const { 
+    selected_stream, 
+    students = [], 
+    subject_teachers = [], 
+    topic_performance = [], 
+    attention_students = [], 
+    is_supervising_selected = false 
+  } = classData || {};
 
   const filteredStudents = students.filter(s => 
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -121,8 +134,12 @@ export default function MyClassPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-3 py-1 bg-primary text-white text-xs font-black uppercase tracking-wider rounded-lg">
-                Supervised Class
+              <span className={`px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg ${
+                is_supervising_selected
+                  ? 'bg-primary text-white'
+                  : 'bg-slate-100 text-slate-700'
+              }`}>
+                {is_supervising_selected ? 'Supervised Class (Class Teacher)' : 'Taught Class (Subject Teacher)'}
               </span>
               {activeSchool?.name && (
                 <span className="text-xs font-semibold text-slate-400">
@@ -134,20 +151,22 @@ export default function MyClassPage() {
               {selected_stream?.form_name} {selected_stream?.name}
             </h1>
             <p className="text-sm font-semibold text-slate-500 mt-1">
-              Class Teacher Management Center • Academic Year 2026
+              {is_supervising_selected 
+                ? 'Class Teacher Supervision Center • Academic Year 2026'
+                : 'Subject Teacher Class View • Academic Year 2026'}
             </p>
           </div>
 
-          {/* Supervised Stream Selector if supervising multiple streams */}
-          {supervised_streams.length > 1 && (
+          {/* Stream Selector if multiple streams available */}
+          {streamOptions.length > 1 && (
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-400">Switch Stream:</span>
               <select
                 value={selected_stream?.id || ''}
                 onChange={(e) => setSelectedStreamId(Number(e.target.value))}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-navy focus:outline-none focus:border-primary"
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-navy focus:outline-none focus:border-primary cursor-pointer"
               >
-                {supervised_streams.map((st) => (
+                {streamOptions.map((st) => (
                   <option key={st.id} value={st.id}>
                     {st.form_name} {st.name}
                   </option>
@@ -158,8 +177,8 @@ export default function MyClassPage() {
         </div>
       </header>
 
-      {/* 4 Summary KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Summary KPI Cards */}
+      <div className={`grid gap-4 ${is_supervising_selected ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
         <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center justify-between shadow-xs">
           <div>
             <p className="text-xs font-black uppercase tracking-wider text-slate-400">Enrolled Students</p>
@@ -172,7 +191,9 @@ export default function MyClassPage() {
 
         <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center justify-between shadow-xs">
           <div>
-            <p className="text-xs font-black uppercase tracking-wider text-slate-400">Class Average</p>
+            <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+              {is_supervising_selected ? 'Class Average' : 'Subject Average'}
+            </p>
             <h3 className="text-3xl font-black text-success mt-1">
               {selected_stream?.overall_assessment_average || 0}%
             </h3>
@@ -184,9 +205,9 @@ export default function MyClassPage() {
 
         <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center justify-between shadow-xs">
           <div>
-            <p className="text-xs font-black uppercase tracking-wider text-slate-400">Class Grade</p>
+            <p className="text-xs font-black uppercase tracking-wider text-slate-400">Average Grade</p>
             <h3 className="text-3xl font-black text-navy mt-1">
-              {selected_stream?.overall_grade || 'B'}
+              {selected_stream?.overall_grade || '—'}
             </h3>
           </div>
           <div className="w-12 h-12 bg-accent/10 text-accent rounded-2xl flex items-center justify-center">
@@ -194,17 +215,19 @@ export default function MyClassPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-danger/20 p-5 flex items-center justify-between shadow-xs">
-          <div>
-            <p className="text-xs font-black uppercase tracking-wider text-danger">Need Attention</p>
-            <h3 className="text-3xl font-black text-danger mt-1">
-              {selected_stream?.students_requiring_attention_count || attention_students.length}
-            </h3>
+        {is_supervising_selected && (
+          <div className="bg-white rounded-2xl border border-danger/20 p-5 flex items-center justify-between shadow-xs">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-danger">Need Attention</p>
+              <h3 className="text-3xl font-black text-danger mt-1">
+                {selected_stream?.students_requiring_attention_count || attention_students.length}
+              </h3>
+            </div>
+            <div className="w-12 h-12 bg-danger/10 text-danger rounded-2xl flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
           </div>
-          <div className="w-12 h-12 bg-danger/10 text-danger rounded-2xl flex items-center justify-center">
-            <AlertTriangle className="w-6 h-6" />
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Tab Navigation */}
@@ -217,7 +240,7 @@ export default function MyClassPage() {
               : 'border-transparent text-slate-500 hover:text-navy'
           }`}
         >
-          <BarChart3 className="w-4 h-4" /> Subject Performance ({subject_teachers.length})
+          <BarChart3 className="w-4 h-4" /> {is_supervising_selected ? 'Subject Performance' : 'Taught Subjects'} ({subject_teachers.length})
         </button>
 
         <button
@@ -231,16 +254,18 @@ export default function MyClassPage() {
           <Users className="w-4 h-4" /> Students Roster ({students.length})
         </button>
 
-        <button
-          onClick={() => setActiveTab('teachers')}
-          className={`pb-3 px-4 font-black text-sm transition-all flex items-center gap-2 border-b-2 cursor-pointer ${
-            activeTab === 'teachers'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-slate-500 hover:text-navy'
-          }`}
-        >
-          <BookOpen className="w-4 h-4" /> Subject Teachers ({subject_teachers.length})
-        </button>
+        {is_supervising_selected && (
+          <button
+            onClick={() => setActiveTab('teachers')}
+            className={`pb-3 px-4 font-black text-sm transition-all flex items-center gap-2 border-b-2 cursor-pointer ${
+              activeTab === 'teachers'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-slate-500 hover:text-navy'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" /> Subject Teachers ({subject_teachers.length})
+          </button>
+        )}
 
         <button
           onClick={() => setActiveTab('topics')}
@@ -253,16 +278,18 @@ export default function MyClassPage() {
           <Sparkles className="w-4 h-4" /> Topic Breakdown
         </button>
 
-        <button
-          onClick={() => setActiveTab('attention')}
-          className={`pb-3 px-4 font-black text-sm transition-all flex items-center gap-2 border-b-2 cursor-pointer ${
-            activeTab === 'attention'
-              ? 'border-danger text-danger'
-              : 'border-transparent text-slate-500 hover:text-danger'
-          }`}
-        >
-          <AlertTriangle className="w-4 h-4" /> Academic Intervention ({attention_students.length})
-        </button>
+        {is_supervising_selected && (
+          <button
+            onClick={() => setActiveTab('attention')}
+            className={`pb-3 px-4 font-black text-sm transition-all flex items-center gap-2 border-b-2 cursor-pointer ${
+              activeTab === 'attention'
+                ? 'border-danger text-danger'
+                : 'border-transparent text-slate-500 hover:text-danger'
+            }`}
+          >
+            <AlertTriangle className="w-4 h-4" /> Academic Intervention ({attention_students.length})
+          </button>
+        )}
       </div>
 
       {/* Tab 1: Subject Performance Overview */}
