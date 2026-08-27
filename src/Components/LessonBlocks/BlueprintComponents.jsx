@@ -263,18 +263,117 @@ export const ConceptExplanationBlock = ({ block }) => {
   );
 };
 
-// ─── Definition Card ──────────────────────────────────────────────────────────
+// ─── Definition Card / Key Terms ──────────────────────────────────────────────
 export const DefinitionCardBlock = ({ block }) => {
   const c = parseContent(block.content);
-  const term = c.term || (block.title && block.title !== 'None' ? block.title : (c.title || 'Definition'));
-  const definition = c.content || c.body || c.text || c.definition || text(block.content);
+  const rawText = text(block.content);
+  const mainTitle = c.term || (block.title && block.title !== 'None' ? block.title : (c.title || 'Key Terms & Definitions'));
+  const introDefinition = (c.definition && c.definition !== mainTitle) ? c.definition : (c.subtitle || c.description || '');
+
+  // Extract structured term items from various formats
+  let termItems = [];
+
+  if (Array.isArray(c.terms) && c.terms.length > 0) {
+    termItems = c.terms.map((item, i) => {
+      if (typeof item === 'string') {
+        const colonIdx = item.indexOf(':');
+        if (colonIdx !== -1) {
+          return {
+            id: i,
+            term: item.substring(0, colonIdx).trim(),
+            definition: item.substring(colonIdx + 1).trim()
+          };
+        }
+        return { id: i, term: `Term ${i + 1}`, definition: item };
+      }
+      return {
+        id: i,
+        term: item.term || item.title || item.name || `Term ${i + 1}`,
+        definition: item.definition || item.meaning || item.description || item.body || ''
+      };
+    });
+  } else if (Array.isArray(c.key_points) && c.key_points.length > 0) {
+    termItems = c.key_points.map((item, i) => {
+      if (typeof item === 'string') {
+        const colonIdx = item.indexOf(':');
+        if (colonIdx !== -1) {
+          return {
+            id: i,
+            term: item.substring(0, colonIdx).trim(),
+            definition: item.substring(colonIdx + 1).trim()
+          };
+        }
+        return { id: i, term: `Key Concept ${i + 1}`, definition: item };
+      }
+      return {
+        id: i,
+        term: item.term || item.title || `Concept ${i + 1}`,
+        definition: item.definition || item.body || JSON.stringify(item)
+      };
+    });
+  } else if (Array.isArray(c.items) && c.items.length > 0) {
+    termItems = c.items.map((item, i) => {
+      if (typeof item === 'string') {
+        const colonIdx = item.indexOf(':');
+        if (colonIdx !== -1) {
+          return {
+            id: i,
+            term: item.substring(0, colonIdx).trim(),
+            definition: item.substring(colonIdx + 1).trim()
+          };
+        }
+        return { id: i, term: `Item ${i + 1}`, definition: item };
+      }
+      return {
+        id: i,
+        term: item.term || item.title || `Item ${i + 1}`,
+        definition: item.definition || item.body || ''
+      };
+    });
+  }
+
+  // Fallback single definition text if no array found
+  const singleDef = !termItems.length ? (c.content || c.body || c.text || introDefinition || rawText) : '';
+
   return (
-    <div className="my-6 sm:my-12 bg-amber-50/60 border border-amber-200/60 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
-      <BlockHeader icon={Book} label="Definition" title={term} colorClass="text-amber-800" />
-      <MD className="text-gray-800 text-base sm:text-lg md:text-xl leading-relaxed font-sans max-w-[70ch]">{definition}</MD>
+    <div className="my-6 sm:my-12 bg-gradient-to-br from-amber-50/80 to-orange-50/50 border border-amber-200/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-xs">
+      <BlockHeader icon={Book} label="Essential Terminology & Definitions" title={mainTitle} colorClass="text-amber-800" />
+      
+      {introDefinition && termItems.length > 0 && (
+        <div className="mb-6 p-3.5 sm:p-4 rounded-xl bg-amber-100/50 border border-amber-200/60 text-amber-900 font-medium text-sm sm:text-base leading-relaxed">
+          <MD className="!max-w-none text-amber-950">{introDefinition}</MD>
+        </div>
+      )}
+
+      {termItems.length > 0 ? (
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 mt-4 sm:mt-6">
+          {termItems.map((item) => (
+            <div
+              key={item.id}
+              className="p-4 sm:p-5 rounded-xl sm:rounded-2xl bg-white/90 border border-amber-200/60 shadow-xs hover:shadow-sm transition-shadow flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4"
+            >
+              <div className="sm:w-1/3 shrink-0">
+                <span className="inline-block px-3 py-1 rounded-lg bg-amber-100/80 text-amber-900 font-bold text-sm sm:text-base border border-amber-200">
+                  {item.term}
+                </span>
+              </div>
+              <div className="sm:w-2/3 flex-1 min-w-0">
+                <MD className="text-gray-800 text-sm sm:text-base md:text-lg leading-relaxed !max-w-none">
+                  {item.definition}
+                </MD>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <MD className="text-gray-800 text-base sm:text-lg md:text-xl leading-relaxed font-sans max-w-[70ch]">
+          {singleDef}
+        </MD>
+      )}
     </div>
   );
 };
+
 
 // ─── Worked Example ───────────────────────────────────────────────────────────
 export const WorkedExampleBlock = ({ block }) => {
@@ -756,14 +855,14 @@ export const SuggestedMediaBlock = ({ block }) => {
   // 1. Render Inline SVG if available
   if (inlineSvg && !isVideo) {
     return (
-      <div className="my-16">
+      <div className="my-8 sm:my-16">
         <figure className="w-full">
           <div
-            className="w-full h-auto rounded-3xl shadow-xl overflow-hidden bg-slate-950 flex items-center justify-center p-4 md:p-6 border border-slate-800 transition-all hover:border-slate-700"
+            className="w-full h-auto rounded-2xl sm:rounded-3xl shadow-md sm:shadow-lg overflow-hidden bg-white border border-slate-200/90 flex items-center justify-center p-3 sm:p-5 md:p-6 transition-all hover:shadow-xl hover:border-slate-300"
             dangerouslySetInnerHTML={{ __html: inlineSvg }}
           />
           {block.title && (
-            <figcaption className="text-gray-600 mt-4 text-base text-center font-medium font-sans">
+            <figcaption className="text-gray-700 mt-3 sm:mt-4 text-sm sm:text-base text-center font-medium font-sans">
               {block.title}
             </figcaption>
           )}

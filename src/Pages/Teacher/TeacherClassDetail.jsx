@@ -131,7 +131,7 @@ export const TeacherClassDetail = () => {
                     </div>
 
                     <button
-                      onClick={() => navigate(`/lesson-viewer/${topic.id}`)}
+                      onClick={() => navigate(`/lesson-viewer/${topic.id}?from=teacher`)}
                       className="px-5 py-2.5 bg-custom-blue hover:bg-blue-700 text-white font-extrabold text-xs rounded-2xl shadow-sm transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" /> Teach Lesson

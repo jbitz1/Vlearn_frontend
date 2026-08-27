@@ -32,8 +32,8 @@ export default function SchoolLayout() {
   const academicYear = school?.academicYear || '2026';
   const currentTerm = school?.currentTerm || 'Term 1';
   const curriculum = school?.curricula_offered || school?.curriculum || '';
-  const userName = user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : (user?.username || 'School Master');
-  const userInitials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'SM';
+  const userName = user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : (user?.username || 'School Admin');
+  const userInitials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'SA';
 
   function handleLogout() {
     Swal.fire({
@@ -122,7 +122,7 @@ export default function SchoolLayout() {
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold text-white truncate">{userName}</p>
-              <p className="text-xs text-white/50">School Master</p>
+              <p className="text-xs text-white/50">School Admin</p>
             </div>
           </div>
           <button
@@ -159,7 +159,7 @@ export default function SchoolLayout() {
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
               <p className="text-xs font-semibold text-slate-700">{userName}</p>
-              <p className="text-xs text-slate-400">School Master</p>
+              <p className="text-xs text-slate-400">School Admin</p>
             </div>
             <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white text-xs font-bold font-heading shadow-xs">
               {userInitials}

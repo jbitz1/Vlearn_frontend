@@ -95,11 +95,11 @@ export const TeacherTopicWorkspace = () => {
   };
 
   const handleOpenLesson = (lessonId) => {
-    navigate(`/lesson-viewer/${topicId}?lessonId=${lessonId}`);
+    navigate(`/lesson-viewer/${topicId}?lessonId=${lessonId}&from=teacher`);
   };
 
   const handleViewAsStudent = (lessonId) => {
-    navigate(`/lesson-viewer/${topicId}?lessonId=${lessonId}&mode=preview`);
+    navigate(`/student/lesson-viewer/${topicId}?lessonId=${lessonId}&mode=preview&from=student`);
   };
 
   if (isLoading) {

@@ -81,7 +81,7 @@ export const TopicsView = () => {
 
                         return (
                             <Link 
-                                to={`/lesson-viewer/${topic.id}`} 
+                                to={`/student/lesson-viewer/${topic.id}?from=student`} 
                                 key={topic.id}
                                 className="block bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200"
                             >

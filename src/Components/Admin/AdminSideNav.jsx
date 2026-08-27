@@ -107,7 +107,7 @@ const SideNav = () => {
                         <p className="text-[10px] font-extrabold uppercase text-custom-blue tracking-wider">Switch Workspace</p>
                         <div className="flex flex-col gap-1 text-xs font-semibold">
                             <Link to="/school/dashboard" className="px-2.5 py-1.5 bg-white hover:bg-blue-100 text-gray-800 rounded-xl transition-colors border border-blue-100 flex items-center justify-between">
-                                <span>School Master UI</span>
+                                <span>School Admin</span>
                             </Link>
                             <Link to="/teacher/dashboard" className="px-2.5 py-1.5 bg-white hover:bg-blue-100 text-gray-800 rounded-xl transition-colors border border-blue-100 flex items-center justify-between">
                                 <span>Teacher Portal</span>

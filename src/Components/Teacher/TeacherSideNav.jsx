@@ -114,7 +114,7 @@ const TeacherSideNav = () => {
               <p className="text-[10px] font-extrabold uppercase text-accent tracking-wider">Switch Workspace</p>
               <div className="flex flex-col gap-1 text-xs font-semibold">
                 <Link to="/school/dashboard" className="px-2.5 py-1.5 bg-navy text-white hover:bg-primary rounded-lg transition-colors flex items-center justify-between border border-navy-700">
-                  <span>School Master</span>
+                  <span>School Admin</span>
                 </Link>
                 <Link to="/student" className="px-2.5 py-1.5 bg-navy text-white hover:bg-primary rounded-lg transition-colors flex items-center justify-between border border-navy-700">
                   <span>Student Workspace</span>

@@ -199,7 +199,7 @@ export function Dashboard() {
                   return (
                     <div
                       key={module.lessonId || module.storageKey}
-                      onClick={() => navigate(`/lesson-viewer/${module.topicId}`)}
+                      onClick={() => navigate(`/student/lesson-viewer/${module.topicId}?from=student`)}
                       className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs sm:shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
                     >
                       <div>

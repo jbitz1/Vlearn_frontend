@@ -607,3 +607,387 @@ function parseContent(content) {
     if (typeof content === 'object') return content;
     try { return JSON.parse(content); } catch { return { text: content }; }
 }
+
+// ──────────────────────────────────────────────────────────
+// EDITOR: Definition
+// ──────────────────────────────────────────────────────────
+export function DefinitionEditor({ block, onChange, onSave }) {
+    const c = parseContent(block.content);
+    const term = c.term || '';
+    const definition = c.definition || '';
+    const example = c.example || '';
+
+    const update = (patch) => {
+        const updated = { ...block, content: { ...c, ...patch } };
+        onChange(updated);
+        onSave(updated);
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-purple-100">
+                <span className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm">D</span>
+                <div>
+                    <p className="text-xs font-bold text-purple-700 uppercase tracking-wide">Definition</p>
+                    <p className="text-xs text-gray-500">Introduce a key term with a clear definition.</p>
+                </div>
+            </div>
+            <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Term</label>
+                <input
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-400"
+                    value={term}
+                    onChange={(e) => onChange({ ...block, content: { ...c, term: e.target.value } })}
+                    onBlur={() => update({ term })}
+                    placeholder="e.g. Osmosis"
+                />
+            </div>
+            <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Definition</label>
+                <textarea
+                    rows={3}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none outline-none focus:border-purple-400"
+                    value={definition}
+                    onChange={(e) => onChange({ ...block, content: { ...c, definition: e.target.value } })}
+                    onBlur={() => update({ definition })}
+                    placeholder="The movement of water molecules across a semi-permeable membrane..."
+                />
+            </div>
+            <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Example <span className="text-gray-400 font-normal">(optional)</span></label>
+                <input
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-400"
+                    value={example}
+                    onChange={(e) => onChange({ ...block, content: { ...c, example: e.target.value } })}
+                    onBlur={() => update({ example })}
+                    placeholder="e.g. Water entering a plant root cell from soil"
+                />
+            </div>
+        </div>
+    );
+}
+
+// ──────────────────────────────────────────────────────────
+// EDITOR: Misconception
+// ──────────────────────────────────────────────────────────
+export function MisconceptionEditor({ block, onChange, onSave }) {
+    const c = parseContent(block.content);
+    const myth = c.myth || '';
+    const reality = c.reality || '';
+
+    const update = (patch) => {
+        const updated = { ...block, content: { ...c, ...patch } };
+        onChange(updated);
+        onSave(updated);
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-red-100">
+                <span className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                    <AlertCircle size={16} className="text-red-500" />
+                </span>
+                <div>
+                    <p className="text-xs font-bold text-red-700 uppercase tracking-wide">Misconception Buster</p>
+                    <p className="text-xs text-gray-500">Correct a common student misconception.</p>
+                </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-xs font-bold text-red-600 mb-2">❌ Common Myth</p>
+                    <textarea
+                        rows={4}
+                        className="w-full bg-transparent text-sm text-gray-700 resize-none outline-none"
+                        value={myth}
+                        onChange={(e) => onChange({ ...block, content: { ...c, myth: e.target.value } })}
+                        onBlur={() => update({ myth })}
+                        placeholder="Students often think..."
+                    />
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p className="text-xs font-bold text-green-600 mb-2">✅ The Reality</p>
+                    <textarea
+                        rows={4}
+                        className="w-full bg-transparent text-sm text-gray-700 resize-none outline-none"
+                        value={reality}
+                        onChange={(e) => onChange({ ...block, content: { ...c, reality: e.target.value } })}
+                        onBlur={() => update({ reality })}
+                        placeholder="In fact..."
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ──────────────────────────────────────────────────────────
+// EDITOR: Table
+// ──────────────────────────────────────────────────────────
+export function TableEditor({ block, onChange, onSave }) {
+    const c = parseContent(block.content);
+    const headers = c.headers || ['Column 1', 'Column 2'];
+    const rows = c.rows || [['', '']];
+
+    const update = (patch) => {
+        const updated = { ...block, content: { ...c, ...patch } };
+        onChange(updated);
+        onSave(updated);
+    };
+
+    const addColumn = () => {
+        const newHeaders = [...headers, `Column ${headers.length + 1}`];
+        const newRows = rows.map(r => [...r, '']);
+        update({ headers: newHeaders, rows: newRows });
+    };
+
+    const addRow = () => {
+        update({ rows: [...rows, headers.map(() => '')] });
+    };
+
+    const updateHeader = (i, val) => {
+        const h = [...headers];
+        h[i] = val;
+        update({ headers: h });
+    };
+
+    const updateCell = (r, c2, val) => {
+        const newRows = rows.map((row, ri) =>
+            ri === r ? row.map((cell, ci) => (ci === c2 ? val : cell)) : row
+        );
+        update({ rows: newRows });
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-blue-100">
+                <span className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">T</span>
+                <div>
+                    <p className="text-xs font-bold text-blue-700 uppercase tracking-wide">Table</p>
+                    <p className="text-xs text-gray-500">Structured comparison or data table.</p>
+                </div>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                    <thead>
+                        <tr>
+                            {headers.map((h, i) => (
+                                <th key={i} className="border border-gray-300 bg-gray-100 p-1">
+                                    <input
+                                        className="w-full bg-transparent text-center font-semibold outline-none"
+                                        value={h}
+                                        onChange={(e) => updateHeader(i, e.target.value)}
+                                    />
+                                </th>
+                            ))}
+                            <th className="border border-dashed border-gray-300 p-1">
+                                <button onClick={addColumn} className="text-xs text-blue-500 hover:text-blue-700 w-full">+ Col</button>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map((row, ri) => (
+                            <tr key={ri}>
+                                {row.map((cell, ci) => (
+                                    <td key={ci} className="border border-gray-200 p-1">
+                                        <input
+                                            className="w-full outline-none px-1 py-0.5"
+                                            value={cell}
+                                            onChange={(e) => updateCell(ri, ci, e.target.value)}
+                                        />
+                                    </td>
+                                ))}
+                                <td />
+                            </tr>
+                        ))}
+                        <tr>
+                            <td colSpan={headers.length + 1} className="border border-dashed border-gray-200">
+                                <button onClick={addRow} className="text-xs text-blue-500 hover:text-blue-700 w-full py-1">+ Row</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+// ──────────────────────────────────────────────────────────
+// EDITOR: Image
+// ──────────────────────────────────────────────────────────
+export function ImageEditor({ block, onChange, onSave }) {
+    const c = parseContent(block.content);
+    const [urlInput, setUrlInput] = useState(c.url || '');
+
+    const save = (url, caption) => {
+        const updated = { ...block, content: { ...c, url, caption } };
+        onChange(updated);
+        onSave(updated);
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-cyan-100">
+                <span className="w-8 h-8 rounded-lg bg-cyan-100 flex items-center justify-center text-cyan-600 font-bold text-sm">🖼</span>
+                <div>
+                    <p className="text-xs font-bold text-cyan-700 uppercase tracking-wide">Image</p>
+                    <p className="text-xs text-gray-500">Embed an image by URL.</p>
+                </div>
+            </div>
+            <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Image URL</label>
+                <input
+                    type="url"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-400"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    onBlur={() => save(urlInput, c.caption || '')}
+                    placeholder="https://..."
+                />
+            </div>
+            <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Caption <span className="text-gray-400 font-normal">(optional)</span></label>
+                <input
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-400"
+                    value={c.caption || ''}
+                    onChange={(e) => onChange({ ...block, content: { ...c, caption: e.target.value } })}
+                    onBlur={() => save(urlInput, c.caption || '')}
+                    placeholder="Figure 1: ..."
+                />
+            </div>
+            {urlInput && (
+                <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center min-h-[120px]">
+                    <img
+                        src={urlInput}
+                        alt={c.caption || 'Preview'}
+                        className="max-h-48 max-w-full object-contain"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ──────────────────────────────────────────────────────────
+// EDITOR: YouTube
+// ──────────────────────────────────────────────────────────
+export function YouTubeEditor({ block, onChange, onSave }) {
+    const c = parseContent(block.content);
+    const [urlInput, setUrlInput] = useState(c.youtube_url || '');
+
+    const extractVideoId = (url) => {
+        try {
+            const u = new URL(url);
+            if (u.hostname.includes('youtu.be')) return u.pathname.slice(1);
+            return u.searchParams.get('v') || '';
+        } catch { return ''; }
+    };
+
+    const save = (url) => {
+        const videoId = extractVideoId(url);
+        const updated = { ...block, content: { ...c, youtube_url: url, video_id: videoId } };
+        onChange(updated);
+        onSave(updated);
+    };
+
+    const videoId = c.video_id || extractVideoId(urlInput);
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-red-100">
+                <span className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600 font-bold text-sm">▶</span>
+                <div>
+                    <p className="text-xs font-bold text-red-700 uppercase tracking-wide">YouTube Video</p>
+                    <p className="text-xs text-gray-500">Embed a YouTube video by URL.</p>
+                </div>
+            </div>
+            <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">YouTube URL</label>
+                <input
+                    type="url"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    onBlur={() => save(urlInput)}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                />
+            </div>
+            {videoId && (
+                <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 bg-black aspect-video">
+                    <iframe
+                        src={`https://www.youtube.com/embed/${videoId}`}
+                        className="w-full h-full"
+                        allowFullScreen
+                        title="YouTube Preview"
+                    />
+                </div>
+            )}
+            <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Caption <span className="text-gray-400 font-normal">(optional)</span></label>
+                <input
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400"
+                    value={c.caption || ''}
+                    onChange={(e) => onChange({ ...block, content: { ...c, caption: e.target.value } })}
+                    onBlur={() => save(urlInput)}
+                    placeholder="Video: ..."
+                />
+            </div>
+        </div>
+    );
+}
+
+// ──────────────────────────────────────────────────────────
+// EDITOR: Video (hosted / direct link)
+// ──────────────────────────────────────────────────────────
+export function VideoEditor({ block, onChange, onSave }) {
+    const c = parseContent(block.content);
+    const [urlInput, setUrlInput] = useState(c.video_url || '');
+
+    const save = (url) => {
+        const updated = { ...block, content: { ...c, video_url: url } };
+        onChange(updated);
+        onSave(updated);
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-violet-100">
+                <span className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-sm">🎬</span>
+                <div>
+                    <p className="text-xs font-bold text-violet-700 uppercase tracking-wide">Video</p>
+                    <p className="text-xs text-gray-500">Direct link to a hosted video file (MP4, WebM, etc.).</p>
+                </div>
+            </div>
+            <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Video URL</label>
+                <input
+                    type="url"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-violet-400"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    onBlur={() => save(urlInput)}
+                    placeholder="https://cdn.example.com/video.mp4"
+                />
+            </div>
+            {urlInput && (
+                <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 bg-black">
+                    <video
+                        src={urlInput}
+                        controls
+                        className="w-full max-h-60"
+                    />
+                </div>
+            )}
+            <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Caption <span className="text-gray-400 font-normal">(optional)</span></label>
+                <input
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-violet-400"
+                    value={c.caption || ''}
+                    onChange={(e) => onChange({ ...block, content: { ...c, caption: e.target.value } })}
+                    onBlur={() => save(urlInput)}
+                    placeholder="Video description..."
+                />
+            </div>
+        </div>
+    );
+}

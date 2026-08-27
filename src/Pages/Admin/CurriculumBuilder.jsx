@@ -43,6 +43,7 @@ export default function CurriculumBuilder() {
     const fileInputRef = useRef(null);
     const [uploadingPack, setUploadingPack] = useState(false);
     const [activePack, setActivePack] = useState(null); // The pack being processed/reviewed
+    const [uploadMode, setUploadMode] = useState('normal'); // 'normal' | 'ai_ingestion'
     const [subjectPacks, setSubjectPacks] = useState([]);
 
     // Poll for status if a pack is processing
@@ -238,6 +239,7 @@ export default function CurriculumBuilder() {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('subject', selectedSubject.id);
+        formData.append('mode', uploadMode);
 
         try {
             setUploadingPack(true);
@@ -389,6 +391,33 @@ export default function CurriculumBuilder() {
                             </div>
                         )}
                         
+                        {/* Upload mode toggle */}
+                        <div className="flex rounded-lg overflow-hidden border border-gray-200 mb-2 text-[11px] font-semibold">
+                            <button
+                                onClick={() => setUploadMode('normal')}
+                                className={`flex-1 py-1.5 px-2 transition-colors ${uploadMode === 'normal'
+                                    ? 'bg-custom-blue text-white'
+                                    : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                                title="Upload PDF and set up topics manually"
+                            >
+                                📚 Normal
+                            </button>
+                            <button
+                                onClick={() => setUploadMode('ai_ingestion')}
+                                className={`flex-1 py-1.5 px-2 transition-colors ${uploadMode === 'ai_ingestion'
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                                title="AI auto-generates Topics & Units from the textbook"
+                            >
+                                ✨ AI Ingestion
+                            </button>
+                        </div>
+                        {uploadMode === 'ai_ingestion' && (
+                            <p className="text-[10px] text-indigo-600 bg-indigo-50 rounded px-2 py-1 mb-2 border border-indigo-100">
+                                AI will automatically infer Topics & Learning Units from the uploaded textbook. You can review and edit them before approval.
+                            </p>
+                        )}
+
                         {activePack ? (
                             activePack.status === 'processing' ? (
                                 <div className="w-full flex items-center justify-center gap-2 text-xs bg-blue-50 text-blue-600 py-1.5 rounded border border-blue-200">
@@ -636,6 +665,10 @@ export default function CurriculumBuilder() {
                         if (selectedSubject) {
                             fetchData(`/api/curriculum/topics/?subject=${selectedSubject.id}`, setTopics);
                         }
+                    }}
+                    onDelete={(deletedPackId) => {
+                        setActivePack(null);
+                        setSubjectPacks((prev) => prev.filter((p) => p.id !== deletedPackId));
                     }}
                 />
             )}

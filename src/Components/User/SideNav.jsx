@@ -115,7 +115,7 @@ const SideNav = () => {
                   onClick={() => setIsSidebarOpen(false)}
                   className="px-2.5 py-1.5 bg-white text-gray-800 hover:bg-custom-blue hover:text-white rounded-xl transition-colors flex items-center justify-between border border-blue-100 shadow-xs"
                 >
-                  <span>School Master</span>
+                  <span>School Admin</span>
                 </Link>
                 <Link
                   to="/teacher/dashboard"

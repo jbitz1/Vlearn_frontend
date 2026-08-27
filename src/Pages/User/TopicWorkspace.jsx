@@ -60,7 +60,7 @@ export const TopicWorkspace = () => {
   }, [topicId, user?.id]);
 
   const handleLaunchLesson = (lessonId) => {
-    navigate(`/lesson-viewer/${topicId}?lessonId=${lessonId}`);
+    navigate(`/student/lesson-viewer/${topicId}?lessonId=${lessonId}&from=student`);
   };
 
   return (

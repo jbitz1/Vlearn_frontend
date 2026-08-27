@@ -2,8 +2,11 @@ import React from 'react';
 import {
     GoalEditor, ExplanationEditor, WorkedExampleEditor,
     KnowledgeCheckEditor, CalloutEditor, SummaryEditor,
-    RealWorldExampleEditor, ExperimentEditor, GenericEditor
+    RealWorldExampleEditor, ExperimentEditor, GenericEditor,
+    DefinitionEditor, MisconceptionEditor, TableEditor,
+    ImageEditor, YouTubeEditor, VideoEditor,
 } from './ComponentEditors';
+import VisualizationEditor from './VisualizationEditor';
 import { MediaSlot } from './MediaSlot';
 import { RotateCcw, Trash2, Copy, ArrowUp, ArrowDown, Plus } from 'lucide-react';
 
@@ -60,14 +63,18 @@ const COMPONENT_CATEGORIES = {
     ],
     'Core Explanations': [
         { label: 'Concept Explanation', type: 'concept_explanation' },
-        { label: 'Definition', type: 'definitions' },
+        { label: 'Definition', type: 'definition' },
         { label: 'Analogy', type: 'analogy' },
+        { label: 'Table', type: 'table' },
     ],
     'Visuals & Media': [
+        { label: 'Image (URL)', type: 'image' },
+        { label: 'YouTube Video', type: 'youtube' },
+        { label: 'Video (Hosted)', type: 'video' },
+        { label: 'AI Visualization', type: 'visualization' },
         { label: 'Upload Image', type: 'image_placeholder', upload: true },
         { label: 'Upload Diagram', type: 'diagram_placeholder', upload: true },
         { label: 'Upload Video', type: 'video_ref', upload: true },
-        { label: 'YouTube Embed', type: 'suggested_video' },
         { label: 'Diagram Suggestion', type: 'suggested_diagram' },
         { label: 'Simulation Suggestion', type: 'suggested_simulation' }
     ],
@@ -84,7 +91,7 @@ const COMPONENT_CATEGORIES = {
         { label: 'Reflection', type: 'reflection' },
     ],
     'Teacher Coaching & Summary': [
-        { label: 'Common Misconception', type: 'common_misconception' },
+        { label: 'Common Misconception', type: 'misconception' },
         { label: 'Key Takeaway', type: 'key_takeaway' },
         { label: 'Summary', type: 'summary' }
     ]
@@ -161,17 +168,35 @@ function selectEditor(blockType) {
         case 'concept_explanation':
         case 'core_explanation':
         case 'visual_learning':
-        case 'definitions':
+        case 'definitions':        // legacy AI-generated type kept for compat
         case 'transition':
         case 'hook':
         case 'story':
         case 'analogy':
         case 'key_takeaway':
-        case 'common_misconception':
+        case 'common_misconception': // legacy type kept for compat
         case 'reflection':
             return ExplanationEditor;
+        // New structured editors
+        case 'definition':
+            return DefinitionEditor;
+        case 'misconception':
+            return MisconceptionEditor;
+        case 'table':
+            return TableEditor;
         case 'worked_example':
             return WorkedExampleEditor;
+        // Rich media editors
+        case 'image':
+            return ImageEditor;
+        case 'youtube':
+            return YouTubeEditor;
+        case 'video':
+            return VideoEditor;
+        // AI visualization
+        case 'visualization':
+            return VisualizationEditor;
+        // Existing editors
         case 'knowledge_check':
         case 'revision_questions':
         case 'multiple_choice':

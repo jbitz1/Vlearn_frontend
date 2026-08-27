@@ -226,7 +226,7 @@ export function User() {
                           <div className="text-[11px] sm:text-xs text-gray-500 font-semibold truncate">{m.topicName || 'Curriculum Lesson'}</div>
                         </div>
                         <button
-                          onClick={() => navigate(`/lesson-viewer/${m.topicId}`)}
+                          onClick={() => navigate(`/student/lesson-viewer/${m.topicId}?from=student`)}
                           className="px-3.5 py-2 bg-blue-50 text-custom-blue font-extrabold text-xs rounded-xl hover:bg-custom-blue hover:text-white transition-colors shrink-0 min-h-[36px] flex items-center"
                         >
                           Continue →

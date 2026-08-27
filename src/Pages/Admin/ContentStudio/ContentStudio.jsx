@@ -9,7 +9,7 @@ import PublishGate from './composer/PublishGate';
 import AIReviewPanel from './composer/AIReviewPanel';
 import {
     ArrowLeft, Eye, Edit, CheckCircle, AlertCircle, X,
-    Loader2, Sparkles, RotateCcw, PenTool
+    Loader2, Sparkles, RotateCcw, PenTool, Save
 } from 'lucide-react';
 
 export default function ContentStudio() {
@@ -329,6 +329,17 @@ export default function ContentStudio() {
         }
     };
 
+    const handleSaveDraft = async () => {
+        if (!lesson) return;
+        try {
+            await apiClient.patch(`/api/curriculum/lessons/${lesson.id}/`, { status: 'draft' });
+            showNotification('success', 'Draft saved.');
+            fetchAll();
+        } catch {
+            showNotification('error', 'Failed to save draft.');
+        }
+    };
+
     // ─────────────────────────────────────────────────────────────────────────
     // Optimistic block update
     // ─────────────────────────────────────────────────────────────────────────
@@ -503,6 +514,14 @@ export default function ContentStudio() {
                                     className="px-2.5 py-1.5 flex items-center gap-1 rounded-lg text-xs font-semibold transition-all bg-orange-50 text-custom-orange hover:bg-orange-100 disabled:opacity-40"
                                 >
                                     <RotateCcw size={12} /> Regenerate
+                                </button>
+                                <button
+                                    onClick={handleSaveDraft}
+                                    disabled={!lesson}
+                                    title="Save current state as draft"
+                                    className="px-2.5 py-1.5 flex items-center gap-1 rounded-lg text-xs font-semibold transition-all bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-40"
+                                >
+                                    <Save size={12} /> Save Draft
                                 </button>
                                 <button
                                     onClick={() => setIsPreview(!isPreview)}

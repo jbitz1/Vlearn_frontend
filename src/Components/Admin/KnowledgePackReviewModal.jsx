@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Check, Trash2, GripVertical, AlertCircle, ListTree, Plus } from 'lucide-react';
 import apiClient from '../../config/apiClient';
 
-export default function KnowledgePackReviewModal({ knowledgePack, onClose, onApprove }) {
+export default function KnowledgePackReviewModal({ knowledgePack, onClose, onApprove, onDelete }) {
     const [structure, setStructure] = useState(knowledgePack.extracted_structure || []);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -64,6 +64,26 @@ export default function KnowledgePackReviewModal({ knowledgePack, onClose, onApp
         }
     };
 
+    const handleDeleteExtraction = async () => {
+        if (!window.confirm('Are you sure you want to delete this extracted Knowledge Pack? This will delete all extracted chunks and remove the textbook.')) {
+            return;
+        }
+        try {
+            setLoading(true);
+            setError('');
+            await apiClient.delete(`/api/curriculum/knowledge-packs/${knowledgePack.id}/`);
+            if (onDelete) {
+                onDelete(knowledgePack.id);
+            } else {
+                onClose();
+            }
+        } catch (err) {
+            console.error('Error deleting knowledge pack:', err);
+            setError(err.response?.data?.detail || 'Failed to delete knowledge pack.');
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -94,7 +114,7 @@ export default function KnowledgePackReviewModal({ knowledgePack, onClose, onApp
                         <div className="text-center py-12 text-gray-500 bg-white rounded-lg border border-gray-200 border-dashed">
                             No structured content could be extracted deterministically.
                             <br />
-                            You can approve an empty structure and build it manually.
+                            You can approve an empty structure and build it manually, or delete this extraction.
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -187,26 +207,37 @@ export default function KnowledgePackReviewModal({ knowledgePack, onClose, onApp
                     </button>
                 </div>
 
-                <div className="p-4 border-t border-gray-200 bg-white flex justify-end gap-3">
+                <div className="p-4 border-t border-gray-200 bg-white flex items-center justify-between">
                     <button 
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        onClick={handleDeleteExtraction}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors disabled:opacity-50"
                         disabled={loading}
+                        title="Permanently delete this extraction and textbook"
                     >
-                        Cancel
+                        <Trash2 className="w-4 h-4" />
+                        Delete Extraction
                     </button>
-                    <button 
-                        onClick={handleApprove}
-                        className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-custom-blue hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
-                        disabled={loading}
-                    >
-                        {loading ? 'Processing...' : (
-                            <>
-                                <Check className="w-4 h-4" />
-                                Approve & Populate
-                            </>
-                        )}
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={onClose}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                            disabled={loading}
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            onClick={handleApprove}
+                            className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-custom-blue hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
+                            disabled={loading}
+                        >
+                            {loading ? 'Processing...' : (
+                                <>
+                                    <Check className="w-4 h-4" />
+                                    Approve & Populate
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

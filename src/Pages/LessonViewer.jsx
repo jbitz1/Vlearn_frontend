@@ -221,8 +221,19 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useContext(UserContext);
     const effectiveTopicId = (topicId && topicId !== 'undefined') ? topicId : lesson?.topic;
+    const searchParams = new URLSearchParams(location.search);
+    const fromParam = searchParams.get('from');
+    const isStudentPath = location.pathname.startsWith('/student');
+    const isTeacherPath = location.pathname.startsWith('/teacher');
+
+    // Context-aware navigation:
+    // If opened from a student path or with ?from=student, or in student preview mode, return to student routes.
+    // If explicitly opened with ?from=teacher or on /teacher path (without from=student), return to teacher routes.
+    const isTeacherView = fromParam === 'teacher' || (isTeacherPath && fromParam !== 'student');
+
     const presentation = PresentationEngine.composeExperience(lesson, lesson.blocks || [], lesson.assets || []);
     const pages = presentation.pages;
     const totalPages = pages.length;
@@ -341,14 +352,14 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                     onBackToTopic={() => {
                         const targetTopicId = effectiveTopicId || lesson?.topic;
                         if (targetTopicId && targetTopicId !== 'undefined') {
-                            if (user?.role === 'teacher') {
+                            if (isTeacherView) {
                                 navigate(`/teacher/topic/${targetTopicId}`);
                             } else {
                                 navigate(`/student/topic/${targetTopicId}`);
                             }
                         } else {
-                            if (user?.role === 'teacher') {
-                                navigate('/teacher/subjects');
+                            if (isTeacherView) {
+                                navigate('/teacher/my-teaching');
                             } else {
                                 navigate('/student/subjects');
                             }
@@ -380,11 +391,11 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                     <div className="flex-1 min-w-0">
                         {topicData && (
                             <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1 truncate">
-                                <button onClick={() => navigate(user?.role === 'teacher' ? '/teacher' : '/student/home')} className="hover:text-custom-blue transition-colors">Dashboard</button>
+                                <button onClick={() => navigate(isTeacherView ? '/teacher' : '/student/home')} className="hover:text-custom-blue transition-colors">Dashboard</button>
                                 <ChevronRight size={12} className="text-gray-300 shrink-0" />
-                                <span className="hover:text-custom-blue cursor-pointer transition-colors truncate" onClick={() => navigate(user?.role === 'teacher' ? `/teacher/subject/${topicData.subject}` : `/student/subject/${topicData.subject}`)}>{topicData.subject_name}</span>
+                                <span className="hover:text-custom-blue cursor-pointer transition-colors truncate" onClick={() => navigate(isTeacherView ? `/teacher/subject/${topicData.subject}` : `/student/subject/${topicData.subject}`)}>{topicData.subject_name}</span>
                                 <ChevronRight size={12} className="text-gray-300 shrink-0" />
-                                <span className="hover:text-custom-blue cursor-pointer transition-colors truncate" onClick={() => navigate(user?.role === 'teacher' ? `/teacher/topic/${effectiveTopicId}` : `/student/topic/${effectiveTopicId}`)}>{topicData.name}</span>
+                                <span className="hover:text-custom-blue cursor-pointer transition-colors truncate" onClick={() => navigate(isTeacherView ? `/teacher/topic/${effectiveTopicId}` : `/student/topic/${effectiveTopicId}`)}>{topicData.name}</span>
                             </div>
                         )}
                         <h1 className="text-xs sm:text-sm font-bold text-gray-800 truncate">{lesson.title}</h1>

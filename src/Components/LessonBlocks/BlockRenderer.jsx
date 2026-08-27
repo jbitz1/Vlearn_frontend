@@ -45,10 +45,15 @@ export const BlockRenderer = ({ block, onInteract }) => {
   switch (block.block_type) {
     // ── Phase 2 blueprint component types ─────────────────────────────────
     case 'learning_goal':        return <LearningGoalBlock       block={block} />;
+    case 'concept':
+    case 'concept_card':
     case 'concept_explanation':  
     case 'hook':
     case 'story':                return <ConceptExplanationBlock  block={block} />;
-    case 'definition_card':      return <DefinitionCardBlock      block={block} />;
+    case 'definition_card':      
+    case 'definitions':
+    case 'key_terms':
+    case 'vocabulary':           return <DefinitionCardBlock      block={block} />;
     case 'worked_example':       return <WorkedExampleBlock       block={block} />;
     case 'analogy':              return <AnalogyBlock             block={block} />;
     case 'common_misconception': return <CommonMisconceptionBlock block={block} />;
@@ -71,6 +76,7 @@ export const BlockRenderer = ({ block, onInteract }) => {
     case 'transition':           return <TransitionBlock          block={block} />;
     case 'comparison_table':     return <ComparisonTableBlock     block={block} />;
     case 'step_process':         return <StepProcessBlock         block={block} />;
+    case 'assessment':
     case 'knowledge_check':
     case 'multiple_choice':
     case 'true_false':
