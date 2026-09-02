@@ -161,6 +161,7 @@ export const studentCurriculumService = {
           const simTopic = (s.topic || '').toLowerCase();
           const simTitle = (s.title || '').toLowerCase();
           if (tLower.includes('acid') || tLower.includes('base') || tLower.includes('salt')) return simTopic.includes('acid') || simTitle.includes('acid') || simTitle.includes('solubility');
+          if (tLower.includes('mole') || tLower.includes('formula') || tLower.includes('titrat') || tLower.includes('volumetric')) return simTopic.includes('mole') || simTitle.includes('titrat') || simTitle.includes('mole') || simTopic.includes('titrat');
           if (tLower.includes('gas law')) return simTopic.includes('gas') || simTitle.includes('gas') || simTitle.includes('charles') || simTitle.includes('boyle') || simTitle.includes('graham') || simTitle.includes('diffusion');
           if (tLower.includes('energy') || tLower.includes('heat') || tLower.includes('therm')) return simTopic.includes('energy') || simTitle.includes('hess') || simTitle.includes('heat');
           if (tLower.includes('rate') || tLower.includes('reversible') || tLower.includes('equilibrium')) return simTopic.includes('rate') || simTitle.includes('rate') || simTitle.includes('collision') || simTitle.includes('haber') || simTitle.includes('equilibrium');

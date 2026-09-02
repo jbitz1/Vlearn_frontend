@@ -107,7 +107,12 @@ function computeMetrics(blocks, assets, concepts) {
 function extractText(content) {
     if (!content) return '';
     if (typeof content === 'string') {
-        try { return JSON.parse(content)?.text || content; } catch { return content; }
+        try {
+            const parsed = JSON.parse(content);
+            return parsed?.text || parsed?.content || parsed?.question || content;
+        } catch {
+            return content;
+        }
     }
-    return content.text || content.content || '';
+    return content.text || content.content || content.question || '';
 }

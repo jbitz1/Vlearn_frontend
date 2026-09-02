@@ -115,19 +115,23 @@ function computeChecks(blocks, assets, concepts, qualityReport) {
         checks.push({ severity: 'ok', label: 'Every concept has a learning goal' });
     }
 
-    // 2. Every concept has explanation
+    // 2. Every concept has educational content
     const conceptsWithoutExplanation = concepts.filter(c => {
-        const textBlocks = c.blocks.filter(b => ['concept_explanation', 'core_explanation', 'visual_learning', 'overview', 'definitions'].includes(b.block_type));
+        const textBlocks = c.blocks.filter(b => [
+            'concept_explanation', 'core_explanation', 'visual_learning', 'overview', 'definitions',
+            'worked_example', 'real_world_example', 'analogy', 'misconception', 'common_misconception',
+            'summary', 'knowledge_check', 'prediction', 'learning_goal', 'hook', 'reflection', 'key_takeaway'
+        ].includes(b.block_type));
         return textBlocks.length === 0;
     });
     if (conceptsWithoutExplanation.length > 0) {
         checks.push({
             severity: 'error',
-            label: `${conceptsWithoutExplanation.length} concept${conceptsWithoutExplanation.length > 1 ? 's' : ''} lack an explanation`,
-            detail: `e.g., "${conceptsWithoutExplanation[0].pageTitle}" needs core content.`
+            label: `${conceptsWithoutExplanation.length} concept${conceptsWithoutExplanation.length > 1 ? 's' : ''} lack content`,
+            detail: `e.g., "${conceptsWithoutExplanation[0].pageTitle}" needs lesson content.`
         });
     } else {
-        checks.push({ severity: 'ok', label: 'Every concept has an explanation' });
+        checks.push({ severity: 'ok', label: 'Every concept has learning content' });
     }
 
     // 3. Knowledge checks exist

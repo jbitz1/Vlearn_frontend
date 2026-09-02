@@ -118,6 +118,15 @@ const COMPREHENSIVE_SIMULATIONS = [
     topic: "Radioactivity",
     description: "Trigger nuclear fission in U-235 nuclei and adjust control rod positions to regulate neutron absorption and prevent thermal runaway.",
     status: "ACTIVE"
+  },
+  {
+    id: "chem_titration_volumetric_analysis",
+    key: "chem_titration_volumetric_analysis",
+    title: "Titration Lab — Volumetric Analysis",
+    subject: "CHEMISTRY",
+    topic: "The Mole: Formulae and Chemical Equations",
+    description: "Virtual volumetric analysis lab simulating direct acid-base, back titration, and redox titrations with real-time burette dropwise manipulation, stoichiometry, and equivalence detection.",
+    status: "ACTIVE"
   }
 ];
 

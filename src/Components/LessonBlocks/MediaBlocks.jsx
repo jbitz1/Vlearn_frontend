@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactPlayer from 'react-player';
 import { Image as ImageIcon, PlayCircle, Video, Settings, Loader2, FlaskConical } from 'lucide-react';
-import SimulationViewerContainer from '../../Pages/User/Simulations/SimulationViewerContainer';
+import LessonSimulationLauncherCard from './LessonSimulationLauncherCard';
 
 export const ImagePlaceholderBlock = ({ block }) => {
     const content = typeof block.content === 'string' ? JSON.parse(block.content) : block.content;
@@ -83,11 +83,7 @@ export const SimulationPlaceholderBlock = ({ block }) => {
         config: config
     };
 
-    return (
-        <div className="my-10">
-            <SimulationViewerContainer simulation={simObject} />
-        </div>
-    );
+    return <LessonSimulationLauncherCard simObject={simObject} />;
 };
 
 function tryJsonParse(str) {

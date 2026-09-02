@@ -266,6 +266,30 @@ export default function ContentStudio() {
         }
     };
 
+    const handleAddConcept = async () => {
+        if (!lesson) return;
+        try {
+            const maxPage = blocks.reduce((max, b) => Math.max(max, typeof b.page_number === 'number' ? b.page_number : 0), 0);
+            const newPageNum = maxPage + 1;
+            const maxOrder = blocks.length > 0 ? Math.max(...blocks.map(b => b.order || 0)) : 0;
+            
+            await apiClient.post(`/api/curriculum/lesson-blocks/`, {
+                lesson: lesson.id,
+                block_type: 'concept_explanation',
+                title: `Part ${newPageNum}: New Concept`,
+                content: { text: '' },
+                order: maxOrder + 1,
+                page_number: newPageNum,
+                page_title: `Part ${newPageNum}: New Concept`,
+            });
+            await fetchBlocks(lesson.id);
+            setActiveConceptId(newPageNum);
+            showNotification('success', `Created Card ${newPageNum}.`);
+        } catch {
+            showNotification('error', 'Failed to create new card.');
+        }
+    };
+
     const addBlockWithFile = async (pageNum, blockType, title, file) => {
         if (!lesson) return;
         
@@ -321,10 +345,17 @@ export default function ContentStudio() {
             showNotification('success', 'Lesson published successfully!');
             fetchAll();
         } catch (error) {
-            if (error.response?.data?.errors) {
-                showNotification('error', 'Publish failed:\n' + error.response.data.errors.join('\n'));
+            const data = error.response?.data;
+            if (data?.errors && Array.isArray(data.errors)) {
+                showNotification('error', 'Publish failed:\n' + data.errors.join('\n'));
+            } else if (data?.detail) {
+                showNotification('error', `Publish failed: ${data.detail}`);
+            } else if (data?.error) {
+                showNotification('error', `Publish failed: ${data.error}`);
+            } else if (data?.message) {
+                showNotification('error', `Publish failed: ${data.message}`);
             } else {
-                showNotification('error', 'Failed to publish lesson.');
+                showNotification('error', error.message || 'Failed to publish lesson.');
             }
         }
     };
@@ -536,6 +567,7 @@ export default function ContentStudio() {
                                 concepts={concepts}
                                 activeConceptId={activeConceptId}
                                 onSelectConcept={setActiveConceptId}
+                                onAddConcept={handleAddConcept}
                                 lessonTitle={lesson?.title}
                                 lessonStatus={lesson?.status}
                                 lessonVersion={lesson?.version}
@@ -647,39 +679,54 @@ function EmptyState({ icon, title, subtitle }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Logic: Intelligent Legacy Grouping
+// Logic: Intelligent Concept Grouping
 // ─────────────────────────────────────────────────────────────────────────────
 export function extractText(content) {
     if (!content) return '';
     if (typeof content === 'string') {
-        try { return JSON.parse(content)?.text || content; } catch { return content; }
+        try {
+            const parsed = JSON.parse(content);
+            return parsed?.text || parsed?.content || parsed?.question || content;
+        } catch {
+            return content;
+        }
     }
-    return content.text || content.content || '';
+    return content.text || content.content || content.question || '';
 }
 
-function groupBlocksIntoConcepts(blocks, assets = []) {
-    const pages = {};
-    const pageOrder = [];
-    
-    let v1ConceptCounter = 1;
-    let currentV1ConceptType = null;
-    
-    const getGroupType = (blockType) => {
-        if (['overview', 'introduction', 'objectives', 'learning_goal'].includes(blockType)) return 'intro';
-        if (['concept_explanation', 'core_explanation', 'visual_learning', 'worked_example', 'real_world_example', 'definitions', 'transition'].includes(blockType)) return 'core';
-        if (['experiment'].includes(blockType)) return 'activity';
-        if (['knowledge_check', 'revision_questions'].includes(blockType)) return 'assessment';
-        if (['summary', 'callout'].includes(blockType)) return 'summary';
-        return null;
-    };
+function cleanConceptTitle(raw, fallback) {
+    if (!raw) return fallback;
+    let clean = String(raw)
+        .replace(/^#+\s*/, '')
+        .replace(/\*\*/g, '')
+        .replace(/^-\s*/, '')
+        .replace(/^(?:Stage|Card|Part|Module|Concept|Step)\s*\d+[\s:\-–—\.]*/i, '')
+        .replace(/^\d+[\s:\-–—\.]+/i, '')
+        .trim();
+    return clean || fallback;
+}
 
-    blocks.forEach((block) => {
-        if (block.page_number != null) {
-            const pageNum = block.page_number;
-            if (!pages[pageNum]) {
-                pages[pageNum] = {
+function groupBlocksIntoConcepts(blocks = [], assets = []) {
+    if (!blocks || blocks.length === 0) return [];
+
+    // 1. Check if backend already assigned distinct page_number values (>= 2 pages)
+    const distinctBackendPages = new Set(
+        blocks.map((b) => b.page_number).filter((p) => p !== undefined && p !== null)
+    );
+
+    let pagesList = [];
+
+    if (distinctBackendPages.size >= 2) {
+        const pagesMap = {};
+        const pageOrder = [];
+
+        blocks.forEach((block) => {
+            const pageNum = block.page_number || 1;
+            if (!pagesMap[pageNum]) {
+                const fallback = block.title || `Part ${pageNum}`;
+                pagesMap[pageNum] = {
                     pageNum,
-                    pageTitle: block.page_title || `Concept ${pageNum}`,
+                    pageTitle: cleanConceptTitle(block.page_title || block.metadata?.concept_group || fallback, fallback),
                     blocks: [],
                     isV1: false,
                     goal: '',
@@ -687,61 +734,104 @@ function groupBlocksIntoConcepts(blocks, assets = []) {
                 };
                 pageOrder.push(pageNum);
             }
-            pages[pageNum].blocks.push(block);
-        } else {
-            const groupType = getGroupType(block.block_type);
-            
-            if (groupType && groupType !== currentV1ConceptType) {
-                currentV1ConceptType = groupType;
-                v1ConceptCounter++;
-            }
-            if (!currentV1ConceptType) {
-                currentV1ConceptType = 'core';
-                v1ConceptCounter++;
-            }
+            pagesMap[pageNum].blocks.push(block);
+        });
 
-            const pageNum = `v1_${v1ConceptCounter}`;
-            if (!pages[pageNum]) {
-                let title = `Concept ${v1ConceptCounter}`;
-                if (currentV1ConceptType === 'intro') title = 'Introduction & Goals';
-                if (currentV1ConceptType === 'core') title = 'Core Concept';
-                if (currentV1ConceptType === 'activity') title = 'Activity / Experiment';
-                if (currentV1ConceptType === 'assessment') title = 'Knowledge Check';
-                if (currentV1ConceptType === 'summary') title = 'Summary & Key Points';
+        pagesList = pageOrder.sort((a, b) => (typeof a === 'number' && typeof b === 'number' ? a - b : 0)).map((k) => pagesMap[k]);
+    } else {
+        // 2. Adaptive Multi-Card Fallback (when backend has <= 1 distinct page number)
+        const pages = [];
+        let currentBlocks = [];
 
-                pages[pageNum] = {
+        const BREAK_TRIGGER_TYPES = new Set([
+            'concept_explanation', 'core_explanation', 'worked_example',
+            'real_world_example', 'experiment', 'misconception', 'common_misconception',
+            'knowledge_check', 'revision_questions', 'multiple_choice', 'true_false',
+            'short_answer', 'summary', 'reflection', 'key_takeaway', 'suggested_simulation'
+        ]);
+
+        blocks.forEach((block) => {
+            const bt = (block.block_type || '').toLowerCase();
+            const isMedia = [
+                'image', 'diagram', 'video', 'youtube', 'gif',
+                'suggested_diagram', 'suggested_image', 'suggested_video',
+                'image_placeholder', 'diagram_placeholder', 'video_ref',
+                'repository_asset', 'simulation_placeholder'
+            ].includes(bt);
+
+            const shouldBreak = currentBlocks.length > 0 && !isMedia && (
+                BREAK_TRIGGER_TYPES.has(bt) ||
+                currentBlocks.length >= 3
+            );
+
+            if (shouldBreak) {
+                const firstBlock = currentBlocks[0];
+                const pageNum = pages.length + 1;
+                const pageTitle = cleanConceptTitle(
+                    firstBlock?.page_title || firstBlock?.metadata?.concept_group || firstBlock?.title || `Part ${pageNum}`,
+                    `Part ${pageNum}`
+                );
+                pages.push({
                     pageNum,
-                    pageTitle: title,
-                    blocks: [],
+                    pageTitle,
+                    blocks: currentBlocks,
                     isV1: true,
                     goal: '',
                     assets: [],
-                };
-                pageOrder.push(pageNum);
+                });
+                currentBlocks = [];
             }
-            pages[pageNum].blocks.push(block);
-        }
-    });
 
-    const result = pageOrder.map((k) => pages[k]);
-    
-    result.forEach(concept => {
+            currentBlocks.push(block);
+        });
+
+        if (currentBlocks.length > 0) {
+            const firstBlock = currentBlocks[0];
+            const pageNum = pages.length + 1;
+            const pageTitle = cleanConceptTitle(
+                firstBlock?.page_title || firstBlock?.metadata?.concept_group || firstBlock?.title || `Part ${pageNum}`,
+                `Part ${pageNum}`
+            );
+            pages.push({
+                pageNum,
+                pageTitle,
+                blocks: currentBlocks,
+                isV1: true,
+                goal: '',
+                assets: [],
+            });
+        }
+
+        pagesList = pages;
+    }
+
+    pagesList.forEach(concept => {
         const goalBlock = concept.blocks.find(b => ['learning_goal', 'objectives'].includes(b.block_type));
         if (goalBlock) {
             concept.goal = extractText(goalBlock.content);
         } else {
-            const expBlock = concept.blocks.find(b => ['concept_explanation', 'core_explanation', 'overview'].includes(b.block_type));
-            if (expBlock) {
-                const text = extractText(expBlock.content);
-                concept.goal = text ? text.substring(0, 150) + '...' : 'No explicit goal defined';
+            const metaGoalBlock = concept.blocks.find(b => b.metadata?.student_goal);
+            if (metaGoalBlock) {
+                concept.goal = metaGoalBlock.metadata.student_goal;
             } else {
-                concept.goal = 'No explicit goal defined';
+                const expBlock = concept.blocks.find(b => [
+                    'concept_explanation', 'core_explanation', 'overview',
+                    'worked_example', 'real_world_example', 'analogy',
+                    'misconception', 'common_misconception', 'summary',
+                    'knowledge_check', 'prediction', 'key_takeaway'
+                ].includes(b.block_type));
+                if (expBlock) {
+                    const text = extractText(expBlock.content);
+                    concept.goal = text ? (text.substring(0, 150) + (text.length > 150 ? '...' : '')) : (concept.pageTitle || 'Core Concept Goal');
+                } else {
+                    concept.goal = concept.pageTitle || 'Core Concept Goal';
+                }
             }
         }
         
         const conceptBlockIds = concept.blocks.map(b => b.id);
         concept.assets = assets.filter(a => 
-            a.blocks && a.blocks.some(bId => conceptBlockIds.includes(bId))
+            a.blocks && a.blocks.some(bId => conceptBlockIds.includes(bId) || conceptBlockIds.includes(bId?.id))
         );
         
         concept.repoUsage = concept.assets.filter(a => a.source_type === 'knowledge_repository').length;
@@ -759,5 +849,5 @@ function groupBlocksIntoConcepts(blocks, assets = []) {
         }
     });
 
-    return result;
+    return pagesList;
 }

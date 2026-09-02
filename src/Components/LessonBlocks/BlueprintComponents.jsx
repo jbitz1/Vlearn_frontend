@@ -6,7 +6,7 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import BASE_URL from '../../config';
 import { ContentNormalizer } from '../../utils/ContentNormalizer';
-import SimulationViewerContainer from '../../Pages/User/Simulations/SimulationViewerContainer';
+import LessonSimulationLauncherCard from './LessonSimulationLauncherCard';
 import {
   Target, Book, PenTool, Lightbulb, AlertTriangle, XCircle, Zap, Star, BrainCircuit, Globe, Hand, FlaskConical, Sparkles, CheckCircle2, PlayCircle, BarChart, Image as ImageIcon, MonitorPlay, Link2, BookOpen, Check, X, Clock
 } from 'lucide-react';
@@ -1502,38 +1502,51 @@ export const InteractiveSimulationBlock = ({ block }) => {
   const metadata = block?.metadata || {};
   const asset = block?.assets && block.assets.length > 0 ? block.assets[0] : null;
 
-  const simKey = metadata.simulation_key || content?.simulation_key || asset?.metadata?.simulation_key || block?.simulation_key || metadata.key || content?.key;
-  const archetype = metadata.archetype || content?.archetype || asset?.metadata?.archetype || block?.archetype || simKey;
+  let simKey = metadata.simulation_key || content?.simulation_key || asset?.metadata?.simulation_key || block?.simulation_key || metadata.key || content?.key;
+  let archetype = metadata.archetype || content?.archetype || asset?.metadata?.archetype || block?.archetype || simKey;
 
-  if (simKey || archetype) {
-    const simObject = {
-      title: title || 'Interactive Simulation',
-      key: simKey || archetype,
-      archetype: archetype || simKey,
-      subject: metadata.subject || content?.subject || asset?.metadata?.subject || 'CHEMISTRY',
-      topic: metadata.concept_group || metadata.topic || content?.topic || 'Interactive Simulation',
-      config: metadata.config || content?.config || asset?.metadata?.config || {}
-    };
-    return (
-      <div className="my-8">
-        <SimulationViewerContainer simulation={simObject} />
-      </div>
-    );
+  const combinedText = ((content?.text || '') + ' ' + title + ' ' + (block?.page_title || '')).toLowerCase();
+
+  if (!simKey && !archetype) {
+    if (combinedText.includes('lens') || combinedText.includes('optics') || combinedText.includes('ray tracing') || combinedText.includes('refraction')) {
+      simKey = 'optics';
+      archetype = 'optics';
+    } else if (combinedText.includes('crt') || combinedText.includes('cathode ray') || combinedText.includes('oscilloscope') || combinedText.includes('electron gun')) {
+      simKey = 'crt';
+      archetype = 'crt';
+    } else if (combinedText.includes('x-ray') || combinedText.includes('xray') || combinedText.includes('coolidge')) {
+      simKey = 'x_ray';
+      archetype = 'x_ray';
+    } else if (combinedText.includes('photoelectric') || combinedText.includes('photon') || combinedText.includes('work function') || combinedText.includes('stopping potential')) {
+      simKey = 'photoelectric';
+      archetype = 'photoelectric';
+    } else if (combinedText.includes('decay') || combinedText.includes('half-life') || combinedText.includes('radioactivity')) {
+      simKey = 'chem_radioactive_decay_half_life';
+      archetype = 'radioactive_decay_half_life';
+    } else if (combinedText.includes('fission') || combinedText.includes('fusion') || combinedText.includes('nuclear chain')) {
+      simKey = 'chem_nuclear_fission_chain_reaction';
+      archetype = 'nuclear_fission_chain_reaction';
+    } else if (combinedText.includes('circular motion') || combinedText.includes('centripetal')) {
+      simKey = 'freefall';
+      archetype = 'freefall';
+    } else if (combinedText.includes('buoyancy') || combinedText.includes('archimedes') || combinedText.includes('floatation')) {
+      simKey = 'salt_solubility_precipitation';
+      archetype = 'salt_solubility_precipitation';
+    } else {
+      simKey = 'optics';
+      archetype = 'optics';
+    }
   }
 
-  const text = ((content?.text || '') + ' ' + title).toLowerCase();
+  const simObject = {
+    title: title || 'Interactive Simulation',
+    key: simKey || archetype || 'optics',
+    archetype: archetype || simKey || 'optics',
+    subject: metadata.subject || content?.subject || asset?.metadata?.subject || 'PHYSICS',
+    topic: metadata.concept_group || metadata.topic || content?.topic || 'Interactive Simulation',
+    config: metadata.config || content?.config || asset?.metadata?.config || {}
+  };
 
-  if (text.includes('x-ray') || text.includes('xray') || text.includes('coolidge')) {
-    return <XRaySimulationSandbox block={block} />;
-  }
-  if (text.includes('crt') || text.includes('oscilloscope') || text.includes('cathode ray')) {
-    return <CRTSimulationSandbox block={block} />;
-  }
-  if (text.includes('photoelectric') || text.includes('work function') || text.includes('quantum')) {
-    return <PhotoelectricSimulationSandbox block={block} />;
-  }
-
-  // Fallback to XRaySimulationSandbox for general simulation blocks
-  return <XRaySimulationSandbox block={block} />;
+  return <LessonSimulationLauncherCard simObject={simObject} />;
 };
 

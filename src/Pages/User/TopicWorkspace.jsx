@@ -4,7 +4,7 @@ import { ChevronLeft, BookOpen, Clock, Play, CheckCircle2, RotateCcw, Cpu, Video
 import studentCurriculumService from '../../services/studentCurriculumService';
 import UserContext from '../../Context/UserContext';
 import ProgressCircle from '../../Components/Common/ProgressCircle';
-import SimulationViewerContainer from './Simulations/SimulationViewerContainer';
+import FullscreenSimulationModal from '../../Components/Simulations/FullscreenSimulationModal';
 
 export const TopicWorkspace = () => {
   const { topicId } = useParams();
@@ -316,19 +316,11 @@ export const TopicWorkspace = () => {
       )}
 
       {/* Modal for Interactive Simulation */}
-      {selectedSimulation && (
-        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-5xl w-full p-4 sm:p-6 md:p-8 shadow-2xl my-4 sm:my-8 relative">
-            <button
-              onClick={() => setSelectedSimulation(null)}
-              className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors z-10 cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <SimulationViewerContainer simulation={selectedSimulation} />
-          </div>
-        </div>
-      )}
+      <FullscreenSimulationModal
+        simulation={selectedSimulation}
+        isOpen={Boolean(selectedSimulation)}
+        onClose={() => setSelectedSimulation(null)}
+      />
 
       {/* Modal for Experiment Video */}
       {selectedExperiment && (

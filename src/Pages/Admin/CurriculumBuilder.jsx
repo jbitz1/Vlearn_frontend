@@ -124,10 +124,23 @@ export default function CurriculumBuilder() {
     useEffect(() => {
         if (selectedSubject) {
             fetchData(`/api/curriculum/topics/?subject=${selectedSubject.id}`, setTopics);
-            apiClient.get(`/api/curriculum/knowledge-packs/?subject=${selectedSubject.id}`).then(res => setSubjectPacks(res.data.results || res.data)).catch(console.error);
+            apiClient.get(`/api/curriculum/knowledge-packs/?subject=${selectedSubject.id}`).then(res => {
+                const packs = res.data.results || res.data || [];
+                setSubjectPacks(packs);
+                // Automatically activate the latest pack awaiting review or processing
+                const pending = packs.find(p => p.status === 'review' || p.status === 'processing');
+                if (pending) {
+                    setActivePack(pending);
+                } else if (packs.length > 0) {
+                    setActivePack(packs[0]);
+                } else {
+                    setActivePack(null);
+                }
+            }).catch(console.error);
         } else {
             setTopics([]);
             setSubjectPacks([]);
+            setActivePack(null);
         }
     }, [selectedSubject]);
 
@@ -371,20 +384,33 @@ export default function CurriculumBuilder() {
                             <div className="mb-3 mt-4">
                                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 border-b border-gray-200 pb-1">Recent Repository</div>
                                 {subjectPacks.map(pack => (
-                                    <div key={pack.id} className="text-xs text-gray-600 py-1.5 flex items-center justify-between gap-1 group">
-                                        <div className="flex items-center gap-1.5 truncate">
+                                    <div key={pack.id} className="text-xs text-gray-600 py-1.5 flex items-center justify-between gap-1 group hover:bg-gray-50 px-1 rounded">
+                                        <div 
+                                            onClick={() => setActivePack({...pack, showReview: pack.status === 'review'})}
+                                            className="flex items-center gap-1.5 truncate cursor-pointer flex-1"
+                                        >
                                             <BookOpen className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                                             <span className="truncate text-gray-700 font-medium" title={pack.file ? pack.file.split('/').pop() : `Pack ${pack.id}`}>
                                                 {pack.file ? pack.file.split('/').pop() : `Pack ${pack.id}`}
                                             </span>
                                         </div>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handleReprocessPack(pack.id); }}
-                                            className="text-[10px] text-custom-blue hover:text-blue-800 font-medium shrink-0 bg-blue-50 hover:bg-blue-100 px-1.5 py-0.5 rounded border border-blue-200 transition-colors"
-                                            title="Re-extract topics using updated parser"
-                                        >
-                                            Re-extract
-                                        </button>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            {pack.status === 'review' && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setActivePack({...pack, showReview: true}); }}
+                                                    className="text-[10px] text-custom-orange hover:text-orange-700 font-medium bg-orange-50 hover:bg-orange-100 px-1.5 py-0.5 rounded border border-orange-200 transition-colors"
+                                                >
+                                                    Review
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleReprocessPack(pack.id); }}
+                                                className="text-[10px] text-custom-blue hover:text-blue-800 font-medium bg-blue-50 hover:bg-blue-100 px-1.5 py-0.5 rounded border border-blue-200 transition-colors"
+                                                title="Re-extract topics using updated parser"
+                                            >
+                                                Re-extract
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-3 border-b border-gray-200 pb-1 mb-2">Upload New</div>

@@ -1,11 +1,11 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { 
   ChevronLeft, BookOpen, Video, Cpu, Play, 
   HelpCircle, ArrowRight, ExternalLink 
 } from 'lucide-react';
 import ReactPlayer from 'react-player';
-import SimulationViewerContainer from './Simulations/SimulationViewerContainer';
+import FullscreenSimulationModal from '../../Components/Simulations/FullscreenSimulationModal';
 import studentCurriculumService from '../../services/studentCurriculumService';
 import UserContext from '../../Context/UserContext';
 import ProgressCircle from '../../Components/Common/ProgressCircle';
@@ -69,15 +69,71 @@ export const SubjectWorkspace = () => {
     setSelectedSimulation(sim);
   };
 
-  // Group simulations by Curriculum Topic
-  const simulationsByTopic = simulations.reduce((acc, sim) => {
-    const topicName = sim.topic || 'General STEM Simulations';
-    if (!acc[topicName]) {
-      acc[topicName] = [];
+  // Filter and group simulations strictly matching this subject's actual curriculum topics
+  const { simulationsByTopic, matchedSimulationsCount } = useMemo(() => {
+    if (!topics || topics.length === 0 || !simulations || simulations.length === 0) {
+      return { simulationsByTopic: {}, matchedSimulationsCount: 0 };
     }
-    acc[topicName].push(sim);
-    return acc;
-  }, {});
+
+    const grouped = {};
+    let totalMatched = 0;
+    const assignedSimKeys = new Set();
+
+    topics.forEach((topic) => {
+      const tRaw = (topic.name || '').replace(/^Topic\s*\d+\s*:\s*/i, '').trim().toLowerCase();
+
+      const matching = simulations.filter((sim) => {
+        if (assignedSimKeys.has(sim.key || sim.id)) return false;
+        const simTopic = (sim.topic || '').toLowerCase();
+        const simTitle = (sim.title || '').toLowerCase();
+
+        // Exact topic title match
+        if (simTopic.includes(tRaw) || tRaw.includes(simTopic)) return true;
+
+        // Specific Chemistry Form 4 vs Form 3 keywords
+        if (tRaw.includes('acid') || tRaw.includes('salt')) {
+          return simTopic.includes('acid') || simTopic.includes('salt') || simTitle.includes('acid') || simTitle.includes('solubility');
+        }
+        if (tRaw.includes('gas law')) {
+          return simTopic.includes('gas') || simTitle.includes('gas') || simTitle.includes('charles') || simTitle.includes('boyle') || simTitle.includes('graham');
+        }
+        if (tRaw.includes('mole') || tRaw.includes('formula') || tRaw.includes('titrat')) {
+          return simTopic.includes('mole') || simTopic.includes('titrat') || simTitle.includes('titrat');
+        }
+        if (tRaw.includes('energy') || tRaw.includes('heat')) {
+          return simTopic.includes('energy') || simTitle.includes('hess') || simTitle.includes('heat');
+        }
+        if (tRaw.includes('rate') || tRaw.includes('reversible')) {
+          return simTopic.includes('rate') || simTitle.includes('collision') || simTitle.includes('haber') || simTitle.includes('equilibrium');
+        }
+        if (tRaw.includes('electro')) {
+          return simTopic.includes('electro') || simTitle.includes('potential') || simTitle.includes('discharge') || simTitle.includes('plating') || simTitle.includes('voltaic') || simTitle.includes('electrolysis');
+        }
+        if (tRaw.includes('metal')) {
+          return simTopic.includes('metal') || simTitle.includes('reactivity');
+        }
+        if (tRaw.includes('organic chemistry ii') || tRaw.includes('alkanol')) {
+          return simTopic.includes('organic chemistry ii') || simTitle.includes('micelle') || simTitle.includes('functional group');
+        }
+        if (tRaw.includes('organic chemistry i') || tRaw.includes('hydrocarbon')) {
+          return simTopic.includes('organic chemistry i');
+        }
+        if (tRaw.includes('radioactivity')) {
+          return simTopic.includes('radioactivity') || simTitle.includes('decay') || simTitle.includes('fission');
+        }
+
+        return false;
+      });
+
+      if (matching.length > 0) {
+        matching.forEach((s) => assignedSimKeys.add(s.key || s.id));
+        grouped[topic.name] = matching;
+        totalMatched += matching.length;
+      }
+    });
+
+    return { simulationsByTopic: grouped, matchedSimulationsCount: totalMatched };
+  }, [topics, simulations]);
 
   const subjectProgress = studentCurriculumService.getSubjectProgress(subjectId, topics, user?.id);
 
@@ -95,20 +151,11 @@ export const SubjectWorkspace = () => {
         className="flex items-center text-xs sm:text-sm font-bold text-custom-blue hover:underline cursor-pointer min-h-[40px]"
       >
         <ChevronLeft className="w-4 h-4 mr-1" />
-        {selectedSimulation
-          ? `Back to ${subject?.name || 'Subject'} Simulations`
-          : 'Back to Subjects'}
+        Back to Subjects
       </button>
 
-      {/* If a simulation is selected, render self-contained SimulationViewerContainer */}
-      {selectedSimulation ? (
-        <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-xs sm:shadow-sm">
-          <SimulationViewerContainer simulation={selectedSimulation} />
-        </div>
-      ) : (
-        <>
-          {/* Subject Header */}
-          <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-xs sm:shadow-sm">
+      {/* Subject Header */}
+      <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-xs sm:shadow-sm">
             <div className="flex items-start justify-between flex-wrap gap-4 sm:gap-6">
               <div className="flex-1 min-w-[200px]">
                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900">
@@ -143,7 +190,7 @@ export const SubjectWorkspace = () => {
               {[
                 { id: 'topics', label: 'Topics', icon: BookOpen, count: topics.length, show: true },
                 { id: 'experiments', label: 'Experiments', icon: Video, count: experiments.length, show: experiments.length > 0 },
-                { id: 'simulations', label: 'Simulations', icon: Cpu, count: simulations.length, show: simulations.length > 0 },
+                { id: 'simulations', label: 'Simulations', icon: Cpu, count: matchedSimulationsCount, show: matchedSimulationsCount > 0 },
                 { id: 'practice', label: 'Practice', icon: HelpCircle, count: quizAttempts.length, show: true },
               ].filter(tab => tab.show).map((tab) => (
                 <button
@@ -368,8 +415,13 @@ export const SubjectWorkspace = () => {
               )}
             </div>
           )}
-        </>
-      )}
+
+      {/* Fullscreen Simulation Modal */}
+      <FullscreenSimulationModal
+        simulation={selectedSimulation}
+        isOpen={Boolean(selectedSimulation)}
+        onClose={() => setSelectedSimulation(null)}
+      />
 
       {/* Modal for Experiment Video */}
       {selectedExperiment && (

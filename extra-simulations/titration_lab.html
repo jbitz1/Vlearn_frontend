@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Titration Lab — Volumetric Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6FAFB;
+    --panel:#EAF7FC;
+    --panel-line:#CFE7EF;
+    --ink:#15303C;
+    --ink-soft:#4A6572;
+    --ink-faint:#8AA3AC;
+    --line:#C6DCE3;
+    --orange:#FF8400;
+    --orange-dark:#B85E00;
+    --orange-pale:#FFE7CC;
+    --white:#FFFFFF;
+    --glass:#E4F1F5;
+    --glass-line:#9FC3CE;
+    --good:#2E7D5B;
+    --good-bg:#E1F3EA;
+    --bad:#C0392B;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'IBM Plex Sans',sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'Newsreader',serif;font-weight:500;margin:0;}
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 28px;}
+
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    flex-wrap:wrap;gap:12px;margin-bottom:16px;
+  }
+  .title-block h1{font-size:22px;letter-spacing:.2px;}
+  .title-block p{margin:2px 0 0;font-size:13px;color:var(--ink-soft);}
+
+  .mode-tabs{display:flex;gap:6px;background:var(--white);border:1px solid var(--line);border-radius:10px;padding:4px;}
+  .mode-tabs button{
+    border:none;background:transparent;padding:8px 14px;border-radius:7px;
+    font-family:'IBM Plex Sans';font-size:13px;font-weight:500;color:var(--ink-soft);
+    cursor:pointer;transition:.15s;
+  }
+  .mode-tabs button.active{background:var(--ink);color:var(--white);}
+  .mode-tabs button:hover:not(.active){background:var(--panel);}
+
+  .reset-btn{
+    border:1px solid var(--line);background:var(--white);color:var(--ink-soft);
+    padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'IBM Plex Sans';
+  }
+  .reset-btn:hover{border-color:var(--ink-soft);color:var(--ink);}
+
+  .stage{
+    display:grid;
+    grid-template-columns: 340px 1fr 260px;
+    gap:16px;
+    align-items:stretch;
+  }
+  @media (max-width: 920px){
+    .stage{grid-template-columns:1fr;}
+  }
+
+  .card{
+    background:var(--white);border:1px solid var(--line);border-radius:14px;
+    padding:16px;
+  }
+
+  /* Apparatus card */
+  .apparatus{
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    position:relative;min-height:420px;
+  }
+  .apparatus svg{width:100%;max-width:300px;height:auto;}
+
+  .readouts{
+    position:absolute; top:16px; left:16px; right:16px;
+    display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace;
+  }
+  .readout-pill{
+    background:var(--panel); border:1px solid var(--panel-line); border-radius:8px;
+    padding:5px 9px; font-size:12px; color:var(--ink);
+  }
+  .readout-pill b{font-weight:600;}
+
+  /* Center: reaction narrative + controls */
+  .center-col{display:flex;flex-direction:column;gap:14px;}
+
+  .status-card{padding:16px 18px;}
+  .status-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin-bottom:6px;}
+  .status-text{font-size:15px;line-height:1.5;color:var(--ink);}
+  .status-text b{color:var(--orange-dark);}
+  .endpoint-flag{
+    display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:5px 10px;
+    border-radius:7px;font-size:12.5px;font-weight:500;
+  }
+  .endpoint-flag.at{background:var(--good-bg);color:var(--good);}
+  .endpoint-flag.before{background:var(--panel);color:var(--ink-soft);}
+  .endpoint-flag.after{background:#FCEBEA;color:var(--bad);}
+
+  .control-card{padding:16px 18px;}
+  .control-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .control-row:last-child{margin-bottom:0;}
+  .control-row label{font-size:12.5px;color:var(--ink-soft);min-width:78px;}
+  input[type=range]{flex:1;accent-color:var(--orange);height:4px;}
+  .num-in{
+    width:64px;padding:6px 7px;border:1px solid var(--line);border-radius:6px;
+    font-family:'IBM Plex Mono';font-size:13px;text-align:right;
+  }
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .btn{
+    border:1px solid var(--line); background:var(--white); color:var(--ink);
+    padding:8px 13px; border-radius:8px; font-size:12.5px; font-weight:500;
+    cursor:pointer; font-family:'IBM Plex Sans'; transition:.12s;
+  }
+  .btn:hover{border-color:var(--ink-soft);}
+  .btn.primary{background:var(--orange);border-color:var(--orange);color:var(--white);}
+  .btn.primary:hover{background:var(--orange-dark);border-color:var(--orange-dark);}
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.4;cursor:default;transform:none;}
+
+  /* Right: data + tabs */
+  .side-col{display:flex;flex-direction:column;gap:14px;}
+  .info-card{padding:14px 16px;}
+  .info-title{font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;}
+  .info-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px dashed var(--panel-line);}
+  .info-row:last-child{border-bottom:none;}
+  .info-row span:first-child{color:var(--ink-soft);}
+  .info-row span:last-child{font-family:'IBM Plex Mono';font-weight:500;}
+
+  .trial-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .trial-table th{text-align:left;color:var(--ink-faint);font-weight:500;padding:4px 4px;border-bottom:1px solid var(--panel-line);}
+  .trial-table td{padding:5px 4px;font-family:'IBM Plex Mono';border-bottom:1px dashed var(--panel-line);}
+  .trial-empty{font-size:12px;color:var(--ink-faint);padding:8px 0;}
+
+  .tabbar{display:flex;gap:4px;background:var(--panel);border-radius:9px;padding:3px;margin-bottom:0;}
+  .tabbar button{
+    flex:1;border:none;background:transparent;padding:7px 4px;border-radius:6px;
+    font-size:11.5px;font-weight:500;color:var(--ink-soft);cursor:pointer;font-family:'IBM Plex Sans';
+  }
+  .tabbar button.active{background:var(--white);color:var(--ink);}
+
+  .panel-body{font-size:13px;line-height:1.55;color:var(--ink);padding-top:10px;}
+  .panel-body ol,.panel-body ul{margin:6px 0;padding-left:18px;}
+  .panel-body li{margin-bottom:4px;}
+
+  .predict-opts{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+  .predict-opts button{
+    text-align:left;border:1px solid var(--line);background:var(--white);
+    padding:8px 10px;border-radius:8px;font-size:12.5px;cursor:pointer;font-family:'IBM Plex Sans';
+  }
+  .predict-opts button:hover{border-color:var(--orange);}
+  .predict-opts button.correct{border-color:var(--good);background:var(--good-bg);}
+  .predict-opts button.wrong{border-color:var(--bad);background:#FCEBEA;}
+
+  .challenge-box{padding-top:8px;}
+  .challenge-goal{font-size:13px;background:var(--orange-pale);color:var(--orange-dark);padding:8px 10px;border-radius:8px;margin-bottom:8px;}
+  .challenge-result{font-size:13px;margin-top:8px;padding:8px 10px;border-radius:8px;}
+  .challenge-result.win{background:var(--good-bg);color:var(--good);}
+  .challenge-result.lose{background:#FCEBEA;color:var(--bad);}
+
+  .drop{
+    position:absolute; width:5px; height:9px; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;
+    left:50%; transform:translateX(-50%); top:150px; opacity:0; pointer-events:none;
+  }
+  @keyframes fall{
+    0%{opacity:1; top:150px;}
+    85%{opacity:1;}
+    100%{opacity:0; top:245px;}
+  }
+  .drop.falling{animation:fall .45s ease-in forwards;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="title-block">
+      <h1>Titration Lab</h1>
+      <p>Volumetric analysis — direct, back and redox titration</p>
+    </div>
+    <div class="mode-tabs" id="modeTabs">
+      <button data-mode="direct" class="active">Direct</button>
+      <button data-mode="back">Back</button>
+      <button data-mode="redox">Redox</button>
+    </div>
+    <button class="reset-btn" id="resetBtn">Reset apparatus</button>
+  </div>
+
+  <div class="stage">
+
+    <div class="card apparatus">
+      <div class="readouts">
+        <span class="readout-pill">Burette <b id="buretteVal">0.0</b> cm3</span>
+        <span class="readout-pill">Titre <b id="titreVal">0.0</b> cm3</span>
+      </div>
+      <svg id="rig" viewBox="0 0 300 420">
+        <rect x="128" y="20" width="44" height="200" rx="4" fill="var(--glass)" stroke="var(--glass-line)" stroke-width="1.5"/>
+        <g id="buretteTicks"></g>
+        <rect id="buretteLiquid" x="130" y="24" width="40" height="0" fill="#B7DDE8"/>
+        <path d="M143 220 L157 220 L152 236 L148 236 Z" fill="var(--glass)" stroke="var(--glass-line)" stroke-width="1.5"/>
+        <line id="stopcock" x1="150" y1="228" x2="150" y2="228" stroke="var(--ink-soft)" stroke-width="2"/>
+        <circle id="dropShape" class="drop" r="3"/>
+        <path d="M110 260 L190 260 L172 330 Q150 348 128 330 Z"
+              fill="var(--glass)" stroke="var(--glass-line)" stroke-width="1.5"/>
+        <path id="flaskLiquid" d="M118 300 L182 300 L172 330 Q150 348 128 330 Z" fill="#F3C7DC"/>
+        <rect x="140" y="240" width="20" height="24" fill="var(--glass)" stroke="var(--glass-line)" stroke-width="1.5"/>
+        <text x="150" y="400" text-anchor="middle" font-family="IBM Plex Sans" font-size="12" fill="var(--ink-soft)" id="analyteLabel">25.0 cm3 NaOH (0.1 M) + phenolphthalein</text>
+      </svg>
+    </div>
+
+    <div class="center-col">
+      <div class="card status-card">
+        <div class="status-label">What's happening</div>
+        <div class="status-text" id="statusText">You have not added any titrant yet. Turn the stopcock to release acid, drop by drop, into the flask.</div>
+        <span class="endpoint-flag before" id="endpointFlag">Before end point</span>
+      </div>
+
+      <div class="card control-card">
+        <div class="control-row">
+          <label>Stopcock</label>
+          <input type="range" id="volSlider" min="0" max="50" step="0.1" value="0">
+          <input type="number" class="num-in" id="volInput" min="0" max="50" step="0.1" value="0.0">
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="dropBtn">+0.1 cm3 drop</button>
+          <button class="btn" id="mlBtn">+1.0 cm3</button>
+          <button class="btn" id="fastBtn">Fast add</button>
+          <button class="btn primary" id="recordBtn">Record titre</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col">
+      <div class="card info-card">
+        <div class="info-title">Live measurements</div>
+        <div class="info-row"><span>Titrant</span><span id="titrantName">HCl, 0.1 M</span></div>
+        <div class="info-row"><span>Moles titrant added</span><span id="molesAdded">0.0000 mol</span></div>
+        <div class="info-row"><span>Moles analyte reacted</span><span id="molesReacted">0.0000 mol</span></div>
+        <div class="info-row"><span>Indicator</span><span id="indicatorName">Phenolphthalein</span></div>
+      </div>
+
+      <div class="card info-card">
+        <div class="info-title">Titre readings</div>
+        <table class="trial-table" id="trialTable">
+          <thead><tr><th>Trial</th><th>Titre / cm3</th></tr></thead>
+          <tbody id="trialBody"></tbody>
+        </table>
+        <div class="trial-empty" id="trialEmpty">No trials recorded yet.</div>
+        <div class="info-row" id="avgRow" style="display:none;"><span>Average titre</span><span id="avgTitre">—</span></div>
+      </div>
+
+      <div class="card">
+        <div class="tabbar" id="tabbar">
+          <button data-tab="predict" class="active">Predict</button>
+          <button data-tab="explain">Explain</button>
+          <button data-tab="challenge">Challenge</button>
+        </div>
+        <div class="panel-body" id="tabPredict"></div>
+        <div class="panel-body" id="tabExplain" style="display:none;"></div>
+        <div class="panel-body" id="tabChallenge" style="display:none;"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const MODES = {
+  direct: {
+    label: "Direct titration — NaOH neutralised by HCl",
+    analyteLabel: "25.0 cm3 NaOH (0.1 M) + phenolphthalein",
+    titrantName: "HCl, 0.1 M",
+    titrantConc: 0.1,
+    analyteConc: 0.1,
+    analyteVol: 25.0,
+    ratioTitrantToAnalyte: 1,
+    indicator: "Phenolphthalein",
+    equivVol: 25.0,
+    startColor: "#F3C7DC",
+    endColor: "#F5F2EC",
+    overshootColor: "#F5F2EC",
+    colorDirection: "fade",
+    predict: {
+      q: "As HCl is added to the pink NaOH solution, what will you observe at the end point?",
+      opts: [
+        {t:"The solution turns from pink to colourless", correct:true},
+        {t:"The solution turns from colourless to pink", correct:false},
+        {t:"No colour change occurs", correct:false}
+      ]
+    },
+    explain: [
+      "Phenolphthalein is pink in alkaline solution (excess NaOH present).",
+      "As HCl is added drop by drop, it neutralises the NaOH: HCl(aq) + NaOH(aq) &rarr; NaCl(aq) + H2O(l).",
+      "Near the end point, one more drop of acid uses up the last trace of NaOH.",
+      "The solution turns colourless permanently — this is the end point.",
+      "Mole ratio HCl : NaOH is 1 : 1, so equal moles have reacted."
+    ],
+    challenge: "Find the exact volume of HCl needed to just turn the solution colourless. Get within &plusmn;0.2 cm3 of the true end point without overshooting by more than 1 cm3."
+  },
+  back: {
+    label: "Back titration — excess acid on a metal carbonate",
+    analyteLabel: "0.50 g MCO3 + 30.00 cm3 HCl (0.50 M) excess, titrate with NaOH",
+    titrantName: "NaOH, 1.0 M",
+    titrantConc: 1.0,
+    analyteConc: null,
+    analyteVol: null,
+    excessAcidRemaining: 0.20,
+    ratioTitrantToAnalyte: 1,
+    indicator: "Phenolphthalein",
+    equivVol: 5.0,
+    startColor: "#F5F2EC",
+    endColor: "#F3C7DC",
+    overshootColor: "#E8A9C9",
+    colorDirection: "appear",
+    predict: {
+      q: "The carbonate has already reacted with excess HCl. As NaOH is added to neutralise the leftover acid, what happens?",
+      opts: [
+        {t:"The colourless solution turns pink at the end point", correct:true},
+        {t:"The solution stays colourless throughout", correct:false},
+        {t:"The solution immediately turns pink", correct:false}
+      ]
+    },
+    explain: [
+      "MCO3 was reacted with excess (known) HCl, so some acid is left over unreacted.",
+      "NaOH is now titrated against this leftover acid: HCl(aq) + NaOH(aq) &rarr; NaCl(aq) + H2O(l).",
+      "While excess acid remains, phenolphthalein stays colourless.",
+      "At the end point all the leftover acid is neutralised — the solution turns permanently pink.",
+      "Moles of acid that reacted with the carbonate = total moles HCl added &minus; moles NaOH used to neutralise the excess."
+    ],
+    challenge: "Find the volume of NaOH needed to just turn the solution pink. Get within &plusmn;0.2 cm3 of the true end point without overshooting by more than 1 cm3."
+  },
+  redox: {
+    label: "Redox titration — Fe2+ oxidised by KMnO4",
+    analyteLabel: "25.0 cm3 Fe2+ salt solution + dilute H2SO4",
+    titrantName: "KMnO4, 0.02 M",
+    titrantConc: 0.02,
+    analyteConc: 0.1,
+    analyteVol: 25.0,
+    ratioTitrantToAnalyte: 0.2,
+    indicator: "Self-indicating (KMnO4 colour)",
+    equivVol: 22.5,
+    startColor: "#F5F2EC",
+    endColor: "#D9BFEC",
+    overshootColor: "#8B4FC7",
+    colorDirection: "appear",
+    predict: {
+      q: "KMnO4 is purple; Mn2+ (its reduced form) is colourless. As KMnO4 is added to the Fe2+ solution, what will you see at the end point?",
+      opts: [
+        {t:"The solution stays colourless until one drop gives a permanent faint pink/purple", correct:true},
+        {t:"The solution is purple from the very first drop", correct:false},
+        {t:"No indicator is needed and no colour change ever appears", correct:false}
+      ]
+    },
+    explain: [
+      "MnO4- ions are purple; as they oxidise Fe2+ to Fe3+, they are reduced to colourless Mn2+.",
+      "So each drop of KMnO4 is decolourised while Fe2+ remains in excess.",
+      "This reaction needs no separate indicator — KMnO4 is self-indicating.",
+      "At the end point all Fe2+ has been used up, so the next drop of KMnO4 stays purple/pink and persists.",
+      "Mole ratio: MnO4- : Fe2+ is 1 : 5 (5Fe2+ + MnO4- + 8H+ &rarr; 5Fe3+ + Mn2+ + 4H2O)."
+    ],
+    challenge: "Find the volume of KMnO4 that gives the first permanent faint pink colour. Get within &plusmn;0.2 cm3 of the true end point without overshooting by more than 1 cm3."
+  }
+};
+
+let mode = "direct";
+let vol = 0;
+let trials = [];
+let fastTimer = null;
+let predicted = false;
+let challengeActive = false;
+let challengeDone = false;
+
+const buretteVal = document.getElementById('buretteVal');
+const titreVal = document.getElementById('titreVal');
+const buretteLiquid = document.getElementById('buretteLiquid');
+const flaskLiquid = document.getElementById('flaskLiquid');
+const analyteLabel = document.getElementById('analyteLabel');
+const statusText = document.getElementById('statusText');
+const endpointFlag = document.getElementById('endpointFlag');
+const titrantName = document.getElementById('titrantName');
+const molesAdded = document.getElementById('molesAdded');
+const molesReacted = document.getElementById('molesReacted');
+const indicatorName = document.getElementById('indicatorName');
+const volSlider = document.getElementById('volSlider');
+const volInput = document.getElementById('volInput');
+const trialBody = document.getElementById('trialBody');
+const trialEmpty = document.getElementById('trialEmpty');
+const avgRow = document.getElementById('avgRow');
+const avgTitre = document.getElementById('avgTitre');
+
+function buildTicks(){
+  const g = document.getElementById('buretteTicks');
+  g.innerHTML = '';
+  for(let i=0;i<=10;i++){
+    const y = 24 + i*19.6;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',128); line.setAttribute('x2', i%5===0?122:126);
+    line.setAttribute('y1',y); line.setAttribute('y2',y);
+    line.setAttribute('stroke','var(--ink-faint)'); line.setAttribute('stroke-width','1');
+    g.appendChild(line);
+  }
+}
+buildTicks();
+
+function lerpColor(a,b,t){
+  const ah = a.replace('#',''), bh = b.replace('#','');
+  const ar = parseInt(ah.substr(0,2),16), ag = parseInt(ah.substr(2,2),16), ab = parseInt(ah.substr(4,2),16);
+  const br = parseInt(bh.substr(0,2),16), bg = parseInt(bh.substr(2,2),16), bb = parseInt(bh.substr(4,2),16);
+  const r = Math.round(ar + (br-ar)*t), g = Math.round(ag + (bg-ag)*t), bl = Math.round(ab + (bb-ab)*t);
+  return `rgb(${r},${g},${bl})`;
+}
+
+function setMode(m){
+  mode = m;
+  vol = 0;
+  trials = [];
+  predicted = false;
+  challengeActive = false;
+  challengeDone = false;
+  document.querySelectorAll('#modeTabs button').forEach(b=>b.classList.toggle('active', b.dataset.mode===m));
+  const cfg = MODES[m];
+  analyteLabel.textContent = cfg.analyteLabel;
+  titrantName.textContent = cfg.titrantName;
+  indicatorName.textContent = cfg.indicator;
+  renderTrials();
+  renderTabs();
+  update();
+}
+
+function currentColor(){
+  const cfg = MODES[mode];
+  const eq = cfg.equivVol;
+  const t = Math.min(1, vol/eq);
+  if(cfg.colorDirection === 'fade'){
+    if(vol < eq - 0.5) return cfg.startColor;
+    if(vol < eq + 0.3) return lerpColor(cfg.startColor, cfg.endColor, (vol-(eq-0.5))/0.8);
+    return cfg.endColor;
+  } else {
+    if(vol < eq - 0.5) return cfg.startColor;
+    if(vol < eq + 0.3){
+      const tt = (vol-(eq-0.5))/0.8;
+      return lerpColor(cfg.startColor, cfg.endColor, tt);
+    }
+    const over = Math.min(1,(vol-eq)/5);
+    return lerpColor(cfg.endColor, cfg.overshootColor, over);
+  }
+}
+
+function stateOf(){
+  const cfg = MODES[mode];
+  const diff = vol - cfg.equivVol;
+  if(Math.abs(diff) <= 0.15) return 'at';
+  if(diff < 0) return 'before';
+  return 'after';
+}
+
+function statusMessage(){
+  const cfg = MODES[mode];
+  const st = stateOf();
+  if(vol === 0) return "You have not added any titrant yet. Turn the stopcock to release titrant, drop by drop, into the flask.";
+  if(st === 'before'){
+    if(mode==='direct') return `You have added <b>${vol.toFixed(1)} cm3</b> of HCl. The flask is still alkaline, so it stays pink. Keep going, slower as you approach the end point.`;
+    if(mode==='back') return `You have added <b>${vol.toFixed(1)} cm3</b> of NaOH. Excess acid remains, so the solution stays colourless.`;
+    return `You have added <b>${vol.toFixed(1)} cm3</b> of KMnO4. Fe2+ is still in excess, so each drop is decolourised as it reduces to Mn2+.`;
+  }
+  if(st === 'at'){
+    if(mode==='direct') return `At <b>${vol.toFixed(1)} cm3</b> the pink colour has just disappeared. This is the end point — moles of acid now equal moles of base originally present.`;
+    if(mode==='back') return `At <b>${vol.toFixed(1)} cm3</b> the solution has just turned permanently pink. All the excess acid has been neutralised.`;
+    return `At <b>${vol.toFixed(1)} cm3</b> a faint pink/purple colour has just persisted for 30 seconds. All Fe2+ has been oxidised.`;
+  }
+  if(mode==='direct') return `You have overshot by <b>${(vol-cfg.equivVol).toFixed(1)} cm3</b>. Excess HCl is now present — the solution stays colourless, but your titre is no longer accurate. Reset and try again, adding drop-wise near the expected end point.`;
+  if(mode==='back') return `You have overshot by <b>${(vol-cfg.equivVol).toFixed(1)} cm3</b>. Excess NaOH now makes the solution a deeper pink — this titre is too high.`;
+  return `You have overshot by <b>${(vol-cfg.equivVol).toFixed(1)} cm3</b>. Excess KMnO4 is colouring the solution deep purple — this titre is too high.`;
+}
+
+function update(){
+  const cfg = MODES[mode];
+  vol = Math.max(0, Math.min(50, vol));
+  volSlider.value = vol;
+  volInput.value = vol.toFixed(1);
+  buretteVal.textContent = vol.toFixed(1);
+  titreVal.textContent = vol.toFixed(1);
+
+  const maxH = 196;
+  const drainedFrac = Math.min(1, vol/50);
+  const liqH = maxH * (1-drainedFrac);
+  buretteLiquid.setAttribute('y', 24 + (maxH-liqH));
+  buretteLiquid.setAttribute('height', liqH);
+
+  const col = currentColor();
+  flaskLiquid.setAttribute('fill', col);
+
+  const molT = (vol/1000)*cfg.titrantConc;
+  molesAdded.textContent = molT.toFixed(4) + ' mol';
+
+  let reacted;
+  if(mode==='direct'){
+    reacted = Math.min(molT, (cfg.analyteVol/1000)*cfg.analyteConc);
+  } else if(mode==='back'){
+    reacted = Math.min(molT, 0.005);
+  } else {
+    reacted = Math.min(molT/cfg.ratioTitrantToAnalyte, (cfg.analyteVol/1000)*cfg.analyteConc);
+  }
+  molesReacted.textContent = reacted.toFixed(4) + ' mol';
+
+  statusText.innerHTML = statusMessage();
+  const st = stateOf();
+  endpointFlag.className = 'endpoint-flag ' + st;
+  endpointFlag.textContent = st==='at' ? 'At end point' : st==='before' ? 'Before end point' : 'Past end point';
+
+  if(challengeActive && !challengeDone && st==='at'){
+    finishChallenge(true);
+  }
+}
+
+function renderTrials(){
+  trialBody.innerHTML = '';
+  if(trials.length===0){
+    trialEmpty.style.display='block';
+    avgRow.style.display='none';
+    return;
+  }
+  trialEmpty.style.display='none';
+  trials.forEach((t,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${t.toFixed(1)}</td>`;
+    trialBody.appendChild(tr);
+  });
+  const avg = trials.reduce((a,b)=>a+b,0)/trials.length;
+  avgRow.style.display='flex';
+  avgTitre.textContent = avg.toFixed(2) + ' cm3';
+}
+
+function dropAnimate(){
+  const d = document.getElementById('dropShape');
+  const cfg = MODES[mode];
+  d.setAttribute('fill', currentColor());
+  d.classList.remove('falling');
+  void d.offsetWidth;
+  d.classList.add('falling');
+}
+
+document.getElementById('modeTabs').addEventListener('click', e=>{
+  if(e.target.tagName==='BUTTON') setMode(e.target.dataset.mode);
+});
+document.getElementById('resetBtn').addEventListener('click', ()=>{ vol=0; update(); });
+document.getElementById('dropBtn').addEventListener('click', ()=>{ vol+=0.1; update(); dropAnimate(); });
+document.getElementById('mlBtn').addEventListener('click', ()=>{ vol+=1.0; update(); dropAnimate(); });
+document.getElementById('fastBtn').addEventListener('click', function(){
+  if(fastTimer){
+    clearInterval(fastTimer); fastTimer=null; this.textContent='Fast add';
+  } else {
+    this.textContent='Stop';
+    fastTimer = setInterval(()=>{
+      vol += 0.4;
+      if(vol>=50){ clearInterval(fastTimer); fastTimer=null; this.textContent='Fast add'; }
+      update();
+    }, 90);
+  }
+});
+document.getElementById('recordBtn').addEventListener('click', ()=>{
+  if(vol>0){ trials.push(vol); renderTrials(); }
+});
+volSlider.addEventListener('input', e=>{ vol = parseFloat(e.target.value); update(); });
+volInput.addEventListener('change', e=>{
+  let v = parseFloat(e.target.value);
+  if(isNaN(v)) v=0;
+  vol = Math.max(0, Math.min(50, v));
+  update();
+});
+
+document.getElementById('tabbar').addEventListener('click', e=>{
+  if(e.target.tagName!=='BUTTON') return;
+  document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('active', b===e.target));
+  ['predict','explain','challenge'].forEach(t=>{
+    document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1)).style.display = (t===e.target.dataset.tab)?'block':'none';
+  });
+});
+
+function renderTabs(){
+  const cfg = MODES[mode];
+  const p = document.getElementById('tabPredict');
+  p.innerHTML = `<div style="font-size:13px;">${cfg.predict.q}</div><div class="predict-opts" id="predictOpts"></div>`;
+  const optsWrap = document.getElementById('predictOpts');
+  cfg.predict.opts.forEach(o=>{
+    const b = document.createElement('button');
+    b.textContent = o.t;
+    b.addEventListener('click', ()=>{
+      if(predicted) return;
+      predicted = true;
+      document.querySelectorAll('#predictOpts button').forEach(btn=>btn.disabled=true);
+      b.classList.add(o.correct?'correct':'wrong');
+      if(!o.correct){
+        const correctBtn = [...optsWrap.children].find((_,idx)=>cfg.predict.opts[idx].correct);
+        correctBtn.classList.add('correct');
+      }
+    });
+    optsWrap.appendChild(b);
+  });
+
+  const ex = document.getElementById('tabExplain');
+  ex.innerHTML = '<ol>' + cfg.explain.map(s=>`<li>${s}</li>`).join('') + '</ol>';
+
+  const ch = document.getElementById('tabChallenge');
+  ch.innerHTML = `<div class="challenge-box">
+    <div class="challenge-goal">${cfg.challenge}</div>
+    <div class="btn-row"><button class="btn primary" id="startChallenge">Start challenge</button></div>
+    <div id="challengeResult"></div>
+  </div>`;
+  document.getElementById('startChallenge').addEventListener('click', ()=>{
+    vol = 0; update();
+    challengeActive = true; challengeDone = false;
+    document.getElementById('challengeResult').innerHTML = '<div style="font-size:12.5px;color:var(--ink-soft);margin-top:8px;">Challenge running — add titrant carefully and watch the flask.</div>';
+  });
+}
+
+function finishChallenge(win){
+  challengeDone = true;
+  const cfg = MODES[mode];
+  const diff = Math.abs(vol - cfg.equivVol);
+  const box = document.getElementById('challengeResult');
+  if(diff <= 0.2){
+    box.innerHTML = `<div class="challenge-result win">Well done — you stopped at ${vol.toFixed(1)} cm3, within &plusmn;0.2 cm3 of the true end point (${cfg.equivVol.toFixed(1)} cm3).</div>`;
+  } else {
+    box.innerHTML = `<div class="challenge-result lose">You stopped at ${vol.toFixed(1)} cm3. The true end point is ${cfg.equivVol.toFixed(1)} cm3 — reset and try adding more slowly as you approach it.</div>`;
+  }
+}
+
+setMode('direct');
+</script>
+</body>
+</html>

@@ -1,10 +1,11 @@
 import React from 'react';
-import { Database, Target, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
+import { Database, Target, CheckCircle, AlertCircle, AlertTriangle, Plus } from 'lucide-react';
 
 export default function ConceptNavigator({
     concepts,
     activeConceptId,
     onSelectConcept,
+    onAddConcept,
     lessonTitle,
     lessonStatus,
     lessonVersion,
@@ -47,6 +48,15 @@ export default function ConceptNavigator({
                         onClick={() => onSelectConcept(concept.pageNum)}
                     />
                 ))}
+
+                {onAddConcept && (
+                    <button
+                        onClick={onAddConcept}
+                        className="w-full py-2.5 px-3 border border-dashed border-gray-300 rounded-xl text-xs font-bold text-gray-600 hover:text-custom-blue hover:border-custom-blue hover:bg-blue-50/50 transition-all flex items-center justify-center gap-1.5"
+                    >
+                        <Plus size={14} /> Add Card / Concept
+                    </button>
+                )}
             </div>
         </div>
     );

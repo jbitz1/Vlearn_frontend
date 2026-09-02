@@ -22,6 +22,7 @@ import {
 import teacherCurriculumService from '../../services/teacherCurriculumService';
 import UserContext from '../../Context/UserContext';
 import TeacherContext from '../../Context/TeacherContext';
+import FullscreenSimulationModal from '../../Components/Simulations/FullscreenSimulationModal';
 
 export const TeacherTopicWorkspace = () => {
   const { topicId, streamId: paramStreamId, subjectId: paramSubjectId } = useParams();
@@ -33,6 +34,7 @@ export const TeacherTopicWorkspace = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('lessons'); // 'lessons' | 'simulations' | 'experiments' | 'videos' | 'resources'
+  const [selectedSimulation, setSelectedSimulation] = useState(null);
 
   // Facilitation Notes state
   const [statusVal, setStatusVal] = useState('AVAILABLE');
@@ -409,7 +411,7 @@ export const TeacherTopicWorkspace = () => {
 
                   <div className="mt-6 pt-4 border-t border-slate-100">
                     <button
-                      onClick={() => navigate(`/simulations`)}
+                      onClick={() => setSelectedSimulation(sim)}
                       className="w-full py-2.5 bg-accent hover:bg-accent/90 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Sparkles className="w-3.5 h-3.5" /> Project in Classroom
@@ -559,6 +561,13 @@ export const TeacherTopicWorkspace = () => {
           </div>
         )}
       </div>
+
+      {/* Interactive Simulation Fullscreen Modal */}
+      <FullscreenSimulationModal
+        simulation={selectedSimulation}
+        isOpen={Boolean(selectedSimulation)}
+        onClose={() => setSelectedSimulation(null)}
+      />
     </div>
   );
 };
