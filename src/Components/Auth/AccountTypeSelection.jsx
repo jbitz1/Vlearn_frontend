@@ -23,17 +23,6 @@ const ACCOUNT_TYPES = [
     focusRing: "focus:ring-custom-blue",
   },
   {
-    id: "teacher",
-    title: "Teacher",
-    description:
-      "Build lessons, manage your classes and monitor how your learners are progressing.",
-    Icon: BookOpen,
-    iconColor: "text-custom-orange",
-    iconBg: "bg-orange-50",
-    activeBorder: "border-custom-orange",
-    focusRing: "focus:ring-custom-orange",
-  },
-  {
     id: "school_admin",
     title: "Register a School",
     description:
@@ -109,6 +98,10 @@ export default function AccountTypeSelection({ onSelect }) {
             </div>
           )
         )}
+      </div>
+
+      <div className="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 text-center leading-relaxed">
+        <span className="font-semibold text-slate-700">Are you a teacher?</span> Teachers join via an SMS invitation from their school administration.
       </div>
 
       <p className="text-center text-sm text-gray-600 mt-5">

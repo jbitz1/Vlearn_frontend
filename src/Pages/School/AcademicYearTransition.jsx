@@ -1,6 +1,7 @@
 import { useState, useContext } from 'react';
 import { ArrowRight, AlertTriangle, Users, CheckCircle, Layers } from 'lucide-react';
 import SchoolContext from '../../Context/SchoolContext';
+import BackButton from '../../Components/Common/BackButton';
 
 export default function AcademicYearTransition() {
   const schoolContext = useContext(SchoolContext);
@@ -12,6 +13,9 @@ export default function AcademicYearTransition() {
   return (
     <div className="space-y-8 min-h-screen pb-10 max-w-7xl mx-auto font-sans">
       <header className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200">
+        <div className="mb-2">
+          <BackButton to="/school" label="Back to Dashboard" />
+        </div>
         <h1 className="text-3xl font-black text-navy mb-1">Academic Year Transition</h1>
         <p className="text-slate-500 font-medium text-sm">
           Review and confirm student progression for {school?.name || 'your school'}.

@@ -3,6 +3,7 @@ import UserContext from '../../Context/UserContext';
 import axios from 'axios';
 import BASE_URL from '../../config';
 import { Trophy, Clock, Calendar, BarChart } from 'lucide-react';
+import BackButton from '../../Components/Common/BackButton';
 
 function Results() {
   const { token } = useContext(UserContext);
@@ -32,7 +33,10 @@ function Results() {
 
   return (
     <div className="pl-14 pr-4 py-4 sm:p-6 md:p-10 max-w-7xl mx-auto space-y-6 sm:space-y-8">
-      <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Your Quiz Results</h1>
+      <div className="space-y-3">
+        <BackButton to="/student" label="Back to Dashboard" />
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Your Quiz Results</h1>
+      </div>
 
       {attempts.length === 0 ? (
         <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xs sm:shadow-sm p-6 sm:p-8 text-center border border-gray-100">

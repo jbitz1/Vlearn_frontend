@@ -11,10 +11,12 @@ import {
   Layers,
   Sparkles,
   ArrowRight,
-  GraduationCap
+  GraduationCap,
+  Eye
 } from 'lucide-react';
 import teacherCurriculumService from '../../services/teacherCurriculumService';
 import TeacherContext from '../../Context/TeacherContext';
+import { formatStreamDisplay } from '../../utils/formatters';
 
 export default function TeacherSubjectWorkspace() {
   const { subjectId, streamId } = useParams();
@@ -106,11 +108,11 @@ export default function TeacherSubjectWorkspace() {
                   Stream Teaching Workspace
                 </span>
                 <span className="text-slate-400 text-xs font-semibold">
-                  • {activeStream?.form_name} {activeStream?.stream_name}
+                  • {formatStreamDisplay(activeStream?.form_name, activeStream?.stream_name)}
                 </span>
               </div>
               <h1 className="text-3xl font-black text-navy">
-                {activeSubject.academic_title || activeSubject.name} · {activeStream?.stream_name}
+                {activeSubject.academic_title || activeSubject.name} · {formatStreamDisplay(activeStream?.form_name, activeStream?.stream_name)}
               </h1>
               <p className="text-slate-500 font-medium text-sm">
                 {activeStream?.student_count || 0} Enrolled Students • {totalTopicsCount} Topics • Teaching progress: {taughtTopicsCount}/{totalTopicsCount} taught
@@ -148,7 +150,7 @@ export default function TeacherSubjectWorkspace() {
         </header>
 
         {/* Topics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
           {filteredTopics.length === 0 ? (
             <div className="col-span-full bg-white border border-slate-200 rounded-3xl p-12 text-center space-y-3">
               <BookOpen className="w-10 h-10 text-slate-300 mx-auto" />
@@ -204,16 +206,26 @@ export default function TeacherSubjectWorkspace() {
                   </div>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-400">
-                    {activeStream?.form_name} {activeStream?.stream_name}
+                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-slate-400 truncate max-w-[120px]" title={formatStreamDisplay(activeStream?.form_name, activeStream?.stream_name)}>
+                    {formatStreamDisplay(activeStream?.form_name, activeStream?.stream_name)}
                   </span>
-                  <button
-                    onClick={() => navigate(`/teacher/topic-workspace/${selectedStreamId}/${activeSubject.id}/${topic.id}`)}
-                    className="px-4 py-2 bg-navy hover:bg-primary text-white font-black rounded-xl text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                  >
-                    Teach Topic <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => navigate(`/lesson-viewer/${topic.id}?from=teacher`)}
+                      className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                      title="Preview lesson as student"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Preview</span>
+                    </button>
+                    <button
+                      onClick={() => navigate(`/teacher/topic-workspace/${selectedStreamId}/${activeSubject.id}/${topic.id}`)}
+                      className="px-3.5 py-1.5 bg-navy hover:bg-primary text-white font-black rounded-xl text-xs flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                    >
+                      Teach <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
@@ -285,37 +297,44 @@ export default function TeacherSubjectWorkspace() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6">
               {workspaceData.by_subject.map((subj) => (
                 <div
                   key={subj.id}
-                  className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col justify-between shadow-xs hover:border-slate-300 transition-all"
+                  className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col justify-between shadow-xs hover:border-slate-300 transition-all gap-5"
                 >
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black">
-                        <BookOpen className="w-5 h-5" />
+                    {/* Header: Icon + Subject Title & Grade on Left, Topic Count on Right */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black shrink-0">
+                          <BookOpen className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <h2 className="text-xl font-black text-navy truncate">
+                            {subj.academic_title || subj.name}
+                          </h2>
+                          {!subj.academic_title && subj.grade_name && (
+                            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                              {subj.grade_name}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-black uppercase rounded-lg">
-                        {subj.topics?.length || 0} Topics
+                      <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-black rounded-lg shrink-0">
+                        {subj.topics?.length || 0} {subj.topics?.length === 1 ? 'Topic' : 'Topics'}
                       </span>
                     </div>
 
-                    <h2 className="text-2xl font-black text-navy">
-                      {subj.academic_title || subj.name}
-                    </h2>
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">
-                      {subj.grade_name ? `Academic Level: ${subj.grade_name}` : 'Curriculum Subject'}
-                    </p>
-
                     {/* Assigned Streams */}
                     <div className="mt-5 space-y-2">
-                      <p className="text-xs font-black uppercase tracking-wider text-slate-400">
-                        Streams I Teach:
-                      </p>
+                      <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-400">
+                        <span>Streams I Teach</span>
+                        <span>{subj.streams?.length || 0} Total</span>
+                      </div>
 
                       {subj.streams && subj.streams.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div className="space-y-2">
                           {subj.streams.map((st) => (
                             <button
                               key={st.stream_id}
@@ -323,17 +342,20 @@ export default function TeacherSubjectWorkspace() {
                                 setSelectedSubjectId(subj.id);
                                 setSelectedStreamId(st.stream_id);
                               }}
-                              className="p-3 bg-slate-50 hover:bg-primary/10 border border-slate-100 hover:border-primary/30 rounded-2xl text-left transition-all flex items-center justify-between group cursor-pointer"
+                              className="w-full px-4 py-3 bg-slate-50 hover:bg-primary/5 border border-slate-200/80 hover:border-primary/40 rounded-2xl text-left transition-all flex items-center justify-between gap-3 group cursor-pointer shadow-2xs hover:shadow-xs"
                             >
-                              <div>
-                                <p className="text-sm font-black text-navy group-hover:text-primary transition-colors">
-                                  {st.form_name} {st.stream_name}
-                                </p>
-                                <p className="text-xs font-medium text-slate-400">
-                                  {st.student_count} Students
-                                </p>
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="text-sm font-bold text-navy group-hover:text-primary transition-colors truncate">
+                                  {formatStreamDisplay(st.form_name, st.stream_name)}
+                                </span>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
+                                  {st.student_count || 0} Students
+                                </span>
                               </div>
-                              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                              <span className="px-3 py-1 text-xs font-bold text-primary bg-white border border-primary/20 rounded-lg group-hover:bg-primary group-hover:text-white transition-all flex items-center gap-1 shrink-0">
+                                Teach <ChevronRight className="w-3.5 h-3.5" />
+                              </span>
                             </button>
                           ))}
                         </div>
@@ -363,7 +385,7 @@ export default function TeacherSubjectWorkspace() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6">
               {workspaceData.by_class.map((cls) => (
                 <div
                   key={cls.stream_id}
@@ -375,12 +397,12 @@ export default function TeacherSubjectWorkspace() {
                         <Users className="w-6 h-6" />
                       </div>
                       <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-black uppercase rounded-lg">
-                        {cls.student_count} Students
+                        {cls.student_count || 0} Students
                       </span>
                     </div>
 
                     <h2 className="text-2xl font-black text-navy">
-                      {cls.form_name} {cls.stream_name}
+                      {formatStreamDisplay(cls.form_name, cls.stream_name)}
                     </h2>
                     <p className="text-xs text-slate-500 font-semibold mt-1">
                       Subjects I Teach Here ({cls.subjects?.length || 0}):

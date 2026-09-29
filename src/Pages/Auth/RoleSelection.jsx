@@ -54,15 +54,6 @@ const RoleSelection = () => {
       borderColor: 'border-blue-500'
     },
     {
-      id: 'teacher',
-      title: 'Teacher',
-      description: 'Create classes, assign coursework, and monitor student performance.',
-      icon: BookOpen,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
-      borderColor: 'border-orange-500'
-    },
-    {
       id: 'school_admin',
       title: 'School Administrator',
       description: 'Manage school structure, teachers, students, and subscriptions.',

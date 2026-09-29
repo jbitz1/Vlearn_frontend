@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { ChevronLeft, Users, BookOpen, Play, User as UserIcon } from 'lucide-react';
 import teacherCurriculumService from '../../services/teacherCurriculumService';
+import BackButton from '../../Components/Common/BackButton';
 
 export const TeacherClassDetail = () => {
   const { streamId } = useParams();
@@ -44,12 +45,9 @@ export const TeacherClassDetail = () => {
   return (
     <div className="space-y-8 min-h-screen">
       {/* Back link */}
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center text-sm font-bold text-custom-blue hover:underline cursor-pointer"
-      >
-        <ChevronLeft className="w-4 h-4 mr-1" /> Back
-      </button>
+      <div>
+        <BackButton to="/teacher/classes" label="Back to My Classes" />
+      </div>
 
       {/* Class Header */}
       <div className="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm">

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FileText, ExternalLink, Clock, Star } from 'lucide-react';
 import axios from 'axios';
 import BASE_URL from '../../config';
+import BackButton from '../../Components/Common/BackButton';
 
 const courses = [
   {
@@ -58,6 +59,9 @@ function Resources() {
 
   return (
     <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
+      <div className="mb-4">
+        <BackButton to="/student" label="Back to Dashboard" />
+      </div>
       {/* Resources Section */}
       <section className="mb-12">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">

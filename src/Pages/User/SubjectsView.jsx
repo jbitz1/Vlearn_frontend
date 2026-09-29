@@ -4,6 +4,7 @@ import { BookOpen, ChevronRight, Layers } from 'lucide-react';
 import studentCurriculumService from '../../services/studentCurriculumService';
 import UserContext from '../../Context/UserContext';
 import ProgressCircle from '../../Components/Common/ProgressCircle';
+import BackButton from '../../Components/Common/BackButton';
 
 export const SubjectsView = () => {
   const { user } = useContext(UserContext);
@@ -93,6 +94,9 @@ export const SubjectsView = () => {
     <div className="pl-14 pr-4 py-4 sm:p-6 md:p-10 max-w-7xl mx-auto space-y-6 sm:space-y-8">
       {/* Header */}
       <div>
+        <div className="mb-3">
+          <BackButton to="/student" label="Back to Dashboard" />
+        </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Subjects</h1>
         <p className="text-gray-500 font-medium text-xs sm:text-sm mt-0.5">Select a subject to continue learning.</p>
       </div>
@@ -119,13 +123,13 @@ export const SubjectsView = () => {
 
       {/* Subject Cards Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4 sm:gap-6">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="h-44 sm:h-48 bg-gray-200 rounded-2xl sm:rounded-3xl animate-pulse"></div>
           ))}
         </div>
       ) : subjects.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4 sm:gap-6">
           {subjects.map((subject) => {
             const gradeSubtitle = selectedGrade?.name || subject.grade_name || '';
             const progress = subjectProgressMap[subject.id] || { pct: 0, isStarted: false, isCompleted: false };

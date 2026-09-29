@@ -3,11 +3,12 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router';
 import {
   Home, Layers, Users, UserCheck, BookOpen,
   ClipboardList, TrendingUp, Award, Settings, LogOut,
-  GraduationCap, FileText, Menu, X
+  GraduationCap, FileText, Menu, X, CreditCard
 } from 'lucide-react';
 import UserContext from '../../Context/UserContext';
 import { useSchoolContext } from '../../Context/SchoolContext';
 import Swal from 'sweetalert2';
+import InstitutionSettingsModal from './InstitutionSettingsModal';
 
 const nav = [
   { to: '/school/dashboard', label: 'Dashboard', Icon: Home },
@@ -17,8 +18,7 @@ const nav = [
   { to: '/school/subjects', label: 'Subjects', Icon: BookOpen },
   { to: '/school/assessments', label: 'Assessments', Icon: ClipboardList },
   { to: '/school/performance', label: 'Performance', Icon: TrendingUp },
-  { to: '/school/final-exams', label: 'Final Exams', Icon: Award },
-  { to: '/school/reports', label: 'Reports', Icon: FileText },
+  { to: '/school/subscription', label: 'Subscription', Icon: CreditCard },
   { to: '/school/settings', label: 'Settings', Icon: Settings },
 ];
 
@@ -27,6 +27,7 @@ export default function SchoolLayout() {
   const { school } = useSchoolContext();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const schoolName = school?.name || 'School';
   const academicYear = school?.academicYear || '2026';
@@ -61,8 +62,8 @@ export default function SchoolLayout() {
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-navy-700">
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-white shadow-md shadow-primary/20">
-            <GraduationCap size={20} />
+          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-navy-800 border border-white/10 shadow-md">
+            <img src="/images/vlearn_icon.png" alt="VizLearn Logo" className="w-6 h-6 object-contain" />
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-primary uppercase tracking-widest font-heading">VizLearn</p>
@@ -157,6 +158,14 @@ export default function SchoolLayout() {
             <span className="font-semibold text-navy font-heading">{schoolName}</span>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-navy hover:bg-slate-100 transition-colors border border-slate-200 cursor-pointer"
+              title="Edit Institution Settings"
+            >
+              <Settings size={14} />
+              <span className="hidden sm:inline">Institution Profile</span>
+            </button>
             <div className="text-right hidden sm:block">
               <p className="text-xs font-semibold text-slate-700">{userName}</p>
               <p className="text-xs text-slate-400">School Admin</p>
@@ -172,6 +181,12 @@ export default function SchoolLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Institution Settings Modal */}
+      <InstitutionSettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+      />
     </div>
   );
 }

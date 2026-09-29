@@ -6,6 +6,7 @@ import studentCurriculumService from '../../services/studentCurriculumService';
 import studentOnboardingService from '../../services/studentOnboardingService';
 import apiClient from '../../config/apiClient';
 import SubscriptionList from '../../component-library/billing-and-payments/subscriptions/SubscriptionList';
+import BackButton from '../../Components/Common/BackButton';
 
 export function User() {
   const { user: contextUser, token } = useContext(UserContext);
@@ -46,6 +47,9 @@ export function User() {
 
   return (
     <div className="pl-14 pr-4 py-4 sm:p-6 md:p-10 max-w-7xl mx-auto space-y-6 sm:space-y-8">
+      <div>
+        <BackButton to="/student" label="Back to Dashboard" />
+      </div>
       {/* Profile Header */}
         <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-xs sm:shadow-sm">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

@@ -39,7 +39,7 @@ import {
 } from './TextBlocks';
 import { ImagePlaceholderBlock, VideoRefBlock, SimulationPlaceholderBlock } from './MediaBlocks';
 
-export const BlockRenderer = ({ block, onInteract }) => {
+export const BlockRenderer = ({ block, onInteract, onReportVisual }) => {
   if (!block || !block.block_type) return null;
 
   switch (block.block_type) {
@@ -108,7 +108,7 @@ export const BlockRenderer = ({ block, onInteract }) => {
     case 'diagram_placeholder':
     case 'video_ref':
     case 'simulation_placeholder':
-      return <SuggestedMediaBlock block={block} />;
+      return <SuggestedMediaBlock block={block} onReportVisual={onReportVisual} />;
 
     // ── Legacy V1 block types — completely unchanged ───────────────────────
     case 'overview':
@@ -134,9 +134,9 @@ export const BlockRenderer = ({ block, onInteract }) => {
       if (compType === 'summary_card' || compType === 'summary') return <SummaryBlock block={block} />;
       if (compType === 'comparison_table') return <ComparisonTableBlock block={block} />;
       if (compType === 'step_process') return <StepProcessBlock block={block} />;
-      if (compType === 'suggested_image' || compType === 'photo_view') return <SuggestedMediaBlock block={block} />;
-      if (compType === 'suggested_diagram' || compType === 'svg_viewer') return <SuggestedMediaBlock block={block} />;
-      if (compType === 'youtube' || compType === 'video' || compType === 'visualization') return <SuggestedMediaBlock block={block} />;
+      if (compType === 'suggested_image' || compType === 'photo_view') return <SuggestedMediaBlock block={block} onReportVisual={onReportVisual} />;
+      if (compType === 'suggested_diagram' || compType === 'svg_viewer') return <SuggestedMediaBlock block={block} onReportVisual={onReportVisual} />;
+      if (compType === 'youtube' || compType === 'video' || compType === 'visualization') return <SuggestedMediaBlock block={block} onReportVisual={onReportVisual} />;
       if (compType === 'knowledge_check' || compType === 'mcq_interactive') return <KnowledgeCheckBlock block={block} onInteract={onInteract} />;
       if (compType === 'concept_card' || compType === 'concept_explanation') return <ConceptExplanationBlock block={block} />;
 

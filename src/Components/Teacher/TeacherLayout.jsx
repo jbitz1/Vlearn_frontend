@@ -25,7 +25,6 @@ export default function TeacherLayout() {
     { to: '/teacher/my-teaching', label: 'My Teaching', Icon: BookOpen },
     { to: '/teacher/assessments', label: 'Assessments', Icon: ClipboardList },
     { to: '/teacher/performance', label: 'Performance', Icon: TrendingUp },
-    { to: '/teacher/students', label: 'Students', Icon: Users },
     { to: '/teacher/profile', label: 'Profile', Icon: User },
   ];
 
@@ -55,8 +54,8 @@ export default function TeacherLayout() {
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-navy-700">
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-white shadow-md shadow-primary/20">
-            <GraduationCap size={20} />
+          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-navy-800 border border-white/10 shadow-md">
+            <img src="/images/vlearn_icon.png" alt="VizLearn Logo" className="w-6 h-6 object-contain" />
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-primary uppercase tracking-widest font-heading">VizLearn</p>

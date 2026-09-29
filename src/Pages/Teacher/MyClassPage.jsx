@@ -116,7 +116,7 @@ export default function MyClassPage() {
   } = classData || {};
 
   const filteredStudents = students.filter(s => 
-    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (s.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (s.admission_number && s.admission_number.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 

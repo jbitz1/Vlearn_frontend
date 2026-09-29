@@ -11,12 +11,15 @@ import {
   Download, 
   Upload, 
   Building2,
-  Calendar
+  Calendar,
+  Plus,
+  X
 } from 'lucide-react';
 import { assessmentService } from '../../services/assessmentService';
 import { gradeFromScore, getGradeColor } from '../../services/performanceService';
 import teacherCurriculumService from '../../services/teacherCurriculumService';
 import TeacherContext from '../../Context/TeacherContext';
+import { formatStreamDisplay } from '../../utils/formatters';
 
 export default function AssessmentEntry() {
   const { examId: paramExamId } = useParams();
@@ -27,6 +30,14 @@ export default function AssessmentEntry() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
+
+  // New Examination Modal state
+  const [showAddExamModal, setShowAddExamModal] = useState(false);
+  const [newExamName, setNewExamName] = useState('');
+  const [newExamTerm, setNewExamTerm] = useState(1);
+  const [newExamMaxScore, setNewExamMaxScore] = useState(100);
+  const [creatingExam, setCreatingExam] = useState(false);
+  const [createExamError, setCreateExamError] = useState(null);
 
   // Teaching context
   const [workspaceData, setWorkspaceData] = useState({ by_subject: [], by_class: [] });
@@ -169,6 +180,35 @@ export default function AssessmentEntry() {
     }
   };
 
+  const handleCreateExam = async (e) => {
+    e?.preventDefault();
+    if (!newExamName.trim()) {
+      setCreateExamError('Please enter an assessment name.');
+      return;
+    }
+    try {
+      setCreatingExam(true);
+      setCreateExamError(null);
+      const created = await assessmentService.createExamination({
+        name: newExamName.trim(),
+        term: Number(newExamTerm) || 1,
+        max_score: Number(newExamMaxScore) || 100,
+        status: 'open',
+      });
+      setExaminations(prev => [created, ...prev]);
+      setSelectedExamId(created.id);
+      setShowAddExamModal(false);
+      setNewExamName('');
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.error('Error creating examination:', err);
+      setCreateExamError(err.response?.data?.detail || err.response?.data?.name?.[0] || 'Failed to create assessment.');
+    } finally {
+      setCreatingExam(false);
+    }
+  };
+
   const validScores = Object.values(marks).filter(v => typeof v === 'number' && v >= 0 && v <= maxScore);
   const classAvg = validScores.length > 0 ? validScores.reduce((a, b) => a + b, 0) / validScores.length : 0;
 
@@ -242,10 +282,25 @@ export default function AssessmentEntry() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Examination */}
           <div>
-            <label className="text-xs font-bold text-navy block mb-1.5">Examination</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-navy block">Examination</label>
+              <button
+                type="button"
+                onClick={() => setShowAddExamModal(true)}
+                className="text-[11px] font-bold text-primary hover:text-primary-dark flex items-center gap-0.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" /> New Assessment
+              </button>
+            </div>
             <select
               value={selectedExamId || ''}
-              onChange={(e) => setSelectedExamId(Number(e.target.value))}
+              onChange={(e) => {
+                if (e.target.value === '__NEW__') {
+                  setShowAddExamModal(true);
+                } else {
+                  setSelectedExamId(Number(e.target.value));
+                }
+              }}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-navy focus:outline-none focus:border-primary cursor-pointer"
             >
               {examinations.length === 0 ? (
@@ -257,6 +312,9 @@ export default function AssessmentEntry() {
                   </option>
                 ))
               )}
+              <option value="__NEW__" className="text-primary font-bold">
+                + Add Custom Assessment / Exam...
+              </option>
             </select>
           </div>
 
@@ -302,7 +360,7 @@ export default function AssessmentEntry() {
               ) : (
                 availableStreams.map(st => (
                   <option key={st.stream_id} value={st.stream_id}>
-                    {st.form_name} {st.stream_name} ({st.student_count} students)
+                    {formatStreamDisplay(st.form_name, st.stream_name)} ({st.student_count || 0} students)
                   </option>
                 ))
               )}
@@ -399,6 +457,109 @@ export default function AssessmentEntry() {
           </div>
         )}
       </div>
+
+      {/* Modal for creating a new exam/assessment */}
+      {showAddExamModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-navy">New Assessment</h3>
+                  <p className="text-xs text-slate-500 font-medium">Create a custom test or examination</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => { setShowAddExamModal(false); setCreateExamError(null); }}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {createExamError && (
+              <div className="p-3 mb-4 rounded-xl bg-danger/10 border border-danger/20 text-danger text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{createExamError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateExam} className="space-y-4">
+              <div>
+                <label className="block text-xs font-black uppercase text-slate-500 mb-1.5">
+                  Assessment Name <span className="text-danger">*</span>
+                </label>
+                <input 
+                  type="text"
+                  value={newExamName}
+                  onChange={(e) => setNewExamName(e.target.value)}
+                  placeholder="e.g. Term 1 Opener Exam 2026"
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-navy focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-black uppercase text-slate-500 mb-1.5">
+                    Term
+                  </label>
+                  <select
+                    value={newExamTerm}
+                    onChange={(e) => setNewExamTerm(Number(e.target.value))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-navy focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+                  >
+                    <option value={1}>Term 1</option>
+                    <option value={2}>Term 2</option>
+                    <option value={3}>Term 3</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase text-slate-500 mb-1.5">
+                    Max Score
+                  </label>
+                  <input 
+                    type="number"
+                    value={newExamMaxScore}
+                    onChange={(e) => setNewExamMaxScore(Number(e.target.value))}
+                    min="10"
+                    max="1000"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-navy focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowAddExamModal(false); setCreateExamError(null); }}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-black hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingExam || !newExamName.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-black hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {creatingExam ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Assessment'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

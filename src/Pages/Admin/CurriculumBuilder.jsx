@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { ChevronRight, Plus, FolderTree, BookOpen, Layers, Target, Library, UploadCloud, Loader2, AlertCircle, Image as ImageIcon, PenTool, Trash2, Sparkles } from 'lucide-react';
 import apiClient from '../../config/apiClient';
 import KnowledgePackReviewModal from '../../Components/Admin/KnowledgePackReviewModal';
+import BackButton from '../../Components/Common/BackButton';
 import { useGeneration } from '../../Context/GenerationContext';
 
 export default function CurriculumBuilder() {
@@ -316,10 +317,15 @@ export default function CurriculumBuilder() {
     };
 
     const Column = ({ title, icon: Icon, items, selectedItem, onSelect, type, parentId, placeholder }) => (
-        <div className="flex flex-col w-64 bg-white border-r border-gray-200 h-full overflow-hidden shrink-0">
-            <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center gap-2">
-                <Icon className="w-5 h-5 text-custom-orange" />
-                <h3 className="font-semibold text-gray-800">{title}</h3>
+        <div className="flex flex-col w-72 bg-white border-r border-gray-200 h-full overflow-hidden shrink-0">
+            <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Icon className="w-5 h-5 text-custom-orange" />
+                    <h3 className="font-semibold text-gray-800">{title}</h3>
+                </div>
+                <span className="text-xs font-bold text-gray-400 bg-gray-200/60 px-2 py-0.5 rounded-full">
+                    {items.length}
+                </span>
             </div>
             
             <div className="flex-1 overflow-y-auto p-2">
@@ -330,28 +336,64 @@ export default function CurriculumBuilder() {
                     <div 
                         key={item.id}
                         onClick={() => onSelect(item)}
-                        className={`p-3 text-sm rounded-lg cursor-pointer mb-1 flex items-center justify-between group transition-colors ${
+                        className={`p-2.5 text-sm rounded-xl cursor-pointer mb-1.5 flex flex-col gap-1 group transition-all ${
                             selectedItem?.id === item.id 
-                            ? 'bg-blue-50 border border-blue-200 text-blue-700' 
-                            : 'hover:bg-gray-100 text-gray-700 border border-transparent'
+                            ? 'bg-blue-50/90 border border-blue-200 text-blue-900 shadow-xs' 
+                            : 'hover:bg-gray-50 text-gray-700 border border-gray-100/70'
                         }`}
                     >
-                        <span className="truncate flex-1">{item.name}</span>
-                        {type === 'unit' && isGeneratingUnit(item.id) && (
-                            <span className="flex items-center gap-1 text-[10px] text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full mr-1 animate-pulse font-medium shrink-0">
-                                <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                                Gen
-                            </span>
-                        )}
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); handleDelete(type, item.id, item.name); }}
-                                className="p-1 hover:text-red-500 text-gray-400"
-                            >
-                                <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                            <ChevronRight className={`w-4 h-4 ${selectedItem?.id === item.id ? 'text-blue-500' : 'text-gray-300'}`} />
+                        <div className="flex items-center justify-between gap-1">
+                            <span className="font-semibold text-xs truncate flex-1">{item.name}</span>
+                            {type === 'unit' && isGeneratingUnit(item.id) && (
+                                <span className="flex items-center gap-1 text-[10px] text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full mr-1 animate-pulse font-medium shrink-0">
+                                    <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                    Gen
+                                </span>
+                            )}
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); handleDelete(type, item.id, item.name); }}
+                                    className="p-1 hover:text-red-500 text-gray-400"
+                                    title="Delete"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                                <ChevronRight className={`w-3.5 h-3.5 ${selectedItem?.id === item.id ? 'text-blue-500' : 'text-gray-300'}`} />
+                            </div>
                         </div>
+
+                        {/* Subject Structural & Content Progress */}
+                        {type === 'subject' && (
+                            <div className="flex flex-col gap-0.5 pt-1 text-[10px] text-gray-500 border-t border-gray-100">
+                                <div className="flex items-center justify-between font-medium">
+                                    <span className="text-gray-500">Structure</span>
+                                    <span className="text-gray-800 font-semibold">
+                                        {item.topics_count ?? 0} {item.topics_count === 1 ? 'Topic' : 'Topics'} • {item.units_count ?? 0} {item.units_count === 1 ? 'Unit' : 'Units'}
+                                    </span>
+                                </div>
+                                {(item.units_count ?? 0) > 0 && (
+                                    <div className="flex items-center justify-between text-gray-400">
+                                        <span>Content</span>
+                                        <span className="text-emerald-600 font-medium">
+                                            {item.lessons_published_count ?? 0}/{item.units_count} pub
+                                            {item.lessons_generated_count > item.lessons_published_count && (
+                                                <span className="text-amber-600 font-normal"> ({item.lessons_generated_count} gen)</span>
+                                            )}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Topic Structural Progress */}
+                        {type === 'topic' && (
+                            <div className="flex items-center justify-between text-[10px] pt-1 text-gray-500 border-t border-gray-100 font-medium">
+                                <span className="text-gray-500">Structure</span>
+                                <span className="text-gray-800 font-semibold">
+                                    {item.units_count ?? 0} {item.units_count === 1 ? 'Unit' : 'Units'}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
@@ -528,6 +570,9 @@ export default function CurriculumBuilder() {
     return (
         <div className="h-[calc(100vh-64px)] flex flex-col bg-white">
             <div className="p-6 border-b border-gray-200">
+                <div className="mb-3">
+                    <BackButton to="/admin-dashboard" label="Back to Admin Dashboard" />
+                </div>
                 <h1 className="text-2xl font-bold text-gray-800">Curriculum Builder</h1>
                 <p className="text-gray-500 mt-1">Design your curriculum hierarchy and transition seamlessly into the Content Studio.</p>
             </div>

@@ -8,7 +8,8 @@ import {
 } from './ComponentEditors';
 import VisualizationEditor from './VisualizationEditor';
 import { MediaSlot } from './MediaSlot';
-import { RotateCcw, Trash2, Copy, ArrowUp, ArrowDown, Plus, X } from 'lucide-react';
+import { RotateCcw, Trash2, Copy, ArrowUp, ArrowDown, Plus, X, Sparkles } from 'lucide-react';
+import VisualPromptModal from './VisualPromptModal';
 
 const SUGGESTED_TYPES = new Set([
     'suggested_diagram', 'suggested_illustration', 'suggested_image', 
@@ -223,6 +224,7 @@ export default function ConceptComposer({
     concept,
     allAssets,
     lessonId,
+    lessonTitle = '',
     onBlockChange,
     onSave,
     onDelete,
@@ -232,8 +234,38 @@ export default function ConceptComposer({
     onMove,
     onAddBlock,
     onAddBlockWithFile,
+    highlightBlockId = null,
 }) {
     const [showAddMenu, setShowAddMenu] = React.useState(false);
+    const [visualModalState, setVisualModalState] = React.useState({
+        isOpen: false,
+        targetBlock: null,
+        targetAsset: null,
+    });
+
+    const handleOpenGeneralVisualPrompt = () => {
+        setVisualModalState({
+            isOpen: true,
+            targetBlock: null,
+            targetAsset: null,
+        });
+    };
+
+    const handleOpenTargetedVisualPrompt = (block, asset) => {
+        setVisualModalState({
+            isOpen: true,
+            targetBlock: block,
+            targetAsset: asset || null,
+        });
+    };
+
+    const handleCloseVisualPrompt = () => {
+        setVisualModalState({
+            isOpen: false,
+            targetBlock: null,
+            targetAsset: null,
+        });
+    };
     if (!concept) {
         return (
             <div className="flex-1 flex items-center justify-center bg-gray-50 text-gray-400">
@@ -291,6 +323,8 @@ export default function ConceptComposer({
                                                 onRegenerate={onRegenerate}
                                                 onAssetUpdated={onAssetUpdated}
                                                 onMove={onMove}
+                                                onPromptVisual={handleOpenTargetedVisualPrompt}
+                                                isHighlighted={Boolean(highlightBlockId && String(block.id) === String(highlightBlockId))}
                                             />
                                         ))}
                                     </div>
@@ -299,12 +333,12 @@ export default function ConceptComposer({
                         });
                     })()}
                     
-                    {/* Add Component Action */}
-                    <div className="pt-8 border-t border-gray-100 flex justify-center">
+                    {/* Add Component & Prompt Visual Actions */}
+                    <div className="pt-8 border-t border-gray-100 flex flex-wrap items-center justify-center gap-3">
                         <div className="relative">
                             <button
                                 onClick={() => setShowAddMenu(!showAddMenu)}
-                                className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-semibold hover:border-custom-blue hover:text-custom-blue transition-colors shadow-sm"
+                                className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-dashed border-gray-300 rounded-xl text-gray-600 font-semibold hover:border-custom-blue hover:text-custom-blue transition-colors shadow-xs cursor-pointer"
                             >
                                 <Plus size={18} />
                                 Add Component
@@ -388,6 +422,30 @@ export default function ConceptComposer({
                                 </div>
                             )}
                         </div>
+
+                        {/* Prompt AI for Visual Action */}
+                        <button
+                            type="button"
+                            onClick={handleOpenGeneralVisualPrompt}
+                            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-dashed border-orange-300 rounded-xl text-custom-orange font-semibold hover:bg-orange-100/70 transition-colors shadow-xs cursor-pointer"
+                        >
+                            <Sparkles size={18} />
+                            Prompt AI for Visual
+                        </button>
+
+                        <VisualPromptModal
+                            isOpen={visualModalState.isOpen}
+                            onClose={handleCloseVisualPrompt}
+                            lessonId={lessonId}
+                            lessonTitle={lessonTitle}
+                            conceptPageNum={concept.pageNum}
+                            targetBlock={visualModalState.targetBlock}
+                            targetAsset={visualModalState.targetAsset}
+                            existingBlocks={concept.blocks || []}
+                            onSuccess={() => {
+                                if (onAssetUpdated) onAssetUpdated();
+                            }}
+                        />
                     </div>
                 </div>
             </div>
@@ -405,7 +463,9 @@ function ComponentWrapper({
     onDuplicate,
     onRegenerate,
     onAssetUpdated,
-    onMove
+    onMove,
+    onPromptVisual,
+    isHighlighted = false,
 }) {
     const isMediaBlock = SUGGESTED_TYPES.has(block.block_type);
 
@@ -416,7 +476,20 @@ function ComponentWrapper({
     const EditorComponent = selectEditor(block.block_type);
 
     return (
-        <div className="relative group">
+        <div className={`relative group transition-all duration-200 ${
+            isHighlighted ? 'ring-2 ring-rose-500 rounded-2xl p-3 bg-rose-50/20 shadow-md' : ''
+        }`}>
+            {isHighlighted && (
+                <div className="mb-3 flex items-center justify-between px-3.5 py-2 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-bold shadow-xs">
+                    <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                        Reported Issue Target: User feedback or visual error reported on this component
+                    </span>
+                    <span className="text-[10px] uppercase tracking-wider bg-rose-200/80 px-2 py-0.5 rounded font-extrabold text-rose-900">
+                        Block #{block.id}
+                    </span>
+                </div>
+            )}
             {/* Action toolbar (visible on hover) */}
             <div className="absolute -top-3 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-white border border-gray-200 shadow-sm rounded-lg p-1 z-10">
                 <button
@@ -432,6 +505,13 @@ function ComponentWrapper({
                     title="Move down"
                 >
                     <ArrowDown size={14} />
+                </button>
+                <button
+                    onClick={() => onPromptVisual && onPromptVisual(block, null)}
+                    className="p-1.5 rounded text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                    title="Generate or update AI visual for this component"
+                >
+                    <Sparkles size={14} />
                 </button>
                 <button
                     onClick={() => onRegenerate(block.id)}
@@ -476,6 +556,7 @@ function ComponentWrapper({
                             blockId={block.id}
                             onAssetUpdated={onAssetUpdated}
                             onDeleteBlock={onDelete}
+                            onPromptVisual={(bId, asset) => onPromptVisual && onPromptVisual(block, asset)}
                         />
                     ) : (
                         blockAssets.map((asset) => (
@@ -486,6 +567,7 @@ function ComponentWrapper({
                                 blockId={block.id}
                                 onAssetUpdated={onAssetUpdated}
                                 onDeleteBlock={onDelete}
+                                onPromptVisual={(bId, asset) => onPromptVisual && onPromptVisual(block, asset)}
                             />
                         ))
                     )}
@@ -511,6 +593,7 @@ function ComponentWrapper({
                             lessonId={lessonId}
                             blockId={block.id}
                             onAssetUpdated={onAssetUpdated}
+                            onPromptVisual={(bId, asset) => onPromptVisual && onPromptVisual(block, asset)}
                         />
                     ))}
                 </div>

@@ -7,8 +7,9 @@ import apiClient from '../config/apiClient';
 import { ContentNormalizer } from '../utils/ContentNormalizer';
 import {
     ChevronLeft, ChevronRight, Clock,
-    CheckCircle, Circle, LayoutList
+    CheckCircle, Circle, LayoutList, Flag
 } from 'lucide-react';
+import ReportVisualizationModal from '../Components/Common/ReportVisualizationModal';
 import { useLessonProgress } from '../Hooks/useLessonProgress';
 import { LessonTimeline, LessonCompletionCard } from '../Components/LessonBlocks/LessonProgressComponents';
 import { PresentationEngine } from '../services/presentation/PresentationEngine';
@@ -101,6 +102,7 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
     const [lesson, setLesson] = useState(lessonData || null);
     const [loading, setLoading] = useState(!lessonData);
     const [error, setError] = useState(null);
+    const [v1ReportingVisual, setV1ReportingVisual] = useState(null);
 
     useEffect(() => {
         if (lessonData) {
@@ -203,7 +205,7 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="space-y-6">
                     {lesson.blocks && lesson.blocks.map((block) => (
-                        <BlockRenderer key={block.id} block={block} />
+                        <BlockRenderer key={block.id} block={block} onReportVisual={setV1ReportingVisual} />
                     ))}
                 </div>
                 {(!lesson.blocks || lesson.blocks.length === 0) && (
@@ -212,6 +214,17 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
                     </div>
                 )}
             </div>
+
+            {/* Report Visualization Modal for V1 Mode */}
+            <ReportVisualizationModal
+                isOpen={Boolean(v1ReportingVisual)}
+                onClose={() => setV1ReportingVisual(null)}
+                visual={v1ReportingVisual}
+                lessonId={lesson?.id}
+                lessonBlockId={v1ReportingVisual?.lessonBlockId}
+                visualizationTitle={v1ReportingVisual?.title}
+                visualizationType={v1ReportingVisual?.type}
+            />
         </div>
     );
 };
@@ -254,6 +267,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
     const [showContents, setShowContents] = useState(false);
     const [interactedBlocks, setInteractedBlocks] = useState(new Set());
     const [topicData, setTopicData] = useState(null);
+    const [reportingVisual, setReportingVisual] = useState(null);
 
     useEffect(() => {
         if (effectiveTopicId && effectiveTopicId !== 'undefined') {
@@ -387,6 +401,23 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                 </div>
 
                 <div className="max-w-[1536px] mx-auto px-4 sm:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-3">
+                    {/* Exit Back Button */}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (effectiveTopicId) {
+                                navigate(isTeacherView ? `/teacher/topic/${effectiveTopicId}` : `/student/topic/${effectiveTopicId}`);
+                            } else {
+                                navigate(-1);
+                            }
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer shrink-0"
+                        title="Exit Lesson"
+                    >
+                        <ChevronLeft size={16} />
+                        <span className="hidden sm:inline">Exit Lesson</span>
+                    </button>
+
                     {/* Lesson title + progress meta */}
                     <div className="flex-1 min-w-0">
                         {topicData && (
@@ -409,6 +440,26 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                             </span>
                         </div>
                     </div>
+
+                    {/* Report Visual / Lesson Issue */}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const mediaBlock = currentPage?.blocks?.find(b => 
+                                ['diagram', 'image', 'youtube', 'video', 'visualization', 'suggested_diagram', 'suggested_video', 'suggested_image', 'suggested_simulation', 'simulation', 'simulation_placeholder', 'experiment'].includes(b.block_type)
+                            );
+                            setReportingVisual({
+                                title: mediaBlock?.title || currentPage?.pageTitle || lesson?.title,
+                                type: mediaBlock?.block_type || 'lesson_visualization',
+                                lessonId: lesson?.id,
+                                lessonBlockId: mediaBlock?.id || null,
+                            });
+                        }}
+                        className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 cursor-pointer"
+                        title="Report Visual Issue"
+                    >
+                        <Flag size={18} />
+                    </button>
 
                     {/* Contents toggle */}
                     <button
@@ -520,7 +571,12 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                                     page={currentPage}
                                     context={presentationContext}
                                     renderBlock={(block) => (
-                                        <BlockRenderer key={block.id} block={block} onInteract={handleInteract} />
+                                        <BlockRenderer 
+                                            key={block.id} 
+                                            block={block} 
+                                            onInteract={handleInteract}
+                                            onReportVisual={setReportingVisual}
+                                        />
                                     )}
                                 />
                             </LessonErrorBoundary>
@@ -577,6 +633,17 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                     )}
                 </div>
             </div>
+
+            {/* Report Visualization Modal */}
+            <ReportVisualizationModal
+                isOpen={Boolean(reportingVisual)}
+                onClose={() => setReportingVisual(null)}
+                visual={reportingVisual}
+                lessonId={lesson?.id}
+                lessonBlockId={reportingVisual?.lessonBlockId}
+                visualizationTitle={reportingVisual?.title}
+                visualizationType={reportingVisual?.type}
+            />
         </div>
     );
 }

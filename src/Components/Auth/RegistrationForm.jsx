@@ -2,7 +2,7 @@ import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router";
 import axios from "axios";
 import Swal from "sweetalert2";
-import { Mail, Lock, ArrowRight, User, ChevronLeft, Loader } from "lucide-react";
+import { Mail, Lock, ArrowRight, User, ChevronLeft, Loader, Eye, EyeOff } from "lucide-react";
 import UserContext from "../../Context/UserContext";
 import BASE_URL from "../../config";
 
@@ -54,6 +54,8 @@ export default function RegistrationForm({ selectedRole, onBack }) {
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { login } = useContext(UserContext);
   const navigate = useNavigate();
@@ -278,18 +280,26 @@ export default function RegistrationForm({ selectedRole, onBack }) {
             Password
           </label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" aria-hidden="true" />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none" aria-hidden="true" />
             <input
               id="reg-password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              className={inputClass("password")}
+              className={`${inputClass("password")} pr-10`}
               placeholder="••••••••"
               autoComplete="new-password"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none cursor-pointer p-1"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
           </div>
           {fieldErrors.password && (
             <p className="text-red-500 text-xs mt-1" role="alert">
@@ -304,18 +314,26 @@ export default function RegistrationForm({ selectedRole, onBack }) {
             Confirm Password
           </label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" aria-hidden="true" />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none" aria-hidden="true" />
             <input
               id="reg-password-confirm"
-              type="password"
+              type={showConfirmPassword ? "text" : "password"}
               name="password_confirm"
               value={formData.password_confirm}
               onChange={handleInputChange}
-              className={inputClass("password_confirm")}
+              className={`${inputClass("password_confirm")} pr-10`}
               placeholder="••••••••"
               autoComplete="new-password"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none cursor-pointer p-1"
+              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+            >
+              {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
           </div>
           {fieldErrors.password_confirm && (
             <p className="text-red-500 text-xs mt-1" role="alert">

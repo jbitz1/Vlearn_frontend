@@ -8,7 +8,7 @@ import BASE_URL from '../../config';
 import { ContentNormalizer } from '../../utils/ContentNormalizer';
 import LessonSimulationLauncherCard from './LessonSimulationLauncherCard';
 import {
-  Target, Book, PenTool, Lightbulb, AlertTriangle, XCircle, Zap, Star, BrainCircuit, Globe, Hand, FlaskConical, Sparkles, CheckCircle2, PlayCircle, BarChart, Image as ImageIcon, MonitorPlay, Link2, BookOpen, Check, X, Clock
+  Target, Book, PenTool, Lightbulb, AlertTriangle, XCircle, Zap, Star, BrainCircuit, Globe, Hand, FlaskConical, Sparkles, CheckCircle2, PlayCircle, BarChart, Image as ImageIcon, MonitorPlay, Link2, BookOpen, Check, X, Clock, Flag
 } from 'lucide-react';
 
 // ─── Content extraction helper ───────────────────────────────────────────────
@@ -791,7 +791,7 @@ const COLOR_MAP = {
   gray:   ['bg-gray-50 border-gray-100', 'text-gray-600', 'text-gray-900', 'text-gray-700'],
 };
 
-export const SuggestedMediaBlock = ({ block }) => {
+export const SuggestedMediaBlock = ({ block, onReportVisual }) => {
   const [imageError, setImageError] = useState(false);
   const [fetchedSvg, setFetchedSvg] = useState(null);
   const cfg = MEDIA_CONFIG[block.block_type] || MEDIA_CONFIG.suggested_image;
@@ -861,11 +861,27 @@ export const SuggestedMediaBlock = ({ block }) => {
             className="w-full h-auto rounded-2xl sm:rounded-3xl shadow-md sm:shadow-lg overflow-hidden bg-white border border-slate-200/90 flex items-center justify-center p-3 sm:p-5 md:p-6 transition-all hover:shadow-xl hover:border-slate-300"
             dangerouslySetInnerHTML={{ __html: inlineSvg }}
           />
-          {block.title && (
-            <figcaption className="text-gray-700 mt-3 sm:mt-4 text-sm sm:text-base text-center font-medium font-sans">
-              {block.title.replace(/\s+(?:Visual|Diagram|Visualization|Video)\s*(?:Card|Slot)?$/i, '')}
-            </figcaption>
-          )}
+          <div className="flex items-center justify-between mt-3 sm:mt-4 px-1 gap-3">
+            {block.title ? (
+              <figcaption className="text-gray-700 text-sm sm:text-base font-medium font-sans">
+                {block.title.replace(/\s+(?:Visual|Diagram|Visualization|Video)\s*(?:Card|Slot)?$/i, '')}
+              </figcaption>
+            ) : <div />}
+            {onReportVisual && (
+              <button
+                type="button"
+                onClick={() => onReportVisual({
+                  title: block.title || 'Scientific Diagram',
+                  type: 'diagram',
+                  lessonBlockId: block.id,
+                })}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-400 hover:text-red-600 transition-colors cursor-pointer shrink-0"
+                title="Report issue with this diagram"
+              >
+                <Flag className="w-3 h-3" /> Report
+              </button>
+            )}
+          </div>
         </figure>
       </div>
     );
@@ -912,11 +928,27 @@ export const SuggestedMediaBlock = ({ block }) => {
           ) : (
             imageElement
           )}
-          {block.title && (
-            <figcaption className="text-gray-600 mt-4 text-base text-center font-medium font-sans">
-              {block.title.replace(/\s+(?:Visual|Diagram|Visualization|Video)\s*(?:Card|Slot)?$/i, '')}
-            </figcaption>
-          )}
+          <div className="flex items-center justify-between mt-4 px-1 gap-3">
+            {block.title ? (
+              <figcaption className="text-gray-600 text-base font-medium font-sans">
+                {block.title.replace(/\s+(?:Visual|Diagram|Visualization|Video)\s*(?:Card|Slot)?$/i, '')}
+              </figcaption>
+            ) : <div />}
+            {onReportVisual && (
+              <button
+                type="button"
+                onClick={() => onReportVisual({
+                  title: block.title || 'Lesson Image',
+                  type: 'image',
+                  lessonBlockId: block.id,
+                })}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-400 hover:text-red-600 transition-colors cursor-pointer shrink-0"
+                title="Report issue with this image"
+              >
+                <Flag className="w-3 h-3" /> Report
+              </button>
+            )}
+          </div>
           {hasAttribution && (
             <div className="mt-2 text-xs text-gray-400 flex items-center justify-center gap-1.5 flex-wrap font-sans text-center">
               {author && <span>© {author}</span>}
@@ -1003,11 +1035,27 @@ export const SuggestedMediaBlock = ({ block }) => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-stretch w-full">
             {/* Left: Dominant, Extra-Wide Video Player */}
             <div className="lg:col-span-8 xl:col-span-9 bg-white border border-gray-200/80 rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-              <div className="flex items-center gap-2 mb-3.5 px-1">
-                <PlayCircle className="text-red-500 w-5 h-5 shrink-0" />
-                <h3 className="font-bold text-base sm:text-xl text-gray-900 font-sans tracking-tight">
-                  {videoTitle}
-                </h3>
+              <div className="flex items-center justify-between mb-3.5 px-1 gap-2">
+                <div className="flex items-center gap-2">
+                  <PlayCircle className="text-red-500 w-5 h-5 shrink-0" />
+                  <h3 className="font-bold text-base sm:text-xl text-gray-900 font-sans tracking-tight">
+                    {videoTitle}
+                  </h3>
+                </div>
+                {onReportVisual && (
+                  <button
+                    type="button"
+                    onClick={() => onReportVisual({
+                      title: videoTitle,
+                      type: 'video',
+                      lessonBlockId: block.id,
+                    })}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-400 hover:text-red-600 transition-colors cursor-pointer shrink-0"
+                    title="Report issue with this video"
+                  >
+                    <Flag className="w-3 h-3" /> Report
+                  </button>
+                )}
               </div>
               <div className="aspect-video w-full bg-black rounded-2xl overflow-hidden shadow-xs">
                 {videoElement}
@@ -1027,11 +1075,27 @@ export const SuggestedMediaBlock = ({ block }) => {
           </div>
         ) : (
           <div className="bg-white border border-gray-200/80 rounded-3xl p-4 sm:p-6 shadow-xs space-y-3 w-full">
-            <div className="flex items-center gap-2 px-1">
-              <PlayCircle className="text-red-500 w-5 h-5 shrink-0" />
-              <h3 className="font-bold text-base sm:text-xl text-gray-900 font-sans tracking-tight">
-                {videoTitle}
-              </h3>
+            <div className="flex items-center justify-between px-1 gap-2">
+              <div className="flex items-center gap-2">
+                <PlayCircle className="text-red-500 w-5 h-5 shrink-0" />
+                <h3 className="font-bold text-base sm:text-xl text-gray-900 font-sans tracking-tight">
+                  {videoTitle}
+                </h3>
+              </div>
+              {onReportVisual && (
+                <button
+                  type="button"
+                  onClick={() => onReportVisual({
+                    title: videoTitle,
+                    type: 'video',
+                    lessonBlockId: block.id,
+                  })}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-400 hover:text-red-600 transition-colors cursor-pointer shrink-0"
+                  title="Report issue with this video"
+                >
+                  <Flag className="w-3 h-3" /> Report
+                </button>
+              )}
             </div>
             <div className="aspect-video w-full bg-black rounded-2xl overflow-hidden shadow-xs">
               {videoElement}

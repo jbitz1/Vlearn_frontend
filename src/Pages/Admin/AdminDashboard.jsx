@@ -15,26 +15,49 @@ import {
     Clock, 
     Layers, 
     Zap,
-    ExternalLink
+    ExternalLink,
+    Flag,
+    Eye,
+    GraduationCap
 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
+import CourseContentProgressModule from "./CourseManagement/CourseContentProgressModule";
+import IssueDetailModal from "./IssueDetailModal";
 
 function AdminDashboard() {
     const navigate = useNavigate();
 
     const [enrolledLearners, setEnrolledLearners] = useState(0);
-    const [videoCount, setVideoCount] = useState(0);
-    const [activeUsers, setActiveUsers] = useState(0);
-    
-    const [learningUnits, setLearningUnits] = useState([]);
-    const [lessons, setLessons] = useState([]);
-    const [generationJobs, setGenerationJobs] = useState([]);
-    const [subjects, setSubjects] = useState([]);
-    const [topics, setTopics] = useState([]);
+    const [subscribedLearners, setSubscribedLearners] = useState(0);
+    const [otherUsersCount, setOtherUsersCount] = useState(0);
+    const [teachersCount, setTeachersCount] = useState(0);
+    const [schoolAdminsCount, setSchoolAdminsCount] = useState(0);
     const [simulationsCount, setSimulationsCount] = useState(0);
-    
-    const [lessonFilter, setLessonFilter] = useState("all"); // "all", "published", "draft"
+    const [courseOverview, setCourseOverview] = useState([]);
+    const [issueReports, setIssueReports] = useState([]);
+    const [selectedIssue, setSelectedIssue] = useState(null);
+    const [issueFilter, setIssueFilter] = useState("all"); // "all", "open", "resolved"
     const [isLoading, setIsLoading] = useState(true);
+
+    const getStudioLink = (issue) => {
+        if (!issue) return '/admin-dashboard/content-studio';
+        if (issue.learning_unit_id) {
+            const params = new URLSearchParams();
+            if (issue.lesson) params.set('lessonId', issue.lesson);
+            if (issue.lesson_block) params.set('targetBlock', issue.lesson_block);
+            if (issue.block_page_number) params.set('targetPage', issue.block_page_number);
+            const qs = params.toString();
+            return `/admin-dashboard/content-studio/${issue.learning_unit_id}${qs ? `?${qs}` : ''}`;
+        }
+        if (issue.lesson) {
+            const params = new URLSearchParams();
+            params.set('lessonId', issue.lesson);
+            if (issue.lesson_block) params.set('targetBlock', issue.lesson_block);
+            if (issue.block_page_number) params.set('targetPage', issue.block_page_number);
+            return `/admin-dashboard/content-studio?${params.toString()}`;
+        }
+        return '/admin-dashboard/content-studio';
+    };
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -42,48 +65,39 @@ function AdminDashboard() {
             try {
                 const [
                     userRes, 
-                    videoRes, 
                     activeUsersRes, 
-                    luRes, 
-                    lessonRes, 
-                    jobRes,
-                    subjRes,
-                    topicRes,
-                    simRes
+                    simRes,
+                    overviewRes,
+                    issueRes
                 ] = await Promise.allSettled([
                     apiClient.get('/users-count/'),
-                    apiClient.get('/video-count/'),
                     apiClient.get('/api/subscriptions/subscribed-users/count/'),
-                    apiClient.get('/api/curriculum/learning-units/?page_size=8'),
-                    apiClient.get('/api/curriculum/lessons/?page_size=8'),
-                    apiClient.get('/api/curriculum/generation-jobs/?page_size=6'),
-                    apiClient.get('/api/curriculum/subjects/'),
-                    apiClient.get('/api/curriculum/topics/'),
                     apiClient.get('/api/curriculum/simulations/'),
+                    apiClient.get('/api/curriculum/course-management/overview/'),
+                    apiClient.get('/api/curriculum/visualization-issues/'),
                 ]);
 
-                if (userRes.status === 'fulfilled') setEnrolledLearners(userRes.value.data?.user_count || 0);
-                if (videoRes.status === 'fulfilled') setVideoCount(videoRes.value.data?.count || 0);
-                if (activeUsersRes.status === 'fulfilled') setActiveUsers(activeUsersRes.value.data?.subscribed_users || 0);
+                if (userRes.status === 'fulfilled') {
+                    const uData = userRes.value.data || {};
+                    setEnrolledLearners(uData.enrolled_learners ?? uData.user_count ?? 0);
+                    setOtherUsersCount(uData.other_users ?? 0);
+                    setTeachersCount(uData.teachers ?? 0);
+                    setSchoolAdminsCount(uData.school_admins ?? 0);
+                }
+                if (activeUsersRes.status === 'fulfilled') {
+                    setSubscribedLearners(activeUsersRes.value.data?.subscribed_users || 0);
+                }
                 
-                if (luRes.status === 'fulfilled') {
-                    setLearningUnits(luRes.value.data?.results || luRes.value.data || []);
-                }
-                if (lessonRes.status === 'fulfilled') {
-                    setLessons(lessonRes.value.data?.results || lessonRes.value.data || []);
-                }
-                if (jobRes.status === 'fulfilled') {
-                    setGenerationJobs(jobRes.value.data?.results || jobRes.value.data || []);
-                }
-                if (subjRes.status === 'fulfilled') {
-                    setSubjects(subjRes.value.data?.results || subjRes.value.data || []);
-                }
-                if (topicRes.status === 'fulfilled') {
-                    setTopics(topicRes.value.data?.results || topicRes.value.data || []);
-                }
                 if (simRes.status === 'fulfilled') {
-                    const sims = simRes.value.data?.results || simRes.value.data || [];
-                    setSimulationsCount(Array.isArray(sims) ? sims.length : 0);
+                    const simData = simRes.value.data;
+                    const count = simData?.count ?? (Array.isArray(simData?.results) ? simData.results.length : Array.isArray(simData) ? simData.length : 0);
+                    setSimulationsCount(count);
+                }
+                if (overviewRes.status === 'fulfilled') {
+                    setCourseOverview(overviewRes.value.data || []);
+                }
+                if (issueRes.status === 'fulfilled') {
+                    setIssueReports(issueRes.value.data?.results || issueRes.value.data || []);
                 }
             } catch (err) {
                 console.error('Error fetching admin dashboard data:', err);
@@ -95,12 +109,40 @@ function AdminDashboard() {
         fetchDashboardData();
     }, []);
 
-    const publishedLessonsCount = lessons.filter(l => l.status === 'published').length;
-    const draftLessonsCount = lessons.filter(l => l.status === 'draft').length;
+    const handleResolveIssue = async (issueId, notes = "Resolved by platform admin.") => {
+        try {
+            await apiClient.post(`/api/curriculum/visualization-issues/${issueId}/resolve/`, {
+                resolution_notes: notes
+            });
+            setIssueReports(prev => prev.map(issue => 
+                issue.id === issueId ? { 
+                    ...issue, 
+                    status: 'resolved',
+                    resolved_at: new Date().toISOString(),
+                    resolution_notes: notes 
+                } : issue
+            ));
+            if (selectedIssue && selectedIssue.id === issueId) {
+                setSelectedIssue(prev => ({
+                    ...prev,
+                    status: 'resolved',
+                    resolved_at: new Date().toISOString(),
+                    resolution_notes: notes
+                }));
+            }
+        } catch (err) {
+            console.error("Failed to resolve issue:", err);
+            alert("Failed to mark issue as resolved.");
+        }
+    };
 
-    const filteredLessons = lessons.filter(lesson => {
-        if (lessonFilter === "published") return lesson.status === 'published';
-        if (lessonFilter === "draft") return lesson.status === 'draft';
+    const totalDefinedUnits = courseOverview.reduce((acc, g) => acc + (g.units_defined || 0), 0);
+    const totalGeneratedLessons = courseOverview.reduce((acc, g) => acc + (g.units_generated || 0), 0);
+    const totalPublishedLessons = courseOverview.reduce((acc, g) => acc + (g.units_published || 0), 0);
+
+    const filteredIssues = issueReports.filter(issue => {
+        if (issueFilter === "open") return issue.status !== 'resolved';
+        if (issueFilter === "resolved") return issue.status === 'resolved';
         return true;
     });
 
@@ -152,7 +194,7 @@ function AdminDashboard() {
             </div>
 
             {/* KPI Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
                 {/* Enrolled Learners */}
                 <div className="bg-white p-6 rounded-3xl border border-gray-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:shadow-md transition-all">
                     <div className="flex items-center justify-between">
@@ -162,11 +204,11 @@ function AdminDashboard() {
                         </div>
                     </div>
                     <div className="mt-4">
-                        <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">
+                        <h2 className="text-3xl font-extrabold text-gray-900">
                             {isLoading ? "..." : enrolledLearners.toLocaleString()}
                         </h2>
                         <p className="text-xs text-gray-500 mt-1 flex items-center gap-1 font-medium">
-                            <span className="text-emerald-600 font-bold">● Active</span> across all schools & self-learners
+                            <span className="text-blue-600 font-bold">Have an account</span> • Registered learners
                         </p>
                     </div>
                 </div>
@@ -180,29 +222,52 @@ function AdminDashboard() {
                         </div>
                     </div>
                     <div className="mt-4">
-                        <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">
-                            {isLoading ? "..." : activeUsers.toLocaleString()}
+                        <h2 className="text-3xl font-extrabold text-gray-900">
+                            {isLoading ? "..." : subscribedLearners.toLocaleString()}
                         </h2>
                         <p className="text-xs text-gray-500 mt-1 flex items-center gap-1 font-medium">
-                            <span className="text-custom-orange font-bold">Unlocked</span> full curriculum entitlements
+                            <span className="text-custom-orange font-bold">Purchased subscriptions</span> • Active access
                         </p>
                     </div>
                 </div>
 
+                {/* Educators & Other Accounts */}
+                <Link
+                    to="/admin-dashboard/user-management"
+                    className="bg-white p-6 rounded-3xl border border-gray-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:shadow-md hover:border-purple-200 transition-all cursor-pointer"
+                    title="View educators, school admins, and staff in User Management"
+                >
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Other Accounts</span>
+                        <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl group-hover:scale-110 transition-transform">
+                            <GraduationCap className="w-5 h-5" />
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <h2 className="text-3xl font-extrabold text-gray-900">
+                            {isLoading ? "..." : otherUsersCount.toLocaleString()}
+                        </h2>
+                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1 font-medium">
+                            <span className="text-purple-600 font-bold">{teachersCount} Teachers</span> • {schoolAdminsCount} Admins
+                        </p>
+                    </div>
+                </Link>
+
                 {/* Published Lessons */}
                 <div className="bg-white p-6 rounded-3xl border border-gray-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:shadow-md transition-all">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Lessons & Units</span>
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Lessons</span>
                         <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:scale-110 transition-transform">
                             <BookOpen className="w-5 h-5" />
                         </div>
                     </div>
                     <div className="mt-4">
-                        <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">
-                            {isLoading ? "..." : (lessons.length || 329).toLocaleString()}
+                        <h2 className="text-3xl font-extrabold text-gray-900">
+                            {isLoading ? "..." : totalGeneratedLessons.toLocaleString()}
                         </h2>
                         <p className="text-xs text-gray-500 mt-1 flex items-center gap-1 font-medium">
-                            <span className="text-emerald-600 font-bold">{publishedLessonsCount || 324} Published</span> in syllabus
+                            <span className="text-emerald-600 font-bold">{totalPublishedLessons.toLocaleString()} Published</span>
+                            {totalDefinedUnits > 0 && <span className="text-gray-400">/ {totalDefinedUnits.toLocaleString()} Units</span>}
                         </p>
                     </div>
                 </div>
@@ -216,273 +281,188 @@ function AdminDashboard() {
                         </div>
                     </div>
                     <div className="mt-4">
-                        <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">
-                            {isLoading ? "..." : (simulationsCount || videoCount || 18)}
+                        <h2 className="text-3xl font-extrabold text-gray-900">
+                            {isLoading ? "..." : simulationsCount.toLocaleString()}
                         </h2>
                         <p className="text-xs text-gray-500 mt-1 flex items-center gap-1 font-medium">
-                            <span className="text-purple-600 font-bold">Virtual Labs</span> & STEM Simulations
+                            <span className="text-purple-600 font-bold">Virtual Labs</span> & Sims
+                        </p>
+                    </div>
+                </div>
+
+                {/* Visual Issues & Teacher Feedback */}
+                <div className="bg-white p-6 rounded-3xl border border-gray-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:shadow-md transition-all">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Reported Issues</span>
+                        <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl group-hover:scale-110 transition-transform">
+                            <Flag className="w-5 h-5" />
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <h2 className="text-3xl font-extrabold text-gray-900">
+                            {isLoading ? "..." : issueReports.filter(i => i.status !== 'resolved').length}
+                        </h2>
+                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1 font-medium">
+                            <span className="text-rose-600 font-bold">{issueReports.length} Total</span> submitted
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* CURRICULUM ACTIVITY & CONTENT STUDIO SECTION */}
-            <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                        <h2 className="text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
-                            <Layers className="w-5 h-5 text-custom-blue" />
-                            Curriculum Activity & Content Studio
-                        </h2>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            Real-time overview of learning modules, lesson authoring, and AI ingestion jobs.
-                        </p>
+            {/* COURSE CONTENT PROGRESSION MODULE */}
+            <CourseContentProgressModule />
+
+
+            {/* VISUALIZATION ISSUE REPORTS & TEACHER FEEDBACK QUEUE */}
+            <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-sm space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-rose-50 text-rose-600 rounded-2xl">
+                            <Flag className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-lg font-extrabold text-gray-900 tracking-tight">
+                                    Visual Issue Reports & Teacher Feedback
+                                </h2>
+                                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-600">
+                                    {issueReports.filter(i => i.status !== 'resolved').length} Open
+                                </span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                User-submitted issues on interactive simulations, diagrams, videos, and pedagogical notes.
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <Link
-                            to="/admin-dashboard/curriculum-builder"
-                            className="text-xs font-bold text-custom-blue hover:underline flex items-center gap-1"
+                    <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl self-start sm:self-auto">
+                        <button
+                            onClick={() => setIssueFilter("all")}
+                            className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${issueFilter === 'all' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500'}`}
                         >
-                            View Entire Curriculum Tree <ChevronRight className="w-3.5 h-3.5" />
-                        </Link>
+                            All ({issueReports.length})
+                        </button>
+                        <button
+                            onClick={() => setIssueFilter("open")}
+                            className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${issueFilter === 'open' ? 'bg-white text-rose-700 shadow-xs' : 'text-gray-500'}`}
+                        >
+                            Open ({issueReports.filter(i => i.status !== 'resolved').length})
+                        </button>
+                        <button
+                            onClick={() => setIssueFilter("resolved")}
+                            className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${issueFilter === 'resolved' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-500'}`}
+                        >
+                            Resolved ({issueReports.filter(i => i.status === 'resolved').length})
+                        </button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Column 1: Learning Units */}
-                    <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-sm flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
-                                <div className="flex items-center gap-2.5">
-                                    <div className="p-2 bg-blue-50 text-custom-blue rounded-xl">
-                                        <BookOpen className="w-4 h-4" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-extrabold text-base text-gray-900">Learning Units</h3>
-                                        <p className="text-[11px] text-gray-400 font-medium">Syllabus modules & topics</p>
-                                    </div>
-                                </div>
-                                <span className="text-xs font-bold bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
-                                    {learningUnits.length} Units
-                                </span>
-                            </div>
-
-                            {isLoading ? (
-                                <div className="space-y-3">
-                                    {[...Array(5)].map((_, i) => (
-                                        <div key={i} className="h-14 bg-gray-100 rounded-2xl animate-pulse"></div>
-                                    ))}
-                                </div>
-                            ) : learningUnits.length === 0 ? (
-                                <div className="text-center py-8 text-gray-400 text-xs">
-                                    No learning units found.
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {learningUnits.slice(0, 5).map((lu) => (
-                                        <div 
-                                            key={lu.id} 
-                                            className="p-3.5 bg-slate-50/80 hover:bg-blue-50/40 border border-gray-100 rounded-2xl transition-all flex items-center justify-between gap-3 group"
-                                        >
-                                            <div className="min-w-0 flex-1">
-                                                <h4 className="font-bold text-gray-900 text-xs truncate group-hover:text-custom-blue transition-colors">
-                                                    {lu.name}
-                                                </h4>
-                                                <p className="text-[11px] text-gray-400 font-medium truncate mt-0.5">
-                                                    {lu.topic_name ? `Topic: ${lu.topic_name}` : `Unit #${lu.id}`}
-                                                </p>
+                {isLoading ? (
+                    <div className="p-8 text-center text-gray-400 text-xs">Loading issue reports...</div>
+                ) : filteredIssues.length === 0 ? (
+                    <div className="p-8 text-center text-gray-400 text-xs">
+                        <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                        No issues matching the filter. All clear!
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                            <thead className="bg-slate-50 text-gray-500 font-bold uppercase tracking-wider border-b border-gray-100">
+                                <tr>
+                                    <th className="p-3.5">Issue Type</th>
+                                    <th className="p-3.5">Visualization / Context</th>
+                                    <th className="p-3.5">Details & Feedback</th>
+                                    <th className="p-3.5">Reporter</th>
+                                    <th className="p-3.5">Status</th>
+                                    <th className="p-3.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 text-gray-700">
+                                {filteredIssues.map((issue) => (
+                                    <tr key={issue.id} className="hover:bg-slate-50/70 transition-colors">
+                                        <td className="p-3.5 font-bold">
+                                            <span className={`inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                                                issue.issue_type === 'teacher_feedback'
+                                                    ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                                                    : issue.issue_type === 'simulation_broken'
+                                                    ? 'bg-red-50 text-red-700 border border-red-200'
+                                                    : 'bg-purple-50 text-purple-700 border border-purple-200'
+                                            }`}>
+                                                {issue.issue_type_display || issue.issue_type}
+                                            </span>
+                                        </td>
+                                        <td className="p-3.5 max-w-[220px]">
+                                            <div className="font-bold text-gray-900 truncate">
+                                                {issue.visualization_title || issue.block_title || 'Visual Component'}
                                             </div>
-                                            <Link 
-                                                to={`/admin-dashboard/content-studio/${lu.id}`}
-                                                className="shrink-0 inline-flex items-center gap-1 text-xs font-bold bg-custom-blue text-white px-3 py-1.5 rounded-xl hover:bg-blue-800 transition-colors shadow-sm"
+                                            <div className="text-[10px] text-gray-500 font-normal truncate mt-0.5">
+                                                {[issue.grade_name, issue.subject_name, issue.lesson_title].filter(Boolean).join(' • ') || `Type: ${issue.visualization_type || issue.block_type || 'Unknown'}`}
+                                            </div>
+                                            {issue.block_page_number && (
+                                                <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-mono">
+                                                    Page {issue.block_page_number}
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="p-3.5 max-w-[260px]">
+                                            <div 
+                                                onClick={() => setSelectedIssue(issue)}
+                                                className="truncate text-gray-600 hover:text-gray-900 cursor-pointer transition-colors"
+                                                title="Click to view full feedback"
                                             >
-                                                <span>Studio</span>
+                                                {issue.description || 'No description provided.'}
+                                            </div>
+                                        </td>
+                                        <td className="p-3.5 text-gray-500">
+                                            <div className="font-medium text-gray-800">
+                                                {issue.user_email || 'Anonymous / Student'}
+                                            </div>
+                                            <div className="text-[10px] text-gray-400">
+                                                {issue.user_role ? `Role: ${issue.user_role} • ` : ''}
+                                                {issue.created_at ? new Date(issue.created_at).toLocaleDateString() : ''}
+                                            </div>
+                                        </td>
+                                        <td className="p-3.5">
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                issue.status === 'resolved'
+                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                    : 'bg-rose-50 text-rose-700 border border-rose-200'
+                                            }`}>
+                                                {issue.status === 'resolved' ? 'Resolved' : 'Open'}
+                                            </span>
+                                        </td>
+                                        <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
+                                            <button
+                                                onClick={() => setSelectedIssue(issue)}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition-colors cursor-pointer"
+                                                title="View complete feedback & issue details"
+                                            >
+                                                <Eye className="w-3 h-3" />
+                                                View
+                                            </button>
+                                            {issue.status !== 'resolved' && (
+                                                <button
+                                                    onClick={() => handleResolveIssue(issue.id)}
+                                                    className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] transition-colors cursor-pointer"
+                                                >
+                                                    Mark Resolved
+                                                </button>
+                                            )}
+                                            <Link
+                                                to={getStudioLink(issue)}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-custom-blue text-white font-bold text-[11px] hover:bg-blue-800 transition-colors inline-block"
+                                                title="Open directly in Content Studio on this target block"
+                                            >
+                                                Fix in Studio
                                                 <ArrowUpRight className="w-3 h-3" />
                                             </Link>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mt-4 pt-4 border-t border-gray-100 text-center">
-                            <Link 
-                                to="/admin-dashboard/content-studio"
-                                className="text-xs font-bold text-custom-blue hover:text-blue-800 flex items-center justify-center gap-1"
-                            >
-                                Open Content Studio <ArrowUpRight className="w-3.5 h-3.5" />
-                            </Link>
-                        </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-
-                    {/* Column 2: Lessons & Publishing Status */}
-                    <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-sm flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
-                                <div className="flex items-center gap-2.5">
-                                    <div className="p-2 bg-orange-50 text-custom-orange rounded-xl">
-                                        <FileText className="w-4 h-4" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-extrabold text-base text-gray-900">Lessons Pipeline</h3>
-                                        <p className="text-[11px] text-gray-400 font-medium">Published & Draft Lessons</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
-                                    <button
-                                        onClick={() => setLessonFilter("all")}
-                                        className={`px-2 py-0.5 text-[10px] font-bold rounded-lg transition-colors ${lessonFilter === 'all' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500'}`}
-                                    >
-                                        All
-                                    </button>
-                                    <button
-                                        onClick={() => setLessonFilter("published")}
-                                        className={`px-2 py-0.5 text-[10px] font-bold rounded-lg transition-colors ${lessonFilter === 'published' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-500'}`}
-                                    >
-                                        Pub
-                                    </button>
-                                    <button
-                                        onClick={() => setLessonFilter("draft")}
-                                        className={`px-2 py-0.5 text-[10px] font-bold rounded-lg transition-colors ${lessonFilter === 'draft' ? 'bg-white text-amber-700 shadow-xs' : 'text-gray-500'}`}
-                                    >
-                                        Draft
-                                    </button>
-                                </div>
-                            </div>
-
-                            {isLoading ? (
-                                <div className="space-y-3">
-                                    {[...Array(5)].map((_, i) => (
-                                        <div key={i} className="h-14 bg-gray-100 rounded-2xl animate-pulse"></div>
-                                    ))}
-                                </div>
-                            ) : filteredLessons.length === 0 ? (
-                                <div className="text-center py-8 text-gray-400 text-xs">
-                                    No lessons match selected filter.
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {filteredLessons.slice(0, 5).map((lesson) => {
-                                        const isPub = lesson.status === 'published';
-                                        return (
-                                            <div 
-                                                key={lesson.id} 
-                                                className="p-3.5 bg-slate-50/80 hover:bg-orange-50/40 border border-gray-100 rounded-2xl transition-all flex items-center justify-between gap-3 group"
-                                            >
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <h4 className="font-bold text-gray-900 text-xs truncate group-hover:text-custom-orange transition-colors">
-                                                            {lesson.title || `Lesson ${lesson.id}`}
-                                                        </h4>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 mt-0.5">
-                                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${isPub ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                                                            {isPub ? 'Published' : 'Draft'}
-                                                        </span>
-                                                        <span className="text-[11px] text-gray-400 font-medium truncate">
-                                                            v{lesson.version || 1} {lesson.learning_unit ? `• Unit ${lesson.learning_unit}` : ''}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <Link 
-                                                    to={lesson.learning_unit ? `/admin-dashboard/content-studio/${lesson.learning_unit}` : `/admin-dashboard/content-studio`}
-                                                    className="shrink-0 inline-flex items-center gap-1 text-xs font-bold bg-custom-orange text-white px-3 py-1.5 rounded-xl hover:bg-orange-600 transition-colors shadow-sm"
-                                                >
-                                                    <span>Edit</span>
-                                                    <ArrowUpRight className="w-3 h-3" />
-                                                </Link>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mt-4 pt-4 border-t border-gray-100 text-center">
-                            <Link 
-                                to="/admin-dashboard/curriculum-builder"
-                                className="text-xs font-bold text-custom-orange hover:text-orange-700 flex items-center justify-center gap-1"
-                            >
-                                Manage Lessons in Builder <ArrowUpRight className="w-3.5 h-3.5" />
-                            </Link>
-                        </div>
-                    </div>
-
-                    {/* Column 3: AI Generation & Ingestion Pipeline Jobs */}
-                    <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-sm flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
-                                <div className="flex items-center gap-2.5">
-                                    <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
-                                        <Activity className="w-4 h-4" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-extrabold text-base text-gray-900">Generation Jobs</h3>
-                                        <p className="text-[11px] text-gray-400 font-medium">AI Ingestion pipeline activity</p>
-                                    </div>
-                                </div>
-                                <span className="text-xs font-bold bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full border border-purple-100">
-                                    {generationJobs.length} Jobs
-                                </span>
-                            </div>
-
-                            {isLoading ? (
-                                <div className="space-y-3">
-                                    {[...Array(5)].map((_, i) => (
-                                        <div key={i} className="h-14 bg-gray-100 rounded-2xl animate-pulse"></div>
-                                    ))}
-                                </div>
-                            ) : generationJobs.length === 0 ? (
-                                <div className="text-center py-8 text-gray-400 text-xs">
-                                    No recent ingestion jobs found.
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {generationJobs.slice(0, 5).map((job) => {
-                                        const isDone = job.status === 'completed' || job.status === 'success';
-                                        const isFailed = job.status === 'failed' || job.status === 'error';
-                                        return (
-                                            <div 
-                                                key={job.id} 
-                                                className="p-3.5 bg-slate-50/80 border border-gray-100 rounded-2xl flex items-center justify-between gap-3"
-                                            >
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <h4 className="font-bold text-gray-900 text-xs truncate">
-                                                            Job #{job.id} • {job.job_type || 'Curriculum Ingestion'}
-                                                        </h4>
-                                                    </div>
-                                                    <p className="text-[11px] text-gray-400 font-medium truncate mt-0.5">
-                                                        {job.created_at ? new Date(job.created_at).toLocaleDateString() : 'Active Pipeline'}
-                                                    </p>
-                                                </div>
-                                                <span className={`inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-extrabold ${
-                                                    isDone 
-                                                        ? 'bg-emerald-100 text-emerald-800' 
-                                                        : isFailed 
-                                                        ? 'bg-red-100 text-red-800' 
-                                                        : 'bg-blue-100 text-custom-blue animate-pulse'
-                                                }`}>
-                                                    {job.status?.toUpperCase() || 'RUNNING'}
-                                                </span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mt-4 pt-4 border-t border-gray-100 text-center">
-                            <Link 
-                                to="/admin-dashboard/ingestion-sandbox"
-                                className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center justify-center gap-1"
-                            >
-                                Launch New Ingestion Job <ArrowUpRight className="w-3.5 h-3.5" />
-                            </Link>
-                        </div>
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* QUICK OPERATIONS & NAVIGATION HUB */}
@@ -498,7 +478,7 @@ function AdminDashboard() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
                     <Link
                         to="/admin-dashboard/curriculum-builder"
                         className="p-5 rounded-2xl border border-gray-200/80 hover:border-custom-blue/50 hover:bg-blue-50/20 hover:shadow-md transition-all group flex flex-col justify-between"
@@ -580,6 +560,14 @@ function AdminDashboard() {
                     </Link>
                 </div>
             </div>
+
+            {/* Reported Issue Detail Modal */}
+            <IssueDetailModal
+                issue={selectedIssue}
+                onClose={() => setSelectedIssue(null)}
+                onResolve={handleResolveIssue}
+                getStudioLink={getStudioLink}
+            />
         </div>
     );
 }

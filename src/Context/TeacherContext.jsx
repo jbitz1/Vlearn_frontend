@@ -12,6 +12,7 @@ export const TeacherProvider = ({ children }) => {
   const [assignedStreams, setAssignedStreams] = useState([]);
   const [assignedSubjects, setAssignedSubjects] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
+  const [classStream, setClassStream] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -42,11 +43,12 @@ export const TeacherProvider = ({ children }) => {
           name: activeMem.school_name || `School #${activeMem.school}`
         });
 
-        // 2. Fetch assignments only if attached to a school
-        const [streams, subjects, recent] = await Promise.all([
+        // 2. Fetch assignments and class supervision only if attached to a school
+        const [streams, subjects, recent, myClassData] = await Promise.all([
           teacherCurriculumService.getMyStreams().catch(() => []),
           teacherCurriculumService.getTeacherSubjects().catch(() => []),
-          teacherCurriculumService.getRecentlyTaught().catch(() => [])
+          teacherCurriculumService.getRecentlyTaught().catch(() => []),
+          teacherCurriculumService.getMyClassDetails().catch(() => null)
         ]);
         
         const validStreams = Array.isArray(streams) ? streams : (streams?.results || []);
@@ -56,6 +58,12 @@ export const TeacherProvider = ({ children }) => {
         setAssignedStreams(validStreams);
         setAssignedSubjects(validSubjects);
         setRecentActivity(validRecent);
+
+        if (myClassData?.is_class_teacher && myClassData?.selected_stream) {
+          setClassStream(myClassData.selected_stream);
+        } else {
+          setClassStream(null);
+        }
         
         if (!activeMem.school_name && validStreams.length > 0 && validStreams[0].school_name) {
           setActiveSchool({
@@ -68,6 +76,7 @@ export const TeacherProvider = ({ children }) => {
         setAssignedStreams([]);
         setAssignedSubjects([]);
         setRecentActivity([]);
+        setClassStream(null);
       }
     } catch (err) {
       console.error('Failed to load teacher context data:', err);
@@ -88,6 +97,7 @@ export const TeacherProvider = ({ children }) => {
     assignedStreams,
     assignedSubjects,
     recentActivity,
+    classStream,
     isLoading,
     error,
     refresh: loadData

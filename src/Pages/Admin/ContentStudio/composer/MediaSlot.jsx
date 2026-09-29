@@ -5,7 +5,7 @@ import {
     BarChart2, Video, Image as ImageIcon, Play, Layers,
     ExternalLink, Upload, Youtube, Link2, Database,
     CheckCircle, Clock, XCircle, ChevronDown, ChevronUp,
-    AlertTriangle, Lightbulb, Trash2
+    AlertTriangle, Lightbulb, Trash2, Sparkles
 } from 'lucide-react';
 
 // Map suggested component types to display metadata
@@ -40,7 +40,7 @@ function getAttachMode(assetType) {
  * MediaSlot — renders a single LessonAsset as an actionable placeholder.
  * When attached, renders a preview of the media instead of the placeholder.
  */
-export function MediaSlot({ asset, lessonId, blockId, onAssetUpdated, onDeleteBlock }) {
+export function MediaSlot({ asset, lessonId, blockId, onAssetUpdated, onDeleteBlock, onPromptVisual }) {
     const [expanded, setExpanded] = useState(asset.status === 'pending');
     const [mode, setMode] = useState(asset.asset_type === 'repository_asset' ? 'repository' : null); // 'upload' | 'url' | 'youtube' | 'repository'
     const [urlInput, setUrlInput] = useState('');
@@ -284,6 +284,15 @@ export function MediaSlot({ asset, lessonId, blockId, onAssetUpdated, onDeleteBl
                                     <Database size={12} /> Repository
                                 </button>
                             )}
+                            {onPromptVisual && (
+                                <button
+                                    type="button"
+                                    onClick={() => onPromptVisual(blockId, asset)}
+                                    className="px-3 py-2 text-xs font-semibold rounded-lg border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 flex items-center gap-1.5"
+                                >
+                                    <Sparkles size={12} /> Prompt AI for Visual
+                                </button>
+                            )}
                             <button
                                 onClick={handleMarkLater}
                                 className="px-3 py-2 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
@@ -361,6 +370,16 @@ export function MediaSlot({ asset, lessonId, blockId, onAssetUpdated, onDeleteBl
                             >
                                 <Link2 size={11} /> Change URL
                             </button>
+                            {onPromptVisual && (
+                                <button
+                                    type="button"
+                                    onClick={() => onPromptVisual(blockId, asset)}
+                                    className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 flex items-center gap-1.5"
+                                    title="Instruct AI to regenerate or refine this visual"
+                                >
+                                    <Sparkles size={11} /> Update with AI
+                                </button>
+                            )}
                             <button
                                 onClick={async () => {
                                     try {

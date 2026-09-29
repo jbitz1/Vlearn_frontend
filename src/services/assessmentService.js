@@ -18,6 +18,9 @@ export const assessmentService = {
 
   saveMarks: async (data) => {
     if (Array.isArray(data)) {
+      const response = await apiClient.post('/api/assessments/marks/bulk/', { marks: data });
+      return response.data;
+    } else if (data && data.marks) {
       const response = await apiClient.post('/api/assessments/marks/bulk/', data);
       return response.data;
     } else {
@@ -40,6 +43,16 @@ export const assessmentService = {
       params: { stream: streamId, subject: subjectId },
       responseType: 'blob',
     });
+    return response.data;
+  },
+
+  getKCSEResults: async (params) => {
+    const response = await apiClient.get('/api/assessments/kcse/', { params });
+    return response.data;
+  },
+
+  createKCSEResult: async (data) => {
+    const response = await apiClient.post('/api/assessments/kcse/', data);
     return response.data;
   },
 };

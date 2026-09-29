@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router';
 import UserContext from '../../Context/UserContext';
 import SimulationCard from '../../Components/User/SimulationCard';
 import FullscreenSimulationModal from '../../Components/Simulations/FullscreenSimulationModal';
+import BackButton from '../../Components/Common/BackButton';
 import {
   Beaker,
   Zap,
@@ -132,6 +133,9 @@ export default function Simulations() {
 
   return (
     <div className="pl-14 pr-4 py-4 sm:p-6 md:p-10 max-w-7xl mx-auto space-y-6 sm:space-y-8">
+      <div>
+        <BackButton to="/student" label="Back to Dashboard" />
+      </div>
       {/* 1. Header & Overview */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -278,7 +282,7 @@ export default function Simulations() {
                             </div>
 
                             {topic.items.length > 0 ? (
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
                                 {topic.items.map((sim) => (
                                   <SimulationCard
                                     key={sim.key || sim.id}

@@ -4,7 +4,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import BASE_URL from "../config";
 import UserContext from "../Context/UserContext";
-import { Lock, User, Loader } from "lucide-react";
+import { Lock, User, Loader, Eye, EyeOff } from "lucide-react";
 
 
 function Login() {
@@ -12,6 +12,7 @@ function Login() {
     username: "",
     password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const { login } = useContext(UserContext);
   const navigate = useNavigate();
@@ -130,16 +131,24 @@ function Login() {
 
               {/* Password */}
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full py-2 px-4 pl-10 border-none bg-gray-100 h-11 rounded-3xl shadow-2xl hover:bg-blue-100 focus:bg-blue-100 focus:ring-0"
+                  className="mt-1 block w-full py-2 px-4 pl-10 pr-11 border-none bg-gray-100 h-11 rounded-3xl shadow-2xl hover:bg-blue-100 focus:bg-blue-100 focus:ring-0"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none cursor-pointer p-1"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
 
               {/* Forgot password */}

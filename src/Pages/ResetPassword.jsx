@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router";
 import axios from "axios";
 import Swal from "sweetalert2";
 import BASE_URL from "../config";
-import { Lock, Loader, ArrowRight } from "lucide-react";
+import { Lock, Loader, ArrowRight, Eye, EyeOff } from "lucide-react";
 
 function ResetPassword() {
   const { token } = useParams();
@@ -14,6 +14,8 @@ function ResetPassword() {
     confirmPassword: "",
   });
   
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -74,8 +76,8 @@ function ResetPassword() {
         <div className="absolute inset-0 bg-gradient-to-br from-black/60 to-black/30 z-0"></div>
 
         <div className="relative sm:max-w-lg w-full md:mx-auto z-10 px-4 sm:px-0">
-          <div className="card bg-custom-blue shadow-2xl w-full h-full rounded-3xl absolute transform -rotate-6"></div>
-          <div className="card bg-custom-orange shadow-2xl w-full h-full rounded-3xl absolute transform rotate-6"></div>
+          <div className="card bg-custom-blue shadow-2xl w-full h-full rounded-3xl absolute transform -rotate-2 sm:-rotate-6"></div>
+          <div className="card bg-custom-orange shadow-2xl w-full h-full rounded-3xl absolute transform rotate-2 sm:rotate-6"></div>
           <div className="relative w-full rounded-3xl px-6 py-8 bg-gray-100 shadow-md">
             
             <div className="flex flex-col items-center justify-center z-10 mb-6">
@@ -95,32 +97,48 @@ function ResetPassword() {
               <div>
                 <label className="block mb-2 text-sm font-medium text-gray-700">New Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full pl-10 pr-4 py-3 text-black border border-gray-300 rounded-3xl outline-none focus:ring-2 focus:ring-custom-blue focus:border-transparent transition-colors"
+                    className="w-full pl-10 pr-11 py-3 text-black border border-gray-300 rounded-3xl outline-none focus:ring-2 focus:ring-custom-blue focus:border-transparent transition-colors"
                     placeholder="••••••••"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none cursor-pointer p-1"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
               </div>
 
               <div>
                 <label className="block mb-2 text-sm font-medium text-gray-700">Confirm New Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    className="w-full pl-10 pr-4 py-3 text-black border border-gray-300 rounded-3xl outline-none focus:ring-2 focus:ring-custom-blue focus:border-transparent transition-colors"
+                    className="w-full pl-10 pr-11 py-3 text-black border border-gray-300 rounded-3xl outline-none focus:ring-2 focus:ring-custom-blue focus:border-transparent transition-colors"
                     placeholder="••••••••"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none cursor-pointer p-1"
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
               </div>
               

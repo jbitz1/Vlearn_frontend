@@ -11,7 +11,9 @@ import {
   Compass,
   ChevronDown,
   ChevronUp,
+  Flag,
 } from 'lucide-react';
+import ReportVisualizationModal from '../../../Components/Common/ReportVisualizationModal';
 
 /**
  * Fallback Context Guides for Simulations without explicitly loaded backend configs
@@ -212,6 +214,7 @@ function SimulationHeader({
   toggleFullscreen,
   onClose,
   isModal,
+  onReportIssue,
 }) {
   return (
     <header
@@ -245,6 +248,19 @@ function SimulationHeader({
 
       {/* Action Controls */}
       <div className="flex items-center gap-2 sm:gap-3 self-end md:self-center shrink-0">
+        {/* Report Issue Button */}
+        {onReportIssue && (
+          <button
+            onClick={onReportIssue}
+            title="Report Issue with this visualization"
+            aria-label="Report Issue"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition-all cursor-pointer"
+          >
+            <Flag className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span className="hidden sm:inline">Report Issue</span>
+          </button>
+        )}
+
         {/* Projector / Screen Fullscreen Mode */}
         <button
           onClick={toggleFullscreen}
@@ -428,6 +444,7 @@ export default function SimulationViewerContainer({
 }) {
   const containerRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   const { title, subject_display, subject, topic, archetype, key, config = {} } = simulation;
 
@@ -482,6 +499,7 @@ export default function SimulationViewerContainer({
         toggleFullscreen={toggleFullscreen}
         onClose={onClose}
         isModal={isFullscreenModal}
+        onReportIssue={() => setIsReportModalOpen(true)}
       />
 
       {/* 2. Top Quick Student Guide Banner (Always Visible Before Sim Canvas) */}
@@ -505,6 +523,20 @@ export default function SimulationViewerContainer({
       <SimulationGuideSection
         howToUse={howToUse}
         expectedResults={expectedResults}
+      />
+
+      {/* Report Issue Modal */}
+      <ReportVisualizationModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        visual={{
+          id: simulation.id || key,
+          title: title || 'Interactive Simulation',
+          type: 'simulation',
+          topic_id: simulation.topic_id || topic,
+          subject: subject_display || subject,
+          archetype: archetype
+        }}
       />
     </div>
   );

@@ -165,7 +165,7 @@ function Home() {
         canonicalPath="/"
       />
       <Navbar />
-      <section className='relative h-fit bg-[url(/images/Vlearn_bg1.png)] bg-cover bg-fixed bg-no-repeat'>
+      <section className='relative h-fit bg-[url(/images/Vlearn_bg1.png)] bg-cover md:bg-fixed bg-no-repeat'>
         <div className="absolute inset-0 bg-white/70 md:bg-white/50 z-0"></div>
         <div className="relative z-10 space-y-8 animate-fade-in items-center text-center mx-auto pt-36 md:pt-48 px-4">
           <h1 className="text-4xl md:text-5xl font-bold mx-auto leading-snug max-w-5xl">
@@ -366,7 +366,7 @@ function Home() {
               type="submit"
               className="bg-custom-blue w-full md:w-1/3 mx-auto text-white px-6 py-3 rounded-3xl hover:bg-custom-orange hover:cursor-pointer transition duration-300 ease-in-out flex items-center justify-center mt-4"
             >
-              Get Started Now
+              Get Started
               <GraduationCap className="ml-2 h-5 w-5" />
 
             </button>

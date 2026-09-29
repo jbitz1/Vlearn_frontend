@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import apiClient from '../../config/apiClient';
 import UserContext from '../../Context/UserContext';
-import { GraduationCap, Check } from 'lucide-react';
+import { GraduationCap, Check, Eye, EyeOff } from 'lucide-react';
 
 const CreatePassword = () => {
   const navigate = useNavigate();
@@ -12,6 +12,8 @@ const CreatePassword = () => {
   
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -115,13 +117,23 @@ const CreatePassword = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-xs font-bold text-slate-600 mb-1.5">New Password *</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => { setPassword(e.target.value); setError(''); }}
-                placeholder="Min. 8 characters"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-50/30 focus:bg-white transition-all text-navy font-medium"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={e => { setPassword(e.target.value); setError(''); }}
+                  placeholder="Min. 8 characters"
+                  className="w-full px-4 pr-11 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-50/30 focus:bg-white transition-all text-navy font-medium"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none cursor-pointer p-1"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
               {password && (
                 <div className="mt-2.5 space-y-1.5">
                   <div className="flex gap-1.5">
@@ -142,13 +154,23 @@ const CreatePassword = () => {
 
             <div>
               <label className="block text-xs font-bold text-slate-600 mb-1.5">Confirm Password *</label>
-              <input
-                type="password"
-                value={confirm}
-                onChange={e => { setConfirm(e.target.value); setError(''); }}
-                placeholder="Repeat your password"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-50/30 focus:bg-white transition-all text-navy font-medium"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirm ? "text" : "password"}
+                  value={confirm}
+                  onChange={e => { setConfirm(e.target.value); setError(''); }}
+                  placeholder="Repeat your password"
+                  className="w-full px-4 pr-11 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-slate-50/30 focus:bg-white transition-all text-navy font-medium"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none cursor-pointer p-1"
+                  aria-label={showConfirm ? "Hide password" : "Show password"}
+                >
+                  {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
 
             {/* Password Criteria Grid */}

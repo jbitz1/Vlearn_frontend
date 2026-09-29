@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router';
 import UserContext from '../../Context/UserContext';
 import TeacherContext from '../../Context/TeacherContext';
 import teacherCurriculumService from '../../services/teacherCurriculumService';
+import { formatStreamDisplay } from '../../utils/formatters';
 
 export default function TeacherDashboard() {
   const { user } = useContext(UserContext);
@@ -26,6 +27,7 @@ export default function TeacherDashboard() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedResumeIndex, setSelectedResumeIndex] = useState(0);
   const [dashboardData, setDashboardData] = useState({
     metrics: {
       streams_count: 0,
@@ -34,6 +36,7 @@ export default function TeacherDashboard() {
       pending_assessments_count: 0
     },
     continue_teaching: null,
+    continue_teaching_by_subject: [],
     my_teaching_today: [],
     recently_taught: [],
     my_class: null
@@ -67,7 +70,11 @@ export default function TeacherDashboard() {
     return () => { isMounted = false; };
   }, [activeSchool]);
 
-  const { metrics, continue_teaching, my_teaching_today, recently_taught, my_class } = dashboardData;
+  const { metrics, continue_teaching, continue_teaching_by_subject, my_teaching_today, recently_taught, my_class } = dashboardData;
+  const resumeItems = (continue_teaching_by_subject && continue_teaching_by_subject.length > 0)
+    ? continue_teaching_by_subject
+    : (continue_teaching ? [continue_teaching] : []);
+  const activeResume = resumeItems[selectedResumeIndex] || resumeItems[0] || null;
 
   if (loading) {
     return (
@@ -118,36 +125,61 @@ export default function TeacherDashboard() {
         </div>
       </header>
 
-      {/* Hero: Continue Teaching */}
-      {continue_teaching && (
+      {/* Hero: Continue Teaching with Multi-Subject Support */}
+      {activeResume && (
         <section className="bg-white border-2 border-primary/20 rounded-3xl p-6 md:p-8 shadow-xs relative overflow-hidden">
+          {resumeItems.length > 1 && (
+            <div className="flex items-center gap-2 mb-5 overflow-x-auto pb-2 border-b border-slate-100">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-wider shrink-0 mr-1">
+                Your Subjects:
+              </span>
+              {resumeItems.map((item, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedResumeIndex(idx)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                    selectedResumeIndex === idx
+                      ? 'bg-navy text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>{item.subject_name}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold ${selectedResumeIndex === idx ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                    {formatStreamDisplay(item.form_name, item.stream_name)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
               <div className="flex items-center gap-2">
                 <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-black uppercase tracking-wider rounded-lg flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" /> Continue Teaching
+                  <Clock className="w-3.5 h-3.5" /> Quick Resume
                 </span>
                 <span className="text-slate-500 text-xs font-bold">
-                  {continue_teaching.form_name} · {continue_teaching.stream_name}
+                  {formatStreamDisplay(activeResume.form_name, activeResume.stream_name)}
                 </span>
               </div>
               <h2 className="text-2xl md:text-3xl font-black text-navy tracking-tight">
-                {continue_teaching.topic_name}
+                {activeResume.topic_name}
               </h2>
               <p className="text-slate-600 font-medium text-sm leading-relaxed">
-                Subject: <span className="text-navy font-bold">{continue_teaching.subject_name}</span>
-                {continue_teaching.last_position && (
-                  <> • Stopped at: <span className="bg-slate-100 px-2.5 py-0.5 rounded-md text-navy font-bold">{continue_teaching.last_position}</span></>
+                Subject: <span className="text-navy font-bold">{activeResume.subject_name}</span>
+                {activeResume.last_position && (
+                  <> • Stopped at: <span className="bg-slate-100 px-2.5 py-0.5 rounded-md text-navy font-bold">{activeResume.last_position}</span></>
                 )}
               </p>
-              {continue_teaching.notes && (
+              {activeResume.notes && (
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 font-medium italic">
-                  "{continue_teaching.notes}"
+                  "{activeResume.notes}"
                 </div>
               )}
             </div>
             <button
-              onClick={() => navigate(`/teacher/topic-workspace/${continue_teaching.stream_id}/${continue_teaching.subject_id}/${continue_teaching.topic_id}`)}
+              onClick={() => navigate(`/teacher/topic-workspace/${activeResume.stream_id}/${activeResume.subject_id}/${activeResume.topic_id}`)}
               className="px-6 py-3.5 bg-primary hover:bg-primary-dark text-white font-black rounded-xl text-sm shadow-md shadow-primary/20 flex items-center justify-center gap-2 shrink-0 transition-colors cursor-pointer"
             >
               <Play className="w-4 h-4 fill-white" /> Resume Teaching
@@ -156,45 +188,45 @@ export default function TeacherDashboard() {
         </section>
       )}
 
-      {/* 4 Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 flex items-center justify-between shadow-xs">
+      {/* 4 Compact Metric Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between shadow-2xs">
           <div>
-            <p className="text-xs font-black uppercase tracking-wider text-slate-400">Streams I Teach</p>
-            <h2 className="text-3xl font-black text-navy mt-1">{metrics.streams_count}</h2>
+            <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Streams I Teach</p>
+            <h2 className="text-2xl font-black text-navy mt-0.5">{metrics?.streams_count ?? 0}</h2>
           </div>
-          <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
-            <Users className="w-6 h-6" />
+          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+            <Users className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 flex items-center justify-between shadow-xs">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between shadow-2xs">
           <div>
-            <p className="text-xs font-black uppercase tracking-wider text-slate-400">Subjects</p>
-            <h2 className="text-3xl font-black text-navy mt-1">{metrics.subjects_count}</h2>
+            <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Subjects</p>
+            <h2 className="text-2xl font-black text-navy mt-0.5">{metrics?.subjects_count ?? 0}</h2>
           </div>
-          <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center text-accent">
-            <BookOpen className="w-6 h-6" />
+          <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center text-accent">
+            <BookOpen className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 flex items-center justify-between shadow-xs">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between shadow-2xs">
           <div>
-            <p className="text-xs font-black uppercase tracking-wider text-slate-400">Total Students</p>
-            <h2 className="text-3xl font-black text-navy mt-1">{metrics.students_count}</h2>
+            <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Total Students</p>
+            <h2 className="text-2xl font-black text-navy mt-0.5">{metrics?.students_count ?? 0}</h2>
           </div>
-          <div className="w-12 h-12 bg-success/10 rounded-2xl flex items-center justify-center text-success">
-            <Users className="w-6 h-6" />
+          <div className="w-10 h-10 bg-success/10 rounded-xl flex items-center justify-center text-success">
+            <Users className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 flex items-center justify-between shadow-xs">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between shadow-2xs">
           <div>
-            <p className="text-xs font-black uppercase tracking-wider text-slate-400">Open Exams</p>
-            <h2 className="text-3xl font-black text-navy mt-1">{metrics.pending_assessments_count}</h2>
+            <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Open Exams</p>
+            <h2 className="text-2xl font-black text-navy mt-0.5">{metrics?.pending_assessments_count ?? 0}</h2>
           </div>
-          <div className="w-12 h-12 bg-warning/10 rounded-2xl flex items-center justify-center text-warning">
-            <AlertTriangle className="w-6 h-6" />
+          <div className="w-10 h-10 bg-warning/10 rounded-xl flex items-center justify-center text-warning">
+            <AlertTriangle className="w-5 h-5" />
           </div>
         </div>
       </div>
@@ -211,7 +243,7 @@ export default function TeacherDashboard() {
                 <span className="text-xs font-bold text-slate-400">Class Teacher Responsibilities</span>
               </div>
               <h2 className="text-2xl font-black text-navy">
-                {my_class.form_name} {my_class.name}
+                {formatStreamDisplay(my_class.form_name, my_class.name)}
               </h2>
               <p className="text-sm font-semibold text-slate-500 mt-0.5">
                 {my_class.student_count} Enrolled Students • {my_class.overall_assessment_average}% Overall Average (Grade {my_class.overall_grade})
@@ -226,7 +258,7 @@ export default function TeacherDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 bg-slate-50 border border-slate-200 rounded-2xl p-5">
+            <div className={`${Number(my_class.students_requiring_attention_count) > 0 ? 'md:col-span-2' : 'col-span-full'} bg-slate-50 border border-slate-200 rounded-2xl p-5`}>
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">
                 Subject Performance Overview
               </h3>
@@ -260,26 +292,28 @@ export default function TeacherDashboard() {
               </div>
             </div>
 
-            <div className="bg-danger/5 border border-danger/20 rounded-2xl p-5 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-danger mb-2">
-                  <AlertTriangle className="w-5 h-5" />
-                  <h3 className="text-xs font-black uppercase tracking-wider">Student Attention</h3>
+            {Number(my_class.students_requiring_attention_count) > 0 && (
+              <div className="bg-danger/5 border border-danger/20 rounded-2xl p-5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-danger mb-2">
+                    <AlertTriangle className="w-5 h-5" />
+                    <h3 className="text-xs font-black uppercase tracking-wider">Student Attention</h3>
+                  </div>
+                  <h4 className="text-3xl font-black text-danger">
+                    {my_class.students_requiring_attention_count}
+                  </h4>
+                  <p className="text-xs font-semibold text-slate-600 mt-1">
+                    Students performing below 50% or needing academic intervention.
+                  </p>
                 </div>
-                <h4 className="text-3xl font-black text-danger">
-                  {my_class.students_requiring_attention_count}
-                </h4>
-                <p className="text-xs font-semibold text-slate-600 mt-1">
-                  Students performing below 50% or needing academic intervention.
-                </p>
+                <button
+                  onClick={() => navigate('/teacher/my-class')}
+                  className="mt-4 w-full py-2 bg-danger text-white rounded-xl text-xs font-bold hover:bg-danger-dark transition-colors cursor-pointer"
+                >
+                  Review Struggling Students
+                </button>
               </div>
-              <button
-                onClick={() => navigate('/teacher/my-class')}
-                className="mt-4 w-full py-2 bg-danger text-white rounded-xl text-xs font-bold hover:bg-danger-dark transition-colors"
-              >
-                Review Struggling Students
-              </button>
-            </div>
+            )}
           </div>
         </section>
       )}
@@ -308,7 +342,7 @@ export default function TeacherDashboard() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
             {my_teaching_today.map((item, idx) => (
               <div
                 key={idx}
@@ -325,7 +359,7 @@ export default function TeacherDashboard() {
                   </div>
 
                   <h3 className="text-xl font-black text-navy group-hover:text-primary transition-colors">
-                    {item.form_name} {item.stream_name}
+                    {formatStreamDisplay(item.form_name, item.stream_name)}
                   </h3>
 
                   <div className="mt-4 p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-1.5">
@@ -394,7 +428,7 @@ export default function TeacherDashboard() {
                       <span className="text-xs font-bold text-slate-400">• {log.subject_name}</span>
                     </div>
                     <p className="text-xs text-slate-500 font-medium">
-                      {log.form_name} {log.stream_name} {log.last_position && `• Stopped at: ${log.last_position}`}
+                      {formatStreamDisplay(log.form_name, log.stream_name)} {log.last_position && `• Stopped at: ${log.last_position}`}
                     </p>
                     {log.notes && (
                       <p className="text-xs text-slate-600 italic mt-1 bg-slate-100 px-2 py-0.5 rounded-md inline-block">

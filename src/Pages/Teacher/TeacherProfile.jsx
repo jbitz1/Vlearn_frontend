@@ -4,6 +4,7 @@ import UserContext from '../../Context/UserContext';
 import { useNavigate } from "react-router";
 import teacherCurriculumService from '../../services/teacherCurriculumService';
 import apiClient from '../../config/apiClient';
+import BackButton from '../../Components/Common/BackButton';
 
 export function TeacherProfile() {
   const { user: contextUser, token } = useContext(UserContext);
@@ -44,6 +45,9 @@ export function TeacherProfile() {
 
   return (
     <div className="space-y-8 min-h-screen">
+      <div>
+        <BackButton to="/teacher" label="Back to Dashboard" />
+      </div>
       {/* Profile Header */}
       <div className="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm">
         <div className="flex items-center gap-4">

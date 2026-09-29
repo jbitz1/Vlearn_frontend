@@ -4,9 +4,13 @@
 /* src/index.css */
 @import "tailwindcss";
 
-/* @plugin '@tailwindcss/typography'; */
-/* @plugin '@tailwindcss/forms'; */
-/* @plugin '@tailwindcss/aspect-ratio';  */
+html, body {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
 
 @theme {
   --color-primary: #02A0BF;

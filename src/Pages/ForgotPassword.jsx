@@ -34,8 +34,8 @@ function ForgotPassword() {
         <div className="absolute inset-0 bg-gradient-to-br from-black/60 to-black/30 z-0"></div>
 
         <div className="relative sm:max-w-lg w-full md:mx-auto z-10 px-4 sm:px-0">
-          <div className="card bg-custom-blue shadow-2xl w-full h-full rounded-3xl absolute transform -rotate-6"></div>
-          <div className="card bg-custom-orange shadow-2xl w-full h-full rounded-3xl absolute transform rotate-6"></div>
+          <div className="card bg-custom-blue shadow-2xl w-full h-full rounded-3xl absolute transform -rotate-2 sm:-rotate-6"></div>
+          <div className="card bg-custom-orange shadow-2xl w-full h-full rounded-3xl absolute transform rotate-2 sm:rotate-6"></div>
           <div className="relative w-full rounded-3xl px-6 py-8 bg-gray-100 shadow-md">
             
             <div className="flex flex-col items-center justify-center z-10 mb-6">

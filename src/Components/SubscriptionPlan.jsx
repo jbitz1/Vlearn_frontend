@@ -75,18 +75,19 @@ const SubscriptionPlan = () => {
                                 promoDetails: promo,
                                 displayPrice: `KSh ${effectivePrice.toLocaleString()}`,
                                 displayStandardPrice: `KSh ${standardPrice.toLocaleString()}`,
-                                duration: variant.duration_days === 1 ? 'day' :
-                                    variant.duration_days === 7 ? 'week' :
-                                        variant.duration_days === 30 ? 'month' :
-                                            variant.duration_days === 365 ? 'year' :
-                                                `${variant.duration_days || 30} days`,
+                                duration: variant.duration_type === 'TERM' || [84, 90].includes(variant.duration_days) ? '3 months / term' :
+                                    variant.duration_days === 1 ? 'day' :
+                                        variant.duration_days === 7 ? 'week' :
+                                            variant.duration_days === 30 ? 'month' :
+                                                variant.duration_days === 365 ? 'year' :
+                                                    `${variant.duration_days || 30} days`,
                                 features: variant.access_scopes && variant.access_scopes.length > 0 ?
                                     variant.access_scopes.map(s => s.description || (s.scope_type === 'SUBJECT' ? 'Selected Subject Curriculum Access' : 'Full Platform Access')) : [
                                     'Selected Curriculum & Topic Access',
                                     'Interactive Science Simulations',
                                     'Progress Analytics & Performance Tracking'
                                 ],
-                                popular: variant.slug === 'monthly-standard',
+                                popular: variant.slug === 'term-standard' || variant.slug === 'monthly-standard' || variant.duration_type === 'TERM',
                             });
                         });
                     }

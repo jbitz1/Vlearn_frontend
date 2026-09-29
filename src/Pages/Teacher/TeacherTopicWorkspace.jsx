@@ -17,24 +17,32 @@ import {
   BarChart3, 
   AlertCircle,
   HelpCircle,
-  FolderOpen
+  FolderOpen,
+  Flag,
+  MessageSquare
 } from 'lucide-react';
 import teacherCurriculumService from '../../services/teacherCurriculumService';
 import UserContext from '../../Context/UserContext';
 import TeacherContext from '../../Context/TeacherContext';
 import FullscreenSimulationModal from '../../Components/Simulations/FullscreenSimulationModal';
+import BackButton from '../../Components/Common/BackButton';
+import ReportVisualizationModal from '../../Components/Common/ReportVisualizationModal';
+import TeacherFeedbackModal from './TeacherFeedbackModal';
+import { formatStreamDisplay } from '../../utils/formatters';
 
 export const TeacherTopicWorkspace = () => {
   const { topicId, streamId: paramStreamId, subjectId: paramSubjectId } = useParams();
   const navigate = useNavigate();
   const { user } = useContext(UserContext);
-  const { activeSchool } = useContext(TeacherContext);
+  const { activeSchool, assignedStreams, assignedSubjects, classStream } = useContext(TeacherContext);
 
   const [workspace, setWorkspace] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('lessons'); // 'lessons' | 'simulations' | 'experiments' | 'videos' | 'resources'
   const [selectedSimulation, setSelectedSimulation] = useState(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [reportingVisual, setReportingVisual] = useState(null);
 
   // Facilitation Notes state
   const [statusVal, setStatusVal] = useState('AVAILABLE');
@@ -48,9 +56,27 @@ export const TeacherTopicWorkspace = () => {
     const loadWorkspace = async () => {
       try {
         setIsLoading(true);
-        // If streamId or subjectId not provided in route params, fetch default
-        const sId = paramStreamId || 1;
-        const subId = paramSubjectId || 1;
+        // Resolve streamId and subjectId dynamically if not provided in route params
+        let sId = paramStreamId;
+        if (!sId) {
+          if (assignedStreams && assignedStreams.length > 0) {
+            sId = assignedStreams[0].id || assignedStreams[0].stream_id || assignedStreams[0].stream;
+          } else if (classStream?.id) {
+            sId = classStream.id;
+          } else {
+            sId = 1;
+          }
+        }
+
+        let subId = paramSubjectId;
+        if (!subId) {
+          if (assignedSubjects && assignedSubjects.length > 0) {
+            subId = assignedSubjects[0].id || assignedSubjects[0].subject_id || assignedSubjects[0].subject;
+          } else {
+            subId = 1;
+          }
+        }
+
         const data = await teacherCurriculumService.getTopicWorkspace(sId, subId, topicId);
         
         if (isMounted) {
@@ -96,12 +122,8 @@ export const TeacherTopicWorkspace = () => {
     }
   };
 
-  const handleOpenLesson = (lessonId) => {
+  const handlePreviewAsStudent = (lessonId) => {
     navigate(`/lesson-viewer/${topicId}?lessonId=${lessonId}&from=teacher`);
-  };
-
-  const handleViewAsStudent = (lessonId) => {
-    navigate(`/student/lesson-viewer/${topicId}?lessonId=${lessonId}&mode=preview&from=student`);
   };
 
   if (isLoading) {
@@ -137,12 +159,7 @@ export const TeacherTopicWorkspace = () => {
     <div className="space-y-8 pb-16 max-w-7xl mx-auto">
       {/* Header with Navigation */}
       <header className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm">
-        <button
-          onClick={() => navigate(`/teacher/my-teaching`)}
-          className="flex items-center text-xs font-bold text-slate-400 hover:text-navy mb-4 transition-colors cursor-pointer"
-        >
-          <ChevronLeft className="w-4 h-4 mr-1" /> Back to My Teaching
-        </button>
+        <BackButton fallbackUrl="/teacher/my-teaching" label="Back to My Teaching" className="mb-4" />
 
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div className="space-y-2">
@@ -151,7 +168,7 @@ export const TeacherTopicWorkspace = () => {
                 {subject.name}
               </span>
               <span className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-black rounded-lg">
-                {stream.form_name} {stream.name}
+                {formatStreamDisplay(stream.form_name, stream.name)}
               </span>
               <span className="px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200 text-xs font-black rounded-lg">
                 Topic {topic.order || 1}
@@ -179,39 +196,54 @@ export const TeacherTopicWorkspace = () => {
         </div>
       </header>
 
-      {/* Persistent Teaching Notes & Facilitation State Bar */}
-      <section className="bg-amber-50/60 border-2 border-amber-200/80 rounded-3xl p-6 md:p-8 space-y-4 shadow-xs">
+      {/* Persistent Teacher Notes & Pacing Insights Bar */}
+      <section className="bg-gradient-to-r from-amber-50/80 via-white to-amber-50/50 border-2 border-amber-200/90 rounded-3xl p-6 md:p-8 space-y-5 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-200/60 text-amber-900 flex items-center justify-center font-black">
-              <FileText className="w-4 h-4" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-900 flex items-center justify-center font-black shadow-2xs">
+              <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-black text-amber-950">Teaching Facilitation & Private Notes</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-black text-amber-950">Teacher Notes & Pacing Insights</h3>
+                <span className="px-2 py-0.5 bg-amber-200/60 text-amber-900 text-[10px] font-black uppercase tracking-wider rounded-md">
+                  Private to Teacher
+                </span>
+              </div>
               <p className="text-xs font-semibold text-amber-800">
-                Track where you stopped in {stream.form_name} {stream.name} and record private lesson reflections.
+                Track where you stopped in {formatStreamDisplay(stream.form_name, stream.name)} and record reflections for classroom pacing.
               </p>
             </div>
           </div>
 
-          {/* Status Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-wider text-amber-900">Status:</span>
-            <select
-              value={statusVal}
-              onChange={(e) => setStatusVal(e.target.value)}
-              className="bg-white border border-amber-300 rounded-xl px-3 py-1.5 text-xs font-black text-navy focus:outline-none focus:border-amber-500 shadow-2xs"
+          {/* Status & Feedback Action */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowFeedbackModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-amber-100/60 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs"
             >
-              <option value="AVAILABLE">Available</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="TAUGHT">Taught / Completed</option>
-            </select>
+              <MessageSquare className="w-3.5 h-3.5 text-amber-700" />
+              Direct Feedback
+            </button>
+            <div className="flex items-center gap-2 bg-white px-3 py-1 border border-amber-200 rounded-xl shadow-2xs">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-900">Status:</span>
+              <select
+                value={statusVal}
+                onChange={(e) => setStatusVal(e.target.value)}
+                className="bg-transparent text-xs font-black text-navy focus:outline-none cursor-pointer"
+              >
+                <option value="AVAILABLE">Available</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="TAUGHT">Taught / Completed</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-1">
           <div>
-            <label className="block text-xs font-black uppercase tracking-wider text-amber-900 mb-1">
+            <label className="block text-xs font-black uppercase tracking-wider text-amber-900 mb-1.5">
               Where We Stopped:
             </label>
             <input
@@ -219,26 +251,37 @@ export const TeacherTopicWorkspace = () => {
               value={lastPosition}
               onChange={(e) => setLastPosition(e.target.value)}
               placeholder="e.g. Worked Example 3, Page 2"
-              className="w-full bg-white border border-amber-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-navy placeholder:text-slate-400 focus:outline-none focus:border-amber-500"
+              className="w-full bg-white border border-amber-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-navy placeholder:text-slate-400 focus:outline-none focus:border-amber-500 shadow-2xs"
             />
+            <p className="text-[11px] text-amber-700 font-medium mt-1.5">
+              Shown on your dashboard Quick Resume card.
+            </p>
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-xs font-black uppercase tracking-wider text-amber-900 mb-1">
-              Private Teacher Notes & Misconceptions:
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={notesVal}
-                onChange={(e) => setNotesVal(e.target.value)}
-                placeholder="e.g. Students struggled with activation energy curve. Need recap next class."
-                className="flex-1 bg-white border border-amber-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-navy placeholder:text-slate-400 focus:outline-none focus:border-amber-500"
-              />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-black uppercase tracking-wider text-amber-900">
+                Teacher Notes & Reflections:
+              </label>
+              <span className="text-[11px] font-semibold text-amber-700">
+                {notesVal.length} chars
+              </span>
+            </div>
+            <textarea
+              rows={3}
+              value={notesVal}
+              onChange={(e) => setNotesVal(e.target.value)}
+              placeholder="Record pedagogical notes, concept mastery observations, or topics needing recap next class..."
+              className="w-full bg-white border border-amber-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-navy placeholder:text-slate-400 focus:outline-none focus:border-amber-500 shadow-2xs resize-none"
+            />
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-[11px] text-amber-700 font-medium">
+                Notes are securely preserved and synced to your teaching history.
+              </p>
               <button
                 onClick={handleSaveNotes}
                 disabled={isSavingLog}
-                className="px-5 py-2 bg-amber-900 hover:bg-amber-950 text-white font-black text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 disabled:opacity-50"
+                className="px-5 py-2 bg-amber-900 hover:bg-amber-950 text-white font-black text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 disabled:opacity-50 shadow-xs"
               >
                 <Save className="w-3.5 h-3.5" />
                 {isSavingLog ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save Notes'}
@@ -308,7 +351,7 @@ export const TeacherTopicWorkspace = () => {
             }`}
           >
             <FolderOpen className="w-4 h-4" />
-            Worksheets & Docs ({resources.length})
+            Other resources ({resources.length})
           </button>
         </div>
 
@@ -361,16 +404,10 @@ export const TeacherTopicWorkspace = () => {
 
                   <div className="flex items-center gap-3 shrink-0">
                     <button
-                      onClick={() => handleViewAsStudent(lesson.id)}
-                      className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-navy font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Eye className="w-3.5 h-3.5" /> Preview as Student
-                    </button>
-                    <button
-                      onClick={() => handleOpenLesson(lesson.id)}
+                      onClick={() => handlePreviewAsStudent(lesson.id)}
                       className="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-black rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md shadow-primary/20 cursor-pointer"
                     >
-                      <Play className="w-3.5 h-3.5 fill-white" /> Launch Facilitator
+                      <Eye className="w-3.5 h-3.5" /> Preview as Student
                     </button>
                   </div>
                 </div>
@@ -381,7 +418,7 @@ export const TeacherTopicWorkspace = () => {
 
         {/* Tab 2: Simulations */}
         {activeTab === 'simulations' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
             {simulations.length === 0 ? (
               <div className="col-span-full bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3">
                 <Sparkles className="w-10 h-10 text-slate-300 mx-auto" />
@@ -398,7 +435,23 @@ export const TeacherTopicWorkspace = () => {
                       <span className="px-2.5 py-0.5 bg-accent/10 text-accent text-xs font-black uppercase tracking-wider rounded-md">
                         {sim.archetype || 'Virtual Lab'}
                       </span>
-                      <span className="text-xs font-bold text-slate-400 uppercase">{sim.subject}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-400 uppercase">{sim.subject}</span>
+                        <button
+                          type="button"
+                          onClick={() => setReportingVisual({
+                            id: sim.id,
+                            title: sim.title,
+                            type: 'simulation',
+                            topic_id: topic?.id,
+                            topic_name: topic?.name
+                          })}
+                          className="p-1 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors"
+                          title="Report issue with simulation"
+                        >
+                          <Flag className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     <h3 className="text-lg font-black text-navy group-hover:text-accent transition-colors">
@@ -425,7 +478,7 @@ export const TeacherTopicWorkspace = () => {
 
         {/* Tab 3: Experiments & Practicals */}
         {activeTab === 'experiments' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
             {experiments.length === 0 ? (
               <div className="col-span-full bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3">
                 <FlaskConical className="w-10 h-10 text-slate-300 mx-auto" />
@@ -442,7 +495,23 @@ export const TeacherTopicWorkspace = () => {
                       <span className="px-2.5 py-0.5 bg-purple-50 text-purple-700 text-xs font-black uppercase rounded-md">
                         {exp.difficulty}
                       </span>
-                      <span className="text-xs font-bold text-slate-400">{exp.duration}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-400">{exp.duration}</span>
+                        <button
+                          type="button"
+                          onClick={() => setReportingVisual({
+                            id: exp.id,
+                            title: exp.title,
+                            type: 'experiment',
+                            topic_id: topic?.id,
+                            topic_name: topic?.name
+                          })}
+                          className="p-1 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors"
+                          title="Report issue with experiment"
+                        >
+                          <Flag className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     <h3 className="text-lg font-black text-navy">{exp.title}</h3>
@@ -473,7 +542,7 @@ export const TeacherTopicWorkspace = () => {
 
         {/* Tab 4: Videos */}
         {activeTab === 'videos' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
             {videos.length === 0 ? (
               <div className="col-span-full bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3">
                 <Video className="w-10 h-10 text-slate-300 mx-auto" />
@@ -516,13 +585,13 @@ export const TeacherTopicWorkspace = () => {
           </div>
         )}
 
-        {/* Tab 5: Worksheets & Resources */}
+        {/* Tab 5: Other resources */}
         {activeTab === 'resources' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
             {resources.length === 0 ? (
               <div className="col-span-full bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3">
                 <FolderOpen className="w-10 h-10 text-slate-300 mx-auto" />
-                <p className="text-slate-500 font-semibold text-sm">No downloadable worksheets or documents available for this topic.</p>
+                <p className="text-slate-500 font-semibold text-sm">No other resources or documents available for this topic.</p>
               </div>
             ) : (
               resources.map((res) => (
@@ -550,9 +619,9 @@ export const TeacherTopicWorkspace = () => {
                       href={res.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors"
+                      className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-navy font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors"
                     >
-                      <Download className="w-3.5 h-3.5" /> Open / Download
+                      <ExternalLink className="w-3.5 h-3.5" /> View Resource
                     </a>
                   </div>
                 </div>
@@ -567,6 +636,25 @@ export const TeacherTopicWorkspace = () => {
         simulation={selectedSimulation}
         isOpen={Boolean(selectedSimulation)}
         onClose={() => setSelectedSimulation(null)}
+      />
+
+      {/* Teacher Feedback Modal */}
+      <TeacherFeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        contextData={{
+          topic_id: topic?.id,
+          topic_name: topic?.name,
+          stream_id: stream?.id,
+          stream_name: `${stream?.form_name || ''} ${stream?.name || ''}`.trim()
+        }}
+      />
+
+      {/* Report Visualization Modal */}
+      <ReportVisualizationModal
+        isOpen={Boolean(reportingVisual)}
+        onClose={() => setReportingVisual(null)}
+        visual={reportingVisual}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useCallback } from "react";
 import { jwtDecode } from "jwt-decode";
 import BASE_URL from "../config";
+import apiClient from "../config/apiClient";
 
 const UserContext = createContext(null);
 
@@ -55,24 +56,14 @@ export const UserProvider = ({ children }) => {
   
       try {
         const decodedUser = jwtDecode(token.access); // Decode the JWT
-        const response = await fetch(`${BASE_URL}/profile/`, {
-          headers: {
-            Authorization: `Bearer ${token.access}`,
-          },
+        const response = await apiClient.get('/profile/');
+        const userData = response.data;
+        setUser({
+          ...decodedUser,
+          ...userData,
+          role: userData.role || decodedUser.role || (userData.is_superuser || userData.is_staff ? "platform_admin" : ""),
+          organization_id: userData.organization_id || decodedUser.organization_id || null,
         });
-  
-        if (response.ok) {
-          const userData = await response.json();
-          setUser({
-            ...decodedUser,
-            ...userData,
-            role: userData.role || decodedUser.role || (userData.is_superuser || userData.is_staff ? "platform_admin" : ""),
-            organization_id: userData.organization_id || decodedUser.organization_id || null,
-          });
-        } else {
-          console.error("Failed to fetch user profile:", response.status);
-          logout();
-        }
       } catch (error) {
         console.error("Error decoding token or fetching user profile:", error);
         logout();

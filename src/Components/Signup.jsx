@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router";
 import AccountTypeSelection from "./Auth/AccountTypeSelection";
 import RegistrationForm from "./Auth/RegistrationForm";
 
-const SELF_REGISTERABLE_ROLES = ["student", "teacher", "school_admin"];
+const SELF_REGISTERABLE_ROLES = ["student", "school_admin"];
 
 function SignupPage() {
   const [searchParams] = useSearchParams();
@@ -43,8 +43,8 @@ function SignupPage() {
 
       <div className="relative sm:max-w-lg w-full md:mx-auto z-10 px-4">
         {/* Decorative tilted cards — identical to Login.jsx and original Signup.jsx */}
-        <div className="card bg-custom-blue shadow-2xl w-full h-full rounded-3xl absolute transform -rotate-6" />
-        <div className="card bg-custom-orange shadow-2xl w-full h-full rounded-3xl absolute transform rotate-6" />
+        <div className="card bg-custom-blue shadow-2xl w-full h-full rounded-3xl absolute transform -rotate-2 sm:-rotate-6" />
+        <div className="card bg-custom-orange shadow-2xl w-full h-full rounded-3xl absolute transform rotate-2 sm:rotate-6" />
 
         {/* Inner content card */}
         <div className="relative w-full rounded-3xl px-6 py-6 bg-gray-100 shadow-md">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, useSearchParams } from 'react-router';
 import apiClient from '../../../config/apiClient';
 import { LessonViewer } from '../../LessonViewer';
 import ConceptNavigator from './composer/ConceptNavigator';
@@ -16,6 +16,10 @@ import {
 export default function ContentStudio() {
     const { learningUnitId } = useParams();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const queryLessonId = searchParams.get('lessonId');
+    const targetBlockId = searchParams.get('targetBlock');
+    const targetPage = searchParams.get('targetPage');
 
     // ── Data state ────────────────────────────────────────────────────────────
     const [lesson, setLesson] = useState(null);
@@ -96,12 +100,21 @@ export default function ContentStudio() {
     const fetchAll = useCallback(async () => {
         setIsLoading(true);
         try {
-            const lessonRes = await apiClient.get(
-                `/api/curriculum/lessons/?learning_unit=${learningUnitId}`
-            );
-            const lessons = lessonRes.data.results || lessonRes.data || [];
-            if (lessons.length > 0) {
-                const current = lessons[0];
+            let current = null;
+            if (learningUnitId) {
+                const lessonRes = await apiClient.get(
+                    `/api/curriculum/lessons/?learning_unit=${learningUnitId}`
+                );
+                const lessons = lessonRes.data.results || lessonRes.data || [];
+                if (lessons.length > 0) current = lessons[0];
+            } else if (queryLessonId) {
+                const lessonRes = await apiClient.get(
+                    `/api/curriculum/lessons/${queryLessonId}/`
+                );
+                current = lessonRes.data;
+            }
+
+            if (current) {
                 setLesson(current);
                 await Promise.all([fetchBlocks(current.id), fetchAssets(current.id)]);
             } else {
@@ -114,11 +127,28 @@ export default function ContentStudio() {
         } finally {
             setIsLoading(false);
         }
-    }, [learningUnitId, fetchBlocks, fetchAssets]);
+    }, [learningUnitId, queryLessonId, fetchBlocks, fetchAssets]);
 
     useEffect(() => {
-        if (learningUnitId) fetchAll();
-    }, [learningUnitId, fetchAll]);
+        if (learningUnitId || queryLessonId) fetchAll();
+    }, [learningUnitId, queryLessonId, fetchAll]);
+
+    // ── Auto-select concept page when targetBlock or targetPage is specified ──
+    useEffect(() => {
+        if (blocks.length > 0) {
+            if (targetBlockId) {
+                const matchedBlock = blocks.find(b => String(b.id) === String(targetBlockId));
+                if (matchedBlock && matchedBlock.page_number) {
+                    setActiveConceptId(matchedBlock.page_number);
+                }
+            } else if (targetPage) {
+                const p = parseInt(targetPage, 10);
+                if (!isNaN(p)) {
+                    setActiveConceptId(p);
+                }
+            }
+        }
+    }, [blocks, targetBlockId, targetPage]);
 
     // ── Listen for background generation completion ──────────────────────────
     useEffect(() => {
@@ -256,10 +286,16 @@ export default function ContentStudio() {
             await apiClient.post(`/api/curriculum/lesson-blocks/`, {
                 lesson: lesson.id,
                 block_type: blockType,
+                component_type: blockType,
                 title: title,
                 content: {}, 
                 order: newOrder,
                 page_number: targetPageNum,
+                metadata: {
+                    component_tag: blockType,
+                    visualization_type: blockType.includes('diagram') ? 'diagram' : blockType.includes('simulation') ? 'simulation' : (blockType.includes('video') || blockType.includes('youtube')) ? 'video' : 'component',
+                    created_via: 'add_component_manual',
+                }
             });
             await fetchBlocks(lesson.id);
         } catch {
@@ -304,10 +340,16 @@ export default function ContentStudio() {
             const blockRes = await apiClient.post(`/api/curriculum/lesson-blocks/`, {
                 lesson: lesson.id,
                 block_type: blockType,
+                component_type: blockType,
                 title: title,
                 content: {}, 
                 order: newOrder,
                 page_number: targetPageNum,
+                metadata: {
+                    component_tag: blockType,
+                    visualization_type: mapBlockTypeToAssetType(blockType),
+                    created_via: 'add_component_file_upload',
+                }
             });
             const newBlockId = blockRes.data.id;
 
@@ -415,12 +457,12 @@ export default function ContentStudio() {
     // Empty / loading states
     // ─────────────────────────────────────────────────────────────────────────
 
-    if (!learningUnitId) {
+    if (!learningUnitId && !queryLessonId) {
         return (
             <EmptyState
                 icon="📚"
-                title="No Learning Unit Selected"
-                subtitle="Select a learning unit from the dashboard."
+                title="No Learning Unit or Lesson Selected"
+                subtitle="Select a learning unit or lesson from Course Management or the Issue Reports queue."
             />
         );
     }
@@ -671,6 +713,7 @@ export default function ContentStudio() {
                                 concept={activeConcept}
                                 allAssets={assets}
                                 lessonId={lesson?.id}
+                                lessonTitle={lesson?.title}
                                 onBlockChange={handleBlockChange}
                                 onSave={saveBlock}
                                 onDelete={deleteBlock}
@@ -678,8 +721,12 @@ export default function ContentStudio() {
                                 onAddBlock={addBlock}
                                 onAddBlockWithFile={addBlockWithFile}
                                 onRegenerate={handleRegenerateBlock}
-                                onAssetUpdated={() => fetchAssets(lesson?.id)}
+                                onAssetUpdated={() => {
+                                    fetchAssets(lesson?.id);
+                                    fetchBlocks(lesson?.id);
+                                }}
                                 onMove={handleMoveBlock}
+                                highlightBlockId={targetBlockId}
                             />
                     )}
                 </div>
