@@ -18,7 +18,8 @@ import {
     ExternalLink,
     Flag,
     Eye,
-    GraduationCap
+    GraduationCap,
+    Play
 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import CourseContentProgressModule from "./CourseManagement/CourseContentProgressModule";
@@ -55,6 +56,10 @@ function AdminDashboard() {
             if (issue.lesson_block) params.set('targetBlock', issue.lesson_block);
             if (issue.block_page_number) params.set('targetPage', issue.block_page_number);
             return `/admin-dashboard/content-studio?${params.toString()}`;
+        }
+        if (issue.visualization_type === 'simulation' || issue.issue_type === 'simulation_broken' || issue.issue_type === 'controls_broken') {
+            const simName = issue.visualization_title || '';
+            return `/simulations${simName ? `?sim=${encodeURIComponent(simName)}` : ''}`;
         }
         return '/admin-dashboard/content-studio';
     };
@@ -291,22 +296,30 @@ function AdminDashboard() {
                 </div>
 
                 {/* Visual Issues & Teacher Feedback */}
-                <div className="bg-white p-6 rounded-3xl border border-gray-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:shadow-md transition-all">
+                <Link
+                    to="/admin-dashboard/reported-issues"
+                    className="bg-white p-6 rounded-3xl border border-gray-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:shadow-md hover:border-rose-200 transition-all cursor-pointer"
+                >
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Reported Issues</span>
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider group-hover:text-rose-600 transition-colors">Reported Issues</span>
                         <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl group-hover:scale-110 transition-transform">
                             <Flag className="w-5 h-5" />
                         </div>
                     </div>
                     <div className="mt-4">
-                        <h2 className="text-3xl font-extrabold text-gray-900">
-                            {isLoading ? "..." : issueReports.filter(i => i.status !== 'resolved').length}
-                        </h2>
+                        <div className="flex items-baseline justify-between">
+                            <h2 className="text-3xl font-extrabold text-gray-900">
+                                {isLoading ? "..." : issueReports.filter(i => i.status !== 'resolved').length}
+                            </h2>
+                            <span className="text-[11px] font-bold text-rose-600 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                                Manage Center →
+                            </span>
+                        </div>
                         <p className="text-xs text-gray-500 mt-1 flex items-center gap-1 font-medium">
                             <span className="text-rose-600 font-bold">{issueReports.length} Total</span> submitted
                         </p>
                     </div>
-                </div>
+                </Link>
             </div>
 
             {/* COURSE CONTENT PROGRESSION MODULE */}
@@ -335,25 +348,35 @@ function AdminDashboard() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl self-start sm:self-auto">
-                        <button
-                            onClick={() => setIssueFilter("all")}
-                            className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${issueFilter === 'all' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500'}`}
+                    <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+                        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+                            <button
+                                onClick={() => setIssueFilter("all")}
+                                className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${issueFilter === 'all' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500'}`}
+                            >
+                                All ({issueReports.length})
+                            </button>
+                            <button
+                                onClick={() => setIssueFilter("open")}
+                                className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${issueFilter === 'open' ? 'bg-white text-rose-700 shadow-xs' : 'text-gray-500'}`}
+                            >
+                                Open ({issueReports.filter(i => i.status !== 'resolved').length})
+                            </button>
+                            <button
+                                onClick={() => setIssueFilter("resolved")}
+                                className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${issueFilter === 'resolved' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-500'}`}
+                            >
+                                Resolved ({issueReports.filter(i => i.status === 'resolved').length})
+                            </button>
+                        </div>
+
+                        <Link
+                            to="/admin-dashboard/reported-issues"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors"
                         >
-                            All ({issueReports.length})
-                        </button>
-                        <button
-                            onClick={() => setIssueFilter("open")}
-                            className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${issueFilter === 'open' ? 'bg-white text-rose-700 shadow-xs' : 'text-gray-500'}`}
-                        >
-                            Open ({issueReports.filter(i => i.status !== 'resolved').length})
-                        </button>
-                        <button
-                            onClick={() => setIssueFilter("resolved")}
-                            className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${issueFilter === 'resolved' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-500'}`}
-                        >
-                            Resolved ({issueReports.filter(i => i.status === 'resolved').length})
-                        </button>
+                            <span>Open Issues Center</span>
+                            <ArrowUpRight className="w-3.5 h-3.5" />
+                        </Link>
                     </div>
                 </div>
 
@@ -448,14 +471,27 @@ function AdminDashboard() {
                                                     Mark Resolved
                                                 </button>
                                             )}
-                                            <Link
-                                                to={getStudioLink(issue)}
-                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-custom-blue text-white font-bold text-[11px] hover:bg-blue-800 transition-colors inline-block"
-                                                title="Open directly in Content Studio on this target block"
-                                            >
-                                                Fix in Studio
-                                                <ArrowUpRight className="w-3 h-3" />
-                                            </Link>
+                                            {issue.visualization_type === 'simulation' || issue.issue_type === 'simulation_broken' || issue.issue_type === 'controls_broken' ? (
+                                                <Link
+                                                    to={getStudioLink(issue)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-600 text-white font-bold text-[11px] hover:bg-purple-700 transition-colors inline-block"
+                                                    title="Launch live simulation"
+                                                >
+                                                    <Play className="w-3 h-3 fill-current" />
+                                                    Test Sim
+                                                </Link>
+                                            ) : (
+                                                <Link
+                                                    to={getStudioLink(issue)}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-custom-blue text-white font-bold text-[11px] hover:bg-blue-800 transition-colors inline-block"
+                                                    title="Open directly in Content Studio on this target block"
+                                                >
+                                                    Fix in Studio
+                                                    <ArrowUpRight className="w-3 h-3" />
+                                                </Link>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -556,6 +592,26 @@ function AdminDashboard() {
                         </div>
                         <span className="text-xs font-bold text-emerald-700 mt-4 flex items-center gap-1">
                             Manage Users →
+                        </span>
+                    </Link>
+
+                    <Link
+                        to="/admin-dashboard/reported-issues"
+                        className="p-5 rounded-2xl border border-gray-200/80 hover:border-rose-300 hover:bg-rose-50/20 hover:shadow-md transition-all group flex flex-col justify-between"
+                    >
+                        <div>
+                            <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-3 group-hover:bg-rose-600 group-hover:text-white transition-colors">
+                                <Flag className="w-5 h-5" />
+                            </div>
+                            <h3 className="text-base font-bold text-gray-900 group-hover:text-rose-700 transition-colors">
+                                Reported Issues
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                                Investigate student/teacher reports on interactive simulations and lesson blocks.
+                            </p>
+                        </div>
+                        <span className="text-xs font-bold text-rose-700 mt-4 flex items-center gap-1">
+                            Resolve Issues ({issueReports.filter(i => i.status !== 'resolved').length}) →
                         </span>
                     </Link>
                 </div>

@@ -1,17 +1,35 @@
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useLocation } from "react-router";
 import {
-    Menu, GraduationCap, ChartNoAxesCombined, Library, LayoutDashboard, UserCog, X, FolderTree
+    Menu, GraduationCap, ChartNoAxesCombined, Library, LayoutDashboard, UserCog, X, FolderTree, Flag, Layers
 } from 'lucide-react';
 import { useState, useContext, useRef, useEffect } from 'react';
 
 import UserContext from '../../Context/UserContext';
+import apiClient from '../../config/apiClient';
 import Swal from 'sweetalert2';
 
 const SideNav = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [openIssuesCount, setOpenIssuesCount] = useState(0);
     const sidebarRef = useRef(null); //Ref for sidebar
     const { logout } = useContext(UserContext);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Fetch open issues count on mount
+    useEffect(() => {
+        const fetchOpenIssues = async () => {
+            try {
+                const res = await apiClient.get('/api/curriculum/visualization-issues/');
+                const list = res.data?.results || res.data || [];
+                const count = list.filter(i => i.status !== 'resolved').length;
+                setOpenIssuesCount(count);
+            } catch (err) {
+                // Silently fallback
+            }
+        };
+        fetchOpenIssues();
+    }, [location.pathname]);
 
     // 👇 useEffect to handle outside click
     useEffect(() => {
@@ -58,10 +76,18 @@ const SideNav = () => {
         { icon: LayoutDashboard, text: "Dashboard", path: '/admin-dashboard/' },
         { icon: Library, text: 'Course management', path: '/admin-dashboard/course-management' },
         { icon: FolderTree, text: "Curriculum Builder", path: '/admin-dashboard/curriculum-builder' },
-        { icon: Library, text: "Content Studio", path: '/admin-dashboard/content-studio' },
+        { icon: Layers, text: "Content Studio", path: '/admin-dashboard/content-studio' },
+        { icon: Flag, text: "Reported Issues", path: '/admin-dashboard/reported-issues', badge: openIssuesCount },
         { icon: ChartNoAxesCombined, text: "Analytics and reports", path: '/admin-dashboard/analytics' },
         { icon: UserCog, text: "User management", path: '/admin-dashboard/user-management' },
     ];
+
+    const isLinkActive = (itemPath) => {
+        if (itemPath === '/admin-dashboard/' || itemPath === '/admin-dashboard') {
+            return location.pathname === '/admin-dashboard' || location.pathname === '/admin-dashboard/';
+        }
+        return location.pathname.startsWith(itemPath);
+    };
 
     return (
         <>
@@ -87,17 +113,29 @@ const SideNav = () => {
                         </Link>
                     </div>
 
-                    <nav className="space-y-2">
-                        {navItems.map((item, index) => (
-                            <Link
-                                to={item.path}
-                                key={index}
-                                className="flex items-center gap-3 w-full p-3 text-gray-700 hover:bg-indigo-50 hover:text-custom-blue rounded-3xl"
-                            >
-                                <item.icon className="h-5 w-5" />
-                                <span>{item.text}</span>
-                            </Link>
-                        ))}
+                    <nav className="space-y-1.5">
+                        {navItems.map((item, index) => {
+                            const active = isLinkActive(item.path);
+                            return (
+                                <Link
+                                    to={item.path}
+                                    key={index}
+                                    className={`flex items-center gap-3 w-full p-2.5 rounded-2xl transition-colors font-medium text-xs ${
+                                        active 
+                                            ? 'bg-blue-50/80 text-custom-blue font-bold shadow-xs' 
+                                            : 'text-gray-700 hover:bg-indigo-50/60 hover:text-custom-blue'
+                                    }`}
+                                >
+                                    <item.icon className="h-4.5 w-4.5 shrink-0" />
+                                    <span className="truncate">{item.text}</span>
+                                    {item.badge > 0 && (
+                                        <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500 text-white shadow-xs animate-pulse">
+                                            {item.badge}
+                                        </span>
+                                    )}
+                                </Link>
+                            );
+                        })}
                     </nav>
                 </div>
 

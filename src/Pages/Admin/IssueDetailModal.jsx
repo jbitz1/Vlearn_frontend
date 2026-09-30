@@ -10,7 +10,12 @@ import {
     BookOpen, 
     ExternalLink,
     MessageSquare,
-    Loader2
+    Loader2,
+    Cpu,
+    Play,
+    SlidersHorizontal,
+    Video,
+    RotateCcw
 } from 'lucide-react';
 import { Link } from 'react-router';
 
@@ -26,9 +31,21 @@ export default function IssueDetailModal({
     const [submitting, setSubmitting] = useState(false);
 
     const isResolved = issue.status === 'resolved';
-    const studioLink = getStudioLink ? getStudioLink(issue) : null;
+    const isSim = (
+        issue.visualization_type === 'simulation' ||
+        issue.issue_type === 'simulation_broken' ||
+        issue.issue_type === 'controls_broken'
+    );
+    const simLink = (isSim || issue.visualization_type === 'simulation') && issue.visualization_title
+        ? `/simulations?sim=${encodeURIComponent(issue.visualization_title)}`
+        : isSim
+        ? '/simulations'
+        : null;
 
-    const handleMarkResolved = async () => {
+    const studioLink = getStudioLink ? getStudioLink(issue) : null;
+    const hasLesson = Boolean(issue.lesson || issue.learning_unit_id);
+
+    const handleMarkResolved = async (resolvedStatus = true) => {
         setSubmitting(true);
         try {
             await onResolve(issue.id, notes.trim());
@@ -46,7 +63,11 @@ export default function IssueDetailModal({
                 {/* Modal Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-slate-50/80">
                     <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200">
+                        <div className={`p-2 rounded-xl border ${
+                            isResolved 
+                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
+                                : 'bg-rose-50 text-rose-600 border-rose-200'
+                        }`}>
                             <Flag size={18} />
                         </div>
                         <div>
@@ -84,6 +105,10 @@ export default function IssueDetailModal({
                                 ? 'bg-amber-50 text-amber-800 border border-amber-200'
                                 : issue.issue_type === 'simulation_broken'
                                 ? 'bg-red-50 text-red-700 border border-red-200'
+                                : issue.issue_type === 'controls_broken'
+                                ? 'bg-orange-50 text-orange-800 border border-orange-200'
+                                : issue.issue_type === 'youtube_unavailable'
+                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
                                 : 'bg-purple-50 text-purple-700 border border-purple-200'
                         }`}>
                             {issue.issue_type_display || issue.issue_type}
@@ -93,27 +118,35 @@ export default function IssueDetailModal({
                                 Media: {issue.visualization_type}
                             </span>
                         )}
+                        {isSim && (
+                            <span className="px-2 py-1 rounded-lg text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
+                                <Cpu size={12} />
+                                Interactive Lab Simulation
+                            </span>
+                        )}
                     </div>
 
                     {/* Pedagogical & Lesson Coordinates */}
                     <div className="bg-slate-50/80 rounded-2xl p-4 border border-gray-200/80 space-y-2">
                         <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                             <BookOpen size={13} className="text-custom-blue" />
-                            Curriculum & Lesson Context
+                            Curriculum & Context Coordinates
                         </p>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                             <div>
                                 <span className="text-[11px] text-gray-500 block">Curriculum Coordinates</span>
                                 <p className="text-xs font-bold text-gray-900">
-                                    {[issue.grade_name, issue.subject_name].filter(Boolean).join(' • ') || 'General Subject'}
+                                    {[issue.grade_name, issue.subject_name].filter(Boolean).join(' • ') || (isSim ? 'Interactive STEM Labs' : 'Platform Content')}
                                     {issue.topic_name && <span className="text-gray-600 block text-[11px] font-normal">Topic: {issue.topic_name}</span>}
                                 </p>
                             </div>
                             <div>
-                                <span className="text-[11px] text-gray-500 block">Lesson & Unit</span>
+                                <span className="text-[11px] text-gray-500 block">
+                                    {isSim && !hasLesson ? 'Interactive Lab' : 'Lesson & Unit'}
+                                </span>
                                 <p className="text-xs font-bold text-gray-900">
-                                    {issue.lesson_title || (issue.lesson ? `Lesson #${issue.lesson}` : 'No Lesson Attached')}
+                                    {issue.lesson_title || (issue.lesson ? `Lesson #${issue.lesson}` : isSim ? (issue.visualization_title || 'Standalone Simulation') : 'General Feedback')}
                                 </p>
                                 {issue.learning_unit_title && (
                                     <span className="text-gray-500 block text-[11px]">Unit: {issue.learning_unit_title}</span>
@@ -124,7 +157,7 @@ export default function IssueDetailModal({
                         {(issue.visualization_title || issue.lesson_block) && (
                             <div className="pt-2 border-t border-gray-200/60 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-700">
                                 {issue.visualization_title && (
-                                    <span><strong>Component:</strong> {issue.visualization_title}</span>
+                                    <span><strong>Target Component:</strong> {issue.visualization_title}</span>
                                 )}
                                 {issue.block_page_number && (
                                     <span><strong>Page:</strong> {issue.block_page_number}</span>
@@ -183,7 +216,7 @@ export default function IssueDetailModal({
                             <textarea
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                placeholder="Describe what was fixed (e.g., 'Replaced YouTube video with working link', 'Regenerated visual vectors via Content Studio')..."
+                                placeholder="Describe what was fixed (e.g., 'Replaced YouTube video with working link', 'Fixed collision canvas bounds in simulation', 'Regenerated visual vectors via Content Studio')..."
                                 className="w-full border border-gray-200 rounded-xl p-3 text-xs outline-none focus:border-custom-blue min-h-[70px] resize-y"
                             />
                         </div>
@@ -200,11 +233,11 @@ export default function IssueDetailModal({
                         Close
                     </button>
 
-                    <div className="flex items-center gap-2.5 ml-auto">
+                    <div className="flex flex-wrap items-center gap-2.5 ml-auto">
                         {!isResolved && (
                             <button
                                 type="button"
-                                onClick={handleMarkResolved}
+                                onClick={() => handleMarkResolved(true)}
                                 disabled={submitting}
                                 className="px-4 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                             >
@@ -213,7 +246,19 @@ export default function IssueDetailModal({
                             </button>
                         )}
 
-                        {studioLink && (
+                        {simLink && (
+                            <Link
+                                to={simLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-4 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                            >
+                                <Play size={13} className="fill-current" />
+                                Launch & Test Simulation →
+                            </Link>
+                        )}
+
+                        {hasLesson && studioLink && (
                             <Link
                                 to={studioLink}
                                 onClick={onClose}

@@ -53,6 +53,7 @@ import TopicWorkspace from "./Pages/User/TopicWorkspace";
 import NotFound from "./Pages/NotFound";
 import CurriculumBuilder from "./Pages/Admin/CurriculumBuilder";
 import IngestionSandbox from "./Pages/Admin/IngestionSandbox";
+import ReportedIssues from "./Pages/Admin/ReportedIssues";
 import RequireRole from "./component-library/account-management/authentication/RequireRole";
 import MyClassPage from "./Pages/Teacher/MyClassPage";
 import KCSEHistory from "./Pages/School/KCSEHistory";
@@ -273,6 +274,14 @@ function App() {
             {
                 path: "ingestion-sandbox",
                 element: <IngestionSandbox />
+            },
+            {
+                path: "reported-issues",
+                element: <ReportedIssues />
+            },
+            {
+                path: "issues",
+                element: <Navigate to="/admin-dashboard/reported-issues" replace />
             },
         ]
     };
