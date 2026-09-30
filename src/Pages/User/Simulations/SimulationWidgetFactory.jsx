@@ -1,5 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { normalizePhetUrl } from '../../../utils/phetUrlHelper';
+import PhetSimulationRunner from './PhetSimulationRunner';
 
 const simulationRegistry = {
   charles_law: lazy(() => import('./CharlesLawGuidedSim')),
@@ -656,6 +658,21 @@ const simulationRegistry = {
 };
 
 export default function SimulationWidgetFactory({ archetype, simulationKey, config = {}, title = '', onTelemetry }) {
+  // Check if this simulation specifies an external PhET HTML5 URL
+  const rawPhetUrl = config?.external_url || config?.url;
+  const phetUrl = normalizePhetUrl(rawPhetUrl);
+
+  if (phetUrl) {
+    return (
+      <PhetSimulationRunner
+        url={phetUrl}
+        title={title}
+        config={config}
+        onTelemetry={onTelemetry}
+      />
+    );
+  }
+
   const norm = (str) => (str || '').trim().toLowerCase().replace(/-/g, '_');
   const aKey = norm(archetype);
   const sKey = norm(simulationKey);

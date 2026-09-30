@@ -2,6 +2,7 @@ import React from 'react';
 import ReactPlayer from 'react-player';
 import { Image as ImageIcon, PlayCircle, Video, Settings, Loader2, FlaskConical } from 'lucide-react';
 import LessonSimulationLauncherCard from './LessonSimulationLauncherCard';
+import { normalizePhetUrl } from '../../utils/phetUrlHelper';
 
 export const ImagePlaceholderBlock = ({ block }) => {
     const content = typeof block.content === 'string' ? JSON.parse(block.content) : block.content;
@@ -67,20 +68,33 @@ export const VideoRefBlock = ({ block }) => {
 export const SimulationPlaceholderBlock = ({ block }) => {
     const content = typeof block.content === 'string' ? (tryJsonParse(block.content)) : block.content || {};
     const metadata = block.metadata || {};
+    const asset = block?.assets && block.assets.length > 0 ? block.assets[0] : null;
 
-    const simKey = metadata.simulation_key || content.simulation_key || 'charles_law';
-    const archetype = metadata.archetype || content.archetype || simKey;
+    const rawExternalUrl = asset?.url || metadata.url || metadata.external_url || content.url || content.external_url || block.url;
+    const phetUrl = normalizePhetUrl(rawExternalUrl);
+
+    const simKey = phetUrl ? 'phet_external_simulation' : (metadata.simulation_key || content.simulation_key || 'charles_law');
+    const archetype = phetUrl ? 'phet_external_simulation' : (metadata.archetype || content.archetype || simKey);
     const config = metadata.config || content.config || {
         context_spec: metadata.context_spec || content.context_spec || {}
     };
 
+    if (phetUrl) {
+        config.url = phetUrl;
+        config.external_url = phetUrl;
+        config.is_phet = true;
+    }
+
     const simObject = {
-        title: block.title || 'Interactive Simulation',
+        title: block.title || (phetUrl ? 'PhET Interactive Simulation' : 'Interactive Simulation'),
         key: simKey,
         archetype: archetype,
-        subject: metadata.subject || 'CHEMISTRY',
+        subject: metadata.subject || 'SCIENCE',
         topic: metadata.concept_group || 'Interactive Simulation',
-        config: config
+        config: config,
+        is_phet: Boolean(phetUrl),
+        url: phetUrl,
+        external_url: phetUrl,
     };
 
     return <LessonSimulationLauncherCard simObject={simObject} />;

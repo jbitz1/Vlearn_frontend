@@ -6,6 +6,7 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import BASE_URL from '../../config';
 import { ContentNormalizer } from '../../utils/ContentNormalizer';
+import { normalizePhetUrl } from '../../utils/phetUrlHelper';
 import LessonSimulationLauncherCard from './LessonSimulationLauncherCard';
 import {
   Target, Book, PenTool, Lightbulb, AlertTriangle, XCircle, Zap, Star, BrainCircuit, Globe, Hand, FlaskConical, Sparkles, CheckCircle2, PlayCircle, BarChart, Image as ImageIcon, MonitorPlay, Link2, BookOpen, Check, X, Clock, Flag
@@ -846,8 +847,9 @@ export const SuggestedMediaBlock = ({ block, onReportVisual }) => {
   const licensing = asset?.metadata?.licensing || asset?.licensing;
   const hasAttribution = Boolean(author || licensing || commonsUrl);
 
-  // Render Interactive Simulation Sandbox if this is a simulation block or sandbox title
+  // Render Interactive Simulation Sandbox if this is a simulation block, has a simulation asset, or sandbox title
   if (['suggested_simulation', 'simulation_placeholder'].includes(block.block_type) ||
+      asset?.asset_type === 'simulation' ||
       (block.title && (block.title.toLowerCase().includes('sandbox') || block.title.toLowerCase().includes('interactive')))) {
     return <InteractiveSimulationBlock block={block} />;
   }
@@ -1571,6 +1573,30 @@ export const InteractiveSimulationBlock = ({ block }) => {
   const title = block?.title || content?.title || '';
   const metadata = block?.metadata || {};
   const asset = block?.assets && block.assets.length > 0 ? block.assets[0] : null;
+
+  // Check if an external PhET simulation URL is attached
+  const rawExternalUrl = asset?.url || metadata?.url || metadata?.external_url || content?.url || content?.external_url || block?.url;
+  const phetUrl = normalizePhetUrl(rawExternalUrl);
+
+  if (phetUrl) {
+    const simObject = {
+      title: title || 'PhET Interactive Simulation',
+      key: 'phet_external_simulation',
+      archetype: 'phet_external_simulation',
+      subject: metadata.subject || content?.subject || asset?.metadata?.subject || 'SCIENCE',
+      topic: metadata.concept_group || metadata.topic || content?.topic || 'Interactive Simulation',
+      is_phet: true,
+      url: phetUrl,
+      external_url: phetUrl,
+      config: {
+        ...(metadata.config || content?.config || asset?.metadata?.config || {}),
+        url: phetUrl,
+        external_url: phetUrl,
+        is_phet: true,
+      },
+    };
+    return <LessonSimulationLauncherCard simObject={simObject} />;
+  }
 
   let simKey = metadata.simulation_key || content?.simulation_key || asset?.metadata?.simulation_key || block?.simulation_key || metadata.key || content?.key;
   let archetype = metadata.archetype || content?.archetype || asset?.metadata?.archetype || block?.archetype || simKey;

@@ -80,10 +80,17 @@ export default function LessonSimulationLauncherCard({ simObject, onTelemetry })
                 <BookOpen className="w-3.5 h-3.5 mr-1 shrink-0" />
                 {simObject.topic || 'Interactive Module'}
               </span>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse shrink-0" />
-                Live Lab Model
-              </span>
+              {simObject.is_phet || simObject.config?.is_phet ? (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 animate-pulse shrink-0" />
+                  PhET Interactive Lab
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse shrink-0" />
+                  Live Lab Model
+                </span>
+              )}
             </div>
 
             <h3 className="text-lg sm:text-xl md:text-2xl font-black text-gray-900 tracking-tight">

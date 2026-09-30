@@ -31,10 +31,15 @@ export default function VisualPromptModal({
             if (targetBlock) {
                 setTargetBlockId(String(targetBlock.id));
                 setPlacement('replace');
-                if (targetBlock.block_type && targetBlock.block_type.startsWith('suggested_')) {
-                    setVisualType(targetBlock.block_type);
-                } else if (targetBlock.block_type === 'simulation') {
+                const bType = targetBlock.block_type || '';
+                if (['suggested_video', 'video', 'youtube', 'video_ref'].includes(bType)) {
+                    setVisualType('suggested_video');
+                } else if (['suggested_image', 'image', 'image_placeholder'].includes(bType)) {
+                    setVisualType('suggested_image');
+                } else if (['suggested_simulation', 'simulation', 'simulation_placeholder'].includes(bType)) {
                     setVisualType('suggested_simulation');
+                } else if (bType === 'visualization') {
+                    setVisualType('visualization');
                 } else {
                     setVisualType('suggested_diagram');
                 }
@@ -234,9 +239,22 @@ export default function VisualPromptModal({
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                             disabled={isSubmitting}
-                            placeholder={isUpdate
-                                ? 'e.g. "Replace the current diagram with a labeled cross-section showing the three layers of the leaf. Make the xylem and phloem visually distinct and add clear directional arrows for transpiration."'
-                                : 'e.g. "Diagram showing the alpha particle scattering experiment, highlighting beam deflection angles around a heavy nucleus."'
+                            placeholder={
+                                visualType === 'suggested_video'
+                                    ? (isUpdate 
+                                        ? 'e.g. "Replace with a YouTube demonstration showing titration of hydrochloric acid with sodium hydroxide."'
+                                        : 'e.g. "Laboratory experiment demonstrating Graham\'s law of diffusion using ammonia and hydrochloric acid gas."')
+                                    : visualType === 'suggested_image'
+                                    ? (isUpdate
+                                        ? 'e.g. "Replace with a clear Wikimedia Commons photo of a mammalian heart showing the ventricles and aorta."'
+                                        : 'e.g. "High-resolution microscope photograph showing onion epidermal cells with stained nuclei from Wikimedia Commons."')
+                                    : visualType === 'suggested_simulation'
+                                    ? (isUpdate
+                                        ? 'e.g. "Link to an interactive PhET simulation for Faraday\'s electromagnetic induction and magnetic flux."'
+                                        : 'e.g. "Interactive PhET simulation link for Gas Properties exploring Boyle\'s Law and Charles\'s Law."')
+                                    : (isUpdate
+                                        ? 'e.g. "Replace the current diagram with a labeled cross-section showing the three layers of the leaf. Make xylem and phloem visually distinct."'
+                                        : 'e.g. "Diagram showing the alpha particle scattering experiment, highlighting beam deflection angles around a heavy nucleus."')
                             }
                             className="w-full px-3.5 py-2.5 text-xs text-gray-900 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-custom-orange/30 focus:border-custom-orange transition-all placeholder:text-gray-400 resize-none disabled:bg-gray-50 disabled:text-gray-400"
                             required
@@ -258,10 +276,19 @@ export default function VisualPromptModal({
                                 disabled={isSubmitting}
                                 className="w-full px-3 py-2 text-xs font-medium border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-custom-orange/30 disabled:bg-gray-50"
                             >
-                                <option value="suggested_diagram">Scientific Diagram / SVG</option>
-                                <option value="suggested_simulation">Interactive Simulation</option>
-                                <option value="visualization">Pedagogical Infographic / Chart</option>
+                                <option value="suggested_diagram">SVG Images / Vector Diagrams</option>
+                                <option value="suggested_image">Wikimedia Links / Images</option>
+                                <option value="suggested_video">Video Links / YouTube</option>
+                                <option value="suggested_simulation">Simulation Links / Interactive Labs</option>
+                                <option value="visualization">Pedagogical Infographics / Charts</option>
                             </select>
+                            <p className="text-[10px] text-gray-400 mt-1 leading-snug">
+                                {visualType === 'suggested_diagram' && 'Generates vector SVG graphics rendered directly in the card.'}
+                                {visualType === 'suggested_image' && 'Targets educational Wikimedia Commons image and photo links.'}
+                                {visualType === 'suggested_video' && 'Targets educational YouTube video demonstration links.'}
+                                {visualType === 'suggested_simulation' && 'Targets interactive PhET simulation or lab widget links.'}
+                                {visualType === 'visualization' && 'Generates structured pedagogical charts and infographics.'}
+                            </p>
                         </div>
 
                         {!isUpdate ? (
