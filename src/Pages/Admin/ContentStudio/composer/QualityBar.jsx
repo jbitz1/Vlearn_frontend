@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckCircle, AlertCircle, Clock, FileText, Image, Video, Activity, HelpCircle, Database, BookOpen } from 'lucide-react';
+import { isAssetPresent, getBlockMedia } from '../../../../utils/assetUtils';
 
 export default function QualityBar({ blocks, assets, onPublish, lessonStatus, concepts = [] }) {
     const metrics = computeMetrics(blocks, assets, concepts);
@@ -88,7 +89,9 @@ function computeMetrics(blocks, assets, concepts) {
         return text && text.trim().length > 10;
     }).length;
 
-    const attachedAssets = assets.filter((a) => a.status === 'attached').length;
+    const attachedAssets = assets.filter(isAssetPresent).length +
+        blocks.filter(b => EMPTY_TYPES.includes(b.block_type) && !assets.some(a => (a.blocks || []).some(x => (typeof x === 'object' ? x?.id : x) === b.id)) && Boolean(getBlockMedia(b))).length;
+    const effectiveTotalAssets = Math.max(totalAssets, blocks.filter(b => EMPTY_TYPES.includes(b.block_type)).length);
 
     return {
         words,
@@ -100,7 +103,7 @@ function computeMetrics(blocks, assets, concepts) {
         knowledgeCheckCount,
         repoCoverage,
         conceptCoverage: textBlocks.length === 0 ? 100 : Math.round((filledConcepts / textBlocks.length) * 100),
-        mediaCoverage: totalAssets === 0 ? 100 : Math.round((attachedAssets / totalAssets) * 100),
+        mediaCoverage: effectiveTotalAssets === 0 ? 100 : Math.min(100, Math.round((attachedAssets / effectiveTotalAssets) * 100)),
     };
 }
 

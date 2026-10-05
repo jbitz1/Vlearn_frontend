@@ -127,7 +127,7 @@ export default function LessonDisaggregationDrawer({
                                 </Link>
                                 <span>•</span>
                                 <a
-                                    href={`/student/lesson-viewer/?lessonId=${lesson.id}&preview=true`}
+                                    href={`/student/lesson-viewer/?lessonId=${lesson.id}&preview=true&from=admin`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1.5 text-emerald-600 hover:underline font-semibold"

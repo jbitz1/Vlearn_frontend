@@ -20,10 +20,14 @@ const SideNav = () => {
     useEffect(() => {
         const fetchOpenIssues = async () => {
             try {
-                const res = await apiClient.get('/api/curriculum/visualization-issues/');
-                const list = res.data?.results || res.data || [];
-                const count = list.filter(i => i.status !== 'resolved').length;
-                setOpenIssuesCount(count);
+                const res = await apiClient.get('/api/curriculum/visualization-issues/summary/');
+                if (res.data && typeof res.data.total_open === 'number') {
+                    setOpenIssuesCount(res.data.total_open);
+                } else {
+                    const list = res.data?.results || res.data || [];
+                    const count = list.filter(i => i.status !== 'resolved').length;
+                    setOpenIssuesCount(count);
+                }
             } catch (err) {
                 // Silently fallback
             }

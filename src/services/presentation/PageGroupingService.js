@@ -88,7 +88,7 @@ export class PageGroupingService {
         const firstWithPageTitle = p.blocks.find((b) => b.page_title && b.page_title.trim());
         return firstWithPageTitle ? firstWithPageTitle.page_title.trim() : null;
       }).filter(Boolean);
-      const isRedundantPageTitle = rawPageTitles.length > 0 && new Set(rawPageTitles).size <= 1;
+      const isRedundantPageTitle = rawPageTitles.length > 1 && new Set(rawPageTitles).size <= 1;
 
       pages.forEach((page) => {
         const primaryBlock = page.blocks.find((b) => !MEDIA_TYPES.has((b.block_type || '').toLowerCase())) || page.blocks[0];

@@ -343,7 +343,7 @@ export default function SubjectDetail({
 
                                                                         {/* Preview as Student */}
                                                                         <a
-                                                                            href={`/student/lesson-viewer/?lessonId=${unit.lesson_id}&preview=true`}
+                                                                            href={`/student/lesson-viewer/?lessonId=${unit.lesson_id}&preview=true&from=admin`}
                                                                             target="_blank"
                                                                             rel="noopener noreferrer"
                                                                             className="px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition inline-flex items-center gap-1"

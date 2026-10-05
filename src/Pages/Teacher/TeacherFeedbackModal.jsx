@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { MessageSquare, X, CheckCircle, AlertTriangle, Loader2, Send } from 'lucide-react';
+import axios from 'axios';
 import apiClient from '../../config/apiClient';
+import BASE_URL from '../../config';
 
 export default function TeacherFeedbackModal({
   isOpen,
@@ -34,13 +36,15 @@ export default function TeacherFeedbackModal({
     setIsSubmitting(true);
     setError(null);
 
+    const payload = {
+      visualization_title: `${sName ? sName + ' - ' : ''}${tName}${fName ? ' (' + fName + ')' : ''}`.trim(),
+      visualization_type: 'teacher_feedback',
+      issue_type: 'teacher_feedback',
+      description: `[Category: ${feedbackCategory}] ${feedbackText.trim()}`,
+    };
+
     try {
-      await apiClient.post('/api/curriculum/visualization-issues/', {
-        visualization_title: `${sName ? sName + ' - ' : ''}${tName}${fName ? ' (' + fName + ')' : ''}`.trim(),
-        visualization_type: 'teacher_feedback',
-        issue_type: 'teacher_feedback',
-        description: `[Category: ${feedbackCategory}] ${feedbackText.trim()}`,
-      });
+      await apiClient.post('/api/curriculum/visualization-issues/', payload);
 
       setIsSubmitted(true);
       setTimeout(() => {
@@ -49,6 +53,23 @@ export default function TeacherFeedbackModal({
         onClose();
       }, 1600);
     } catch (err) {
+      if (err.response?.status === 401 || err.response?.status === 403 || !err.response) {
+        try {
+          await axios.post(`${BASE_URL}/api/curriculum/visualization-issues/`, payload, {
+            headers: { 'Content-Type': 'application/json' }
+          });
+          setIsSubmitted(true);
+          setTimeout(() => {
+            setIsSubmitted(false);
+            setFeedbackText('');
+            onClose();
+          }, 1600);
+          return;
+        } catch (fallbackErr) {
+          setError(fallbackErr.response?.data?.detail || 'Failed to submit feedback. Please try again.');
+          return;
+        }
+      }
       setError(err.response?.data?.detail || 'Failed to submit feedback. Please try again.');
     } finally {
       setIsSubmitting(false);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import apiClient from '../../../../config/apiClient';
 import BASE_URL from '../../../../config';
+import { isAssetPresent } from '../../../../utils/assetUtils';
 import {
     BarChart2, Video, Image as ImageIcon, Play, Layers,
     ExternalLink, Upload, Youtube, Link2, Database,
@@ -21,9 +22,14 @@ const ASSET_TYPE_META = {
 };
 
 const STATUS_META = {
-    pending:  { icon: Clock,        label: 'Missing',  color: 'text-amber-600',  bg: 'bg-amber-50' },
-    attached: { icon: CheckCircle,  label: 'Attached', color: 'text-emerald-600',bg: 'bg-emerald-50' },
-    archived: { icon: XCircle,      label: 'Archived', color: 'text-gray-500',   bg: 'bg-gray-50' },
+    pending:   { icon: Clock,        label: 'Missing',  color: 'text-amber-600',  bg: 'bg-amber-50' },
+    attached:  { icon: CheckCircle,  label: 'Attached', color: 'text-emerald-600',bg: 'bg-emerald-50' },
+    approved:  { icon: CheckCircle,  label: 'Attached', color: 'text-emerald-600',bg: 'bg-emerald-50' },
+    ready:     { icon: CheckCircle,  label: 'Attached', color: 'text-emerald-600',bg: 'bg-emerald-50' },
+    active:    { icon: CheckCircle,  label: 'Attached', color: 'text-emerald-600',bg: 'bg-emerald-50' },
+    published: { icon: CheckCircle,  label: 'Attached', color: 'text-emerald-600',bg: 'bg-emerald-50' },
+    generated: { icon: CheckCircle,  label: 'Attached', color: 'text-emerald-600',bg: 'bg-emerald-50' },
+    archived:  { icon: XCircle,      label: 'Archived', color: 'text-gray-500',   bg: 'bg-gray-50' },
 };
 
 function getAttachMode(assetType) {
@@ -41,14 +47,17 @@ function getAttachMode(assetType) {
  * When attached, renders a preview of the media instead of the placeholder.
  */
 export function MediaSlot({ asset, lessonId, blockId, onAssetUpdated, onDeleteBlock, onPromptVisual }) {
-    const [expanded, setExpanded] = useState(asset.status === 'pending');
+    const isAttached = isAssetPresent(asset);
+    const [expanded, setExpanded] = useState(!isAttached);
     const [mode, setMode] = useState(asset.asset_type === 'repository_asset' ? 'repository' : null); // 'upload' | 'url' | 'youtube' | 'repository'
     const [urlInput, setUrlInput] = useState('');
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState(null);
 
     const meta = ASSET_TYPE_META[asset.asset_type] || ASSET_TYPE_META.image;
-    const statusMeta = STATUS_META[asset.status] || STATUS_META.pending;
+    const statusMeta = isAttached
+        ? STATUS_META.attached
+        : (STATUS_META[asset.status] || STATUS_META.pending);
     const Icon = meta.icon;
     const StatusIcon = statusMeta.icon;
     const attachModes = getAttachMode(asset.asset_type);
@@ -172,7 +181,7 @@ export function MediaSlot({ asset, lessonId, blockId, onAssetUpdated, onDeleteBl
 
     return (
         <div className={`rounded-xl border-2 ${
-            asset.status === 'attached' ? 'border-emerald-200 bg-emerald-50/30' : `${meta.border} ${meta.bg}`
+            isAttached ? 'border-emerald-200 bg-emerald-50/30' : `${meta.border} ${meta.bg}`
         } overflow-hidden transition-all`}>
             {/* Slot header */}
             <div
@@ -246,12 +255,12 @@ export function MediaSlot({ asset, lessonId, blockId, onAssetUpdated, onDeleteBl
                     )}
 
                     {/* Current preview if attached */}
-                    {asset.status === 'attached' && (asset.url || asset.file) && (
+                    {isAttached && (asset.url || asset.file || asset.metadata?.generated_code || asset.metadata?.svg_content || asset.metadata?.svg || asset.metadata?.simulation_key) && (
                         <AttachedPreview asset={asset} />
                     )}
 
-                    {/* Action bar */}
-                    {asset.status !== 'attached' && !mode && (
+                    {/* Action bar if NOT attached */}
+                    {!isAttached && !mode && (
                         <div className="flex flex-wrap items-center gap-2">
                             {attachModes.includes('upload') && (
                                 <label className="cursor-pointer px-3 py-2 text-xs font-semibold rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex items-center gap-1.5">
@@ -355,7 +364,7 @@ export function MediaSlot({ asset, lessonId, blockId, onAssetUpdated, onDeleteBl
                     )}
 
                     {/* Replace / Remove buttons if already attached */}
-                    {asset.status === 'attached' && (
+                    {isAttached && (
                         <div className="flex flex-wrap items-center gap-2">
                             <label className="cursor-pointer px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 flex items-center gap-1.5">
                                 <Upload size={11} /> Replace
@@ -446,11 +455,39 @@ export function MediaSlot({ asset, lessonId, blockId, onAssetUpdated, onDeleteBl
 function AttachedPreview({ asset }) {
     const getFileUrl = (fileStr) => {
         if (!fileStr) return null;
-        if (fileStr.startsWith('http')) return fileStr;
+        if (fileStr.startsWith('http')) {
+            if (fileStr.includes('upload.wikimedia.org') || fileStr.includes('commons.wikimedia.org')) {
+                return `${BASE_URL}/api/curriculum/media-proxy/?url=${encodeURIComponent(fileStr)}`;
+            }
+            return fileStr;
+        }
         const path = fileStr.startsWith('/') ? fileStr : `/media/${fileStr}`;
         return `${BASE_URL}${path}`;
     };
     const url = getFileUrl(asset.url) || getFileUrl(asset.file);
+
+    const svgCandidate = (val) => (typeof val === 'string' && val.includes('<svg') ? val : null);
+    const svgCode =
+        svgCandidate(asset.metadata?.generated_code) ||
+        svgCandidate(asset.metadata?.svg_content) ||
+        svgCandidate(asset.metadata?.svg_code) ||
+        svgCandidate(asset.metadata?.svg);
+
+    if (svgCode) {
+        return (
+            <div className="rounded-xl overflow-hidden border border-slate-200 bg-white p-4 shadow-2xs">
+                <div 
+                    className="w-full flex items-center justify-center [&>svg]:max-h-64 [&>svg]:w-auto [&>svg]:h-auto [&>svg]:max-w-full"
+                    dangerouslySetInnerHTML={{ __html: svgCode }}
+                />
+                {asset.metadata?.alt_text && (
+                    <p className="mt-2 text-xs text-gray-500 italic text-center">
+                        {asset.metadata.alt_text}
+                    </p>
+                )}
+            </div>
+        );
+    }
 
     if (!url) return null;
 

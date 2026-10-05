@@ -21,7 +21,9 @@ import {
     Sparkles,
     SlidersHorizontal,
     Video,
-    HelpCircle
+    HelpCircle,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import apiClient from '../../config/apiClient';
 import IssueDetailModal from './IssueDetailModal';
@@ -34,6 +36,8 @@ export default function ReportedIssues() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedIssue, setSelectedIssue] = useState(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const fetchIssues = async () => {
         try {
@@ -167,6 +171,31 @@ export default function ReportedIssues() {
             return true;
         });
     }, [issues, statusFilter, categoryFilter, searchQuery]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [statusFilter, categoryFilter, searchQuery, pageSize]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredIssues.length / pageSize));
+    const safePage = Math.min(currentPage, totalPages);
+
+    const paginatedIssues = useMemo(() => {
+        const start = (safePage - 1) * pageSize;
+        return filteredIssues.slice(start, start + pageSize);
+    }, [filteredIssues, safePage, pageSize]);
+
+    const getPagePills = (current, total) => {
+        if (total <= 7) {
+            return Array.from({ length: total }, (_, i) => i + 1);
+        }
+        if (current <= 4) {
+            return [1, 2, 3, 4, 5, '...', total];
+        }
+        if (current >= total - 3) {
+            return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+        }
+        return [1, '...', current - 1, current, current + 1, '...', total];
+    };
 
     const getIssueTypeBadge = (issueType) => {
         switch (issueType) {
@@ -443,7 +472,7 @@ export default function ReportedIssues() {
                         <h2 className="text-lg font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
                             <span>Issue Reports List</span>
                             <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
-                                {filteredIssues.length} Shown
+                                {filteredIssues.length} Total
                             </span>
                         </h2>
                         <p className="text-xs text-gray-500 mt-0.5">
@@ -483,7 +512,7 @@ export default function ReportedIssues() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 text-gray-700">
-                                {filteredIssues.map((issue) => {
+                                {paginatedIssues.map((issue) => {
                                     const typeBadge = getIssueTypeBadge(issue.issue_type);
                                     const TypeIcon = typeBadge.icon;
                                     const isResolved = issue.status === 'resolved';
@@ -621,6 +650,79 @@ export default function ReportedIssues() {
                                 })}
                             </tbody>
                         </table>
+                    </div>
+                )}
+
+                {/* Pagination Toolbar */}
+                {!isLoading && filteredIssues.length > 0 && (
+                    <div className="px-6 py-4 bg-slate-50/70 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
+                        {/* Page Size & Showing counts */}
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-gray-500">Rows per page:</span>
+                                <select
+                                    value={pageSize}
+                                    onChange={(e) => {
+                                        setPageSize(Number(e.target.value));
+                                        setCurrentPage(1);
+                                    }}
+                                    className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs font-semibold text-gray-700 focus:outline-none focus:ring-1 focus:ring-custom-blue cursor-pointer"
+                                >
+                                    <option value={10}>10</option>
+                                    <option value={25}>25</option>
+                                    <option value={50}>50</option>
+                                    <option value={100}>100</option>
+                                </select>
+                            </div>
+                            <span className="text-gray-300">|</span>
+                            <div>
+                                Showing <span className="font-bold text-gray-800">{(safePage - 1) * pageSize + 1}</span> to <span className="font-bold text-gray-800">{Math.min(safePage * pageSize, filteredIssues.length)}</span> of <span className="font-bold text-gray-800">{filteredIssues.length}</span> issues
+                            </div>
+                        </div>
+
+                        {/* Page Pill Buttons */}
+                        {totalPages > 1 && (
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={safePage <= 1}
+                                    className="p-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                    title="Previous Page"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                {getPagePills(safePage, totalPages).map((p, idx) => {
+                                    if (p === '...') {
+                                        return (
+                                            <span key={`ellipsis-${idx}`} className="px-2 py-1 text-gray-400 font-bold">
+                                                ...
+                                            </span>
+                                        );
+                                    }
+                                    return (
+                                        <button
+                                            key={`page-${p}`}
+                                            onClick={() => setCurrentPage(p)}
+                                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                                safePage === p
+                                                    ? 'bg-custom-blue text-white shadow-xs'
+                                                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            {p}
+                                        </button>
+                                    );
+                                })}
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={safePage >= totalPages}
+                                    className="p-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                    title="Next Page"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

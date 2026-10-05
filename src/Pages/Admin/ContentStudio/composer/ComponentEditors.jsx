@@ -1,52 +1,491 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
     Target, FileText, Lightbulb, HelpCircle, Star,
     AlertCircle, Info, Zap, Globe, Edit3, Eye,
-    ChevronDown, ChevronUp, Trash2
+    ChevronDown, ChevronUp, Trash2,
+    Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, Calculator, Quote, Palette, Plus
 } from 'lucide-react';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import remarkBreaks from 'remark-breaks';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
+import { extractText } from '../../../../utils/contentUtils';
+import { getComponentBadgeInfo } from '../../../../utils/componentBadgeUtils';
+import { toggleWrap, toggleBlockMath, toggleColor, toggleLinePrefix as toggleLinePrefixUtil, handleEditorKeyDown } from '../../../../utils/editorUtils';
 
 // ──────────────────────────────────────────────────────────
-// Shared text editor: split markdown/preview pane
+// Shared text editor: split markdown/preview pane with toolbar
 // ──────────────────────────────────────────────────────────
 function MarkdownEditor({ value, onChange, onBlur, placeholder, minHeight = 200 }) {
     const [tab, setTab] = useState('write'); // 'write' | 'preview'
+    const [showColorPicker, setShowColorPicker] = useState(false);
+    const textareaRef = useRef(null);
+
+    const toggleWrap = (delimiter) => {
+        const el = textareaRef.current;
+        if (!el) return;
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const val = value || '';
+        const dLen = delimiter.length;
+
+        // 1. Text is selected
+        if (start < end) {
+            const selected = val.slice(start, end);
+            // Case 1a: Selection itself is wrapped with delimiter
+            if (selected.startsWith(delimiter) && selected.endsWith(delimiter) && selected.length >= dLen * 2) {
+                const unwrapped = selected.slice(dLen, -dLen);
+                const nextVal = val.slice(0, start) + unwrapped + val.slice(end);
+                onChange(nextVal);
+                setTimeout(() => {
+                    el.focus();
+                    el.setSelectionRange(start, start + unwrapped.length);
+                }, 0);
+                return;
+            }
+            // Case 1b: Surrounding characters are the delimiter
+            if (start >= dLen && val.slice(start - dLen, start) === delimiter && val.slice(end, end + dLen) === delimiter) {
+                const nextVal = val.slice(0, start - dLen) + selected + val.slice(end + dLen);
+                onChange(nextVal);
+                setTimeout(() => {
+                    el.focus();
+                    el.setSelectionRange(start - dLen, start - dLen + selected.length);
+                }, 0);
+                return;
+            }
+            // Case 1c: Wrap selection
+            const nextVal = val.slice(0, start) + delimiter + selected + delimiter + val.slice(end);
+            onChange(nextVal);
+            setTimeout(() => {
+                el.focus();
+                el.setSelectionRange(start + dLen, end + dLen);
+            }, 0);
+            return;
+        }
+
+        // 2. Collapsed cursor (start === end)
+        let wordStart = start;
+        let wordEnd = start;
+        while (wordStart > 0 && /[a-zA-Z0-9_\-\u00C0-\u017F]/.test(val[wordStart - 1])) wordStart--;
+        while (wordEnd < val.length && /[a-zA-Z0-9_\-\u00C0-\u017F]/.test(val[wordEnd])) wordEnd++;
+
+        if (wordStart < wordEnd) {
+            const word = val.slice(wordStart, wordEnd);
+            // If the word under cursor is already wrapped in delimiter: unwrap it!
+            if (wordStart >= dLen && val.slice(wordStart - dLen, wordStart) === delimiter && val.slice(wordEnd, wordEnd + dLen) === delimiter) {
+                const nextVal = val.slice(0, wordStart - dLen) + word + val.slice(wordEnd + dLen);
+                onChange(nextVal);
+                setTimeout(() => {
+                    el.focus();
+                    el.setSelectionRange(wordStart - dLen, wordEnd - dLen);
+                }, 0);
+                return;
+            }
+            // Otherwise, wrap the word!
+            const nextVal = val.slice(0, wordStart) + delimiter + word + delimiter + val.slice(wordEnd);
+            onChange(nextVal);
+            setTimeout(() => {
+                el.focus();
+                el.setSelectionRange(wordStart + dLen, wordEnd + dLen);
+            }, 0);
+            return;
+        }
+
+        // 3. Not on a word (empty space or punctuation):
+        // Insert empty delimiter pair and place cursor in the middle so typing is formatted.
+        // NEVER insert dummy text like 'bold text' or 'italic text'!
+        const nextVal = val.slice(0, start) + delimiter + delimiter + val.slice(start);
+        onChange(nextVal);
+        setTimeout(() => {
+            el.focus();
+            el.setSelectionRange(start + dLen, start + dLen);
+        }, 0);
+    };
+
+    const toggleBlockMath = () => {
+        const el = textareaRef.current;
+        if (!el) return;
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const val = value || '';
+
+        if (start < end) {
+            const selected = val.slice(start, end).trim();
+            const nextVal = val.slice(0, start) + `\n$$\n${selected}\n$$\n` + val.slice(end);
+            onChange(nextVal);
+            setTimeout(() => {
+                el.focus();
+                el.setSelectionRange(start + 4, start + 4 + selected.length);
+            }, 0);
+            return;
+        }
+
+        // Empty block formula
+        const nextVal = val.slice(0, start) + '\n$$\n\n$$\n' + val.slice(start);
+        onChange(nextVal);
+        setTimeout(() => {
+            el.focus();
+            el.setSelectionRange(start + 4, start + 4);
+        }, 0);
+    };
+
+    const toggleColor = (className) => {
+        const el = textareaRef.current;
+        if (!el) return;
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const val = value || '';
+
+        if (start < end) {
+            const selected = val.slice(start, end);
+            const spanMatch = selected.match(/^<span class="([^"]+)">([\s\S]*)<\/span>$/);
+            if (spanMatch) {
+                if (spanMatch[1] === className) {
+                    const unwrapped = spanMatch[2];
+                    const nextVal = val.slice(0, start) + unwrapped + val.slice(end);
+                    onChange(nextVal);
+                    setTimeout(() => {
+                        el.focus();
+                        el.setSelectionRange(start, start + unwrapped.length);
+                    }, 0);
+                    return;
+                } else {
+                    const updated = `<span class="${className}">${spanMatch[2]}</span>`;
+                    const nextVal = val.slice(0, start) + updated + val.slice(end);
+                    onChange(nextVal);
+                    setTimeout(() => {
+                        el.focus();
+                        el.setSelectionRange(start, start + updated.length);
+                    }, 0);
+                    return;
+                }
+            }
+            const wrapped = `<span class="${className}">${selected}</span>`;
+            const nextVal = val.slice(0, start) + wrapped + val.slice(end);
+            onChange(nextVal);
+            setTimeout(() => {
+                el.focus();
+                el.setSelectionRange(start, start + wrapped.length);
+            }, 0);
+            return;
+        }
+
+        // Collapsed cursor
+        let wordStart = start;
+        let wordEnd = start;
+        while (wordStart > 0 && /[a-zA-Z0-9_\-\u00C0-\u017F]/.test(val[wordStart - 1])) wordStart--;
+        while (wordEnd < val.length && /[a-zA-Z0-9_\-\u00C0-\u017F]/.test(val[wordEnd])) wordEnd++;
+
+        if (wordStart < wordEnd) {
+            const word = val.slice(wordStart, wordEnd);
+            const wrapped = `<span class="${className}">${word}</span>`;
+            const nextVal = val.slice(0, wordStart) + wrapped + val.slice(wordEnd);
+            onChange(nextVal);
+            setTimeout(() => {
+                el.focus();
+                el.setSelectionRange(wordStart, wordStart + wrapped.length);
+            }, 0);
+            return;
+        }
+
+        const tagOpen = `<span class="${className}">`;
+        const tagClose = '</span>';
+        const nextVal = val.slice(0, start) + tagOpen + tagClose + val.slice(start);
+        onChange(nextVal);
+        setTimeout(() => {
+            el.focus();
+            el.setSelectionRange(start + tagOpen.length, start + tagOpen.length);
+        }, 0);
+    };
+
+    const toggleLinePrefix = (prefix, isSequential = false) => {
+        const el = textareaRef.current;
+        if (!el) return;
+        const { nextVal, newStart, newEnd } = toggleLinePrefixUtil(value || '', el.selectionStart, el.selectionEnd, prefix, isSequential);
+        onChange(nextVal);
+        setTimeout(() => {
+            el.focus();
+            el.setSelectionRange(newStart, newEnd);
+        }, 0);
+    };
+
+    const handleKeyDown = (e) => {
+        // Tab key: insert 2 spaces
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = e.target.selectionStart;
+            const end = e.target.selectionEnd;
+            const val = value || '';
+            const nextVal = val.slice(0, start) + '  ' + val.slice(end);
+            onChange(nextVal);
+            setTimeout(() => {
+                if (textareaRef.current) textareaRef.current.setSelectionRange(start + 2, start + 2);
+            }, 0);
+            return;
+        }
+
+        // Ctrl+B or Cmd+B: Bold
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+            e.preventDefault();
+            toggleWrap('**');
+            return;
+        }
+
+        // Ctrl+I or Cmd+I: Italic
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
+            e.preventDefault();
+            toggleWrap('*');
+            return;
+        }
+
+        // Enter key: smart list continuation
+        if (e.key === 'Enter') {
+            const start = e.target.selectionStart;
+            const val = value || '';
+            const lastNewline = val.lastIndexOf('\n', start - 1);
+            const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+            const currentLine = val.substring(lineStart, start);
+
+            // Empty bullet line -> terminate bullet
+            if (/^[\t ]*[-*][\t ]+$/.test(currentLine)) {
+                e.preventDefault();
+                const nextVal = val.slice(0, lineStart) + val.slice(start);
+                onChange(nextVal);
+                setTimeout(() => {
+                    if (textareaRef.current) textareaRef.current.setSelectionRange(lineStart, lineStart);
+                }, 0);
+                return;
+            }
+
+            // Empty numbered line -> terminate list
+            if (/^[\t ]*\d+\.[\t ]+$/.test(currentLine)) {
+                e.preventDefault();
+                const nextVal = val.slice(0, lineStart) + val.slice(start);
+                onChange(nextVal);
+                setTimeout(() => {
+                    if (textareaRef.current) textareaRef.current.setSelectionRange(lineStart, lineStart);
+                }, 0);
+                return;
+            }
+
+            // Active bullet list item
+            const bulletMatch = currentLine.match(/^([\t ]*[-*][\t ]+)/);
+            if (bulletMatch) {
+                e.preventDefault();
+                const prefix = bulletMatch[1];
+                const nextVal = val.slice(0, start) + '\n' + prefix + val.slice(start);
+                onChange(nextVal);
+                setTimeout(() => {
+                    if (textareaRef.current) textareaRef.current.setSelectionRange(start + 1 + prefix.length, start + 1 + prefix.length);
+                }, 0);
+                return;
+            }
+
+            // Active numbered list item
+            const numMatch = currentLine.match(/^([\t ]*)(\d+)\.([\t ]+)/);
+            if (numMatch) {
+                e.preventDefault();
+                const indent = numMatch[1];
+                const nextNum = parseInt(numMatch[2], 10) + 1;
+                const space = numMatch[3];
+                const prefix = `${indent}${nextNum}.${space}`;
+                const nextVal = val.slice(0, start) + '\n' + prefix + val.slice(start);
+                onChange(nextVal);
+                setTimeout(() => {
+                    if (textareaRef.current) textareaRef.current.setSelectionRange(start + 1 + prefix.length, start + 1 + prefix.length);
+                }, 0);
+                return;
+            }
+        }
+    };
+
+    const COLOR_OPTIONS = [
+        { label: 'Blue (Key Term)', className: 'text-blue-600 font-semibold', bg: 'bg-blue-600' },
+        { label: 'Emerald (Example)', className: 'text-emerald-600 font-semibold', bg: 'bg-emerald-600' },
+        { label: 'Amber (Highlight)', className: 'text-amber-600 font-semibold', bg: 'bg-amber-600' },
+        { label: 'Purple (Theory/Formula)', className: 'text-purple-600 font-semibold', bg: 'bg-purple-600' },
+        { label: 'Rose (Critical/Alert)', className: 'text-rose-600 font-semibold', bg: 'bg-rose-600' },
+    ];
 
     return (
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <div className="flex border-b border-gray-200 bg-gray-50">
+        <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-xs">
+            <div className="flex items-center border-b border-gray-200 bg-gray-50/80 px-2 relative">
                 <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => setTab('write')}
-                    className={`px-4 py-2 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                    className={`px-3 py-2 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
                         tab === 'write'
                             ? 'text-custom-blue border-b-2 border-custom-blue bg-white'
                             : 'text-gray-500 hover:text-gray-700'
                     }`}
                 >
-                    <Edit3 size={12} /> Write
+                    <Edit3 size={13} /> Write
                 </button>
                 <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => setTab('preview')}
-                    className={`px-4 py-2 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                    className={`px-3 py-2 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
                         tab === 'preview'
                             ? 'text-custom-blue border-b-2 border-custom-blue bg-white'
                             : 'text-gray-500 hover:text-gray-700'
                     }`}
                 >
-                    <Eye size={12} /> Preview
+                    <Eye size={13} /> Preview
                 </button>
-                <span className="ml-auto px-3 py-2 text-xs text-gray-400">Markdown supported</span>
+
+                {tab === 'write' && (
+                    <div className="flex items-center gap-1 ml-4 pl-3 border-l border-gray-200">
+                        <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => toggleWrap('**')}
+                            className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200/70 rounded transition-colors"
+                            title="Bold (Ctrl+B)"
+                        >
+                            <Bold size={13} />
+                        </button>
+                        <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => toggleWrap('*')}
+                            className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200/70 rounded transition-colors"
+                            title="Italic (Ctrl+I)"
+                        >
+                            <Italic size={13} />
+                        </button>
+                        <div className="w-[1px] h-3.5 bg-gray-200 mx-0.5" />
+                        <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => toggleLinePrefix('# ')}
+                            className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200/70 rounded transition-colors"
+                            title="Heading 1 (# )"
+                        >
+                            <Heading1 size={13} />
+                        </button>
+                        <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => toggleLinePrefix('## ')}
+                            className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200/70 rounded transition-colors"
+                            title="Heading 2 (## )"
+                        >
+                            <Heading2 size={13} />
+                        </button>
+                        <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => toggleLinePrefix('### ')}
+                            className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200/70 rounded transition-colors"
+                            title="Heading 3 (### )"
+                        >
+                            <Heading3 size={13} />
+                        </button>
+                        <div className="w-[1px] h-3.5 bg-gray-200 mx-0.5" />
+                        <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => toggleLinePrefix('- ')}
+                            className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200/70 rounded transition-colors"
+                            title="Bullet List"
+                        >
+                            <List size={13} />
+                        </button>
+                        <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => toggleLinePrefix('1. ', true)}
+                            className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200/70 rounded transition-colors"
+                            title="Numbered List"
+                        >
+                            <ListOrdered size={13} />
+                        </button>
+                        <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => toggleLinePrefix('> ')}
+                            className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200/70 rounded transition-colors"
+                            title="Quote"
+                        >
+                            <Quote size={13} />
+                        </button>
+                        <div className="w-[1px] h-3.5 bg-gray-200 mx-0.5" />
+                        <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => toggleWrap('$')}
+                            className="px-1.5 py-0.5 text-xs font-mono font-bold text-gray-500 hover:text-gray-900 hover:bg-gray-200/70 rounded transition-colors"
+                            title="Inline Math ($...$)"
+                        >
+                            $x$
+                        </button>
+                        <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={toggleBlockMath}
+                            className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200/70 rounded transition-colors"
+                            title="Formula Block ($$...$$)"
+                        >
+                            <Calculator size={13} />
+                        </button>
+
+                        <div className="w-[1px] h-3.5 bg-gray-200 mx-0.5" />
+
+                        {/* Text Color Popover */}
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => setShowColorPicker(!showColorPicker)}
+                                className={`p-1.5 rounded transition-colors ${
+                                    showColorPicker
+                                        ? 'bg-blue-100 text-custom-blue'
+                                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/70'
+                                }`}
+                                title="Highlight / Text Color"
+                            >
+                                <Palette size={13} />
+                            </button>
+
+                            {showColorPicker && (
+                                <div className="absolute top-full left-0 mt-1.5 bg-white border border-gray-200 shadow-xl rounded-xl p-2 z-50 w-48 space-y-1">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-2 py-0.5">Text Color</p>
+                                    {COLOR_OPTIONS.map((col) => (
+                                        <button
+                                            key={col.label}
+                                            type="button"
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={() => {
+                                                toggleColor(col.className);
+                                                setShowColorPicker(false);
+                                            }}
+                                            className="w-full text-left px-2 py-1.5 rounded-lg text-xs hover:bg-gray-50 flex items-center gap-2 font-medium text-gray-700 transition-colors"
+                                        >
+                                            <span className={`w-2.5 h-2.5 rounded-full ${col.bg}`} />
+                                            {col.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                <span className="ml-auto text-[11px] text-gray-400 font-medium hidden sm:inline">Markdown & LaTeX</span>
             </div>
             {tab === 'write' ? (
                 <textarea
+                    ref={textareaRef}
                     className="w-full p-4 text-sm text-gray-700 bg-white resize-none outline-none font-mono leading-relaxed"
                     style={{ minHeight }}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     onBlur={onBlur}
                     placeholder={placeholder}
                 />
@@ -57,8 +496,14 @@ function MarkdownEditor({ value, onChange, onBlur, placeholder, minHeight = 200 
                 >
                     {value ? (
                         <ReactMarkdown
-                            remarkPlugins={[remarkGfm, remarkMath]}
-                            rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
+                            remarkPlugins={[remarkGfm, remarkMath, remarkBreaks]}
+                            rehypePlugins={[rehypeRaw, [rehypeKatex, { throwOnError: false, strict: false }]]}
+                            components={{
+                                p: ({ node, ...props }) => <p className="mb-3 leading-relaxed text-gray-800" {...props} />,
+                                ul: ({ node, ...props }) => <ul className="list-disc ml-5 mb-3 space-y-1 text-gray-800" {...props} />,
+                                ol: ({ node, ...props }) => <ol className="list-decimal ml-5 mb-3 space-y-1 text-gray-800" {...props} />,
+                                li: ({ node, ...props }) => <li className="leading-relaxed" {...props} />
+                            }}
                         >
                             {value}
                         </ReactMarkdown>
@@ -71,25 +516,6 @@ function MarkdownEditor({ value, onChange, onBlur, placeholder, minHeight = 200 
     );
 }
 
-// ──────────────────────────────────────────────────────────
-// Helper to extract text from a block's content field
-// (which may be a JSON object, a JSON string, or plain text)
-// ──────────────────────────────────────────────────────────
-export function extractText(content) {
-    if (!content) return '';
-    if (typeof content === 'string') {
-        try {
-            const parsed = JSON.parse(content);
-            return parsed.text || parsed.content || parsed.procedure || '';
-        } catch {
-            return content;
-        }
-    }
-    if (typeof content === 'object') {
-        return content.text || content.content || content.procedure || '';
-    }
-    return String(content);
-}
 
 // ──────────────────────────────────────────────────────────
 // EDITOR: Learning Goal / Objectives
@@ -124,16 +550,17 @@ export function GoalEditor({ block, onChange, onSave }) {
 // ──────────────────────────────────────────────────────────
 export function ExplanationEditor({ block, onChange, onSave }) {
     const text = extractText(block.content);
+    const badge = getComponentBadgeInfo(block.block_type);
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-indigo-100">
-                <span className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
-                    <FileText size={16} className="text-indigo-600" />
+            <div className={`flex items-center gap-2 pb-3 border-b ${badge.border}`}>
+                <span className={`w-8 h-8 rounded-lg ${badge.bg} flex items-center justify-center`}>
+                    <FileText size={16} className={badge.color} />
                 </span>
                 <div>
-                    <p className="text-xs font-bold text-indigo-700 uppercase tracking-wide">Concept Explanation</p>
-                    <p className="text-xs text-gray-500">Write the core concept clearly and concisely.</p>
+                    <p className={`text-xs font-bold ${badge.color} uppercase tracking-wide`}>{badge.label}</p>
+                    <p className="text-xs text-gray-500">{badge.description}</p>
                 </div>
             </div>
             <MarkdownEditor
@@ -216,7 +643,7 @@ export function WorkedExampleEditor({ block, onChange, onSave }) {
 // ──────────────────────────────────────────────────────────
 export function KnowledgeCheckEditor({ block, onChange, onSave }) {
     const content = parseContent(block.content);
-    const checkType = content.check_type || 'short_answer';
+    const checkType = content.check_type || (['multiple_choice', 'true_false', 'fill_in_the_blank', 'short_answer'].includes(block.block_type) ? block.block_type : 'short_answer');
     const question = content.question || content.text || '';
     const answer = content.answer || content.expected_answer || '';
     const hint = content.hint || '';
@@ -256,6 +683,7 @@ export function KnowledgeCheckEditor({ block, onChange, onSave }) {
                     <option value="short_answer">Short Answer</option>
                     <option value="multiple_choice">Multiple Choice</option>
                     <option value="true_false">True / False</option>
+                    <option value="fill_in_the_blank">Fill in the Blank</option>
                 </select>
             </div>
 
@@ -267,9 +695,30 @@ export function KnowledgeCheckEditor({ block, onChange, onSave }) {
                     value={question}
                     onChange={(e) => onChange({ ...block, content: { ...content, question: e.target.value } })}
                     onBlur={() => update({ question })}
-                    placeholder="What question will test students on this concept?"
+                    placeholder={checkType === 'fill_in_the_blank' ? "e.g. Water freezes at ___ degrees Celsius under standard atmospheric pressure." : "What question will test students on this concept?"}
                 />
+                {checkType === 'fill_in_the_blank' && (
+                    <p className="mt-1 text-xs text-violet-600 font-medium">
+                        Tip: Use <span className="font-mono bg-violet-50 px-1 py-0.5 rounded border border-violet-200">___</span> (three underscores) in the question where the missing word should be.
+                    </p>
+                )}
             </div>
+
+            {checkType === 'fill_in_the_blank' && (
+                <div className="space-y-3 p-4 bg-violet-50/50 border border-violet-100 rounded-xl">
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Expected Missing Word / Phrase</label>
+                        <input
+                            type="text"
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-violet-400 bg-white"
+                            value={typeof answer === 'string' ? answer : ''}
+                            onChange={(e) => onChange({ ...block, content: { ...content, answer: e.target.value } })}
+                            onBlur={() => update({ answer })}
+                            placeholder="e.g. 0 or zero"
+                        />
+                    </div>
+                </div>
+            )}
 
             {checkType === 'multiple_choice' && (
                 <div className="space-y-3 p-4 bg-gray-50 border border-gray-100 rounded-xl">
@@ -806,6 +1255,165 @@ export function TableEditor({ block, onChange, onSave }) {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    );
+}
+
+// ──────────────────────────────────────────────────────────
+// EDITOR: Step Process (Sequential Process Flow)
+// ──────────────────────────────────────────────────────────
+export function StepProcessEditor({ block, onChange, onSave }) {
+    const c = parseContent(block.content);
+    const title = c.title || block.title || '';
+    
+    // Normalize steps into an array of strings
+    const rawSteps = c.steps || c.items || c.procedure || [];
+    const steps = Array.isArray(rawSteps) 
+        ? rawSteps.map(s => typeof s === 'string' ? s : (s.title ? `**${s.title}**: ${s.description || ''}` : JSON.stringify(s)))
+        : (typeof rawSteps === 'string' ? rawSteps.split('\n').filter(Boolean) : []);
+
+    const update = (patch) => {
+        const updated = {
+            ...block,
+            content: {
+                ...c,
+                ...patch,
+            }
+        };
+        onChange(updated);
+        onSave(updated);
+    };
+
+    const handleStepChange = (index, value) => {
+        const nextSteps = [...steps];
+        nextSteps[index] = value;
+        onChange({
+            ...block,
+            content: { ...c, steps: nextSteps }
+        });
+    };
+
+    const handleStepBlur = () => {
+        update({ steps });
+    };
+
+    const addStep = () => {
+        const nextSteps = [...steps, ''];
+        update({ steps: nextSteps });
+    };
+
+    const removeStep = (index) => {
+        const nextSteps = steps.filter((_, i) => i !== index);
+        update({ steps: nextSteps });
+    };
+
+    const moveStep = (index, direction) => {
+        const targetIndex = index + direction;
+        if (targetIndex < 0 || targetIndex >= steps.length) return;
+        const nextSteps = [...steps];
+        const [moved] = nextSteps.splice(index, 1);
+        nextSteps.splice(targetIndex, 0, moved);
+        update({ steps: nextSteps });
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-sky-100">
+                <div className="flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center text-sky-600 font-bold text-sm">
+                        <ListOrdered size={16} />
+                    </span>
+                    <div>
+                        <p className="text-xs font-bold text-sky-700 uppercase tracking-wide">Sequential Process Flow</p>
+                        <p className="text-xs text-gray-500">Ordered sequence of scientific steps or procedure stages.</p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    onClick={addStep}
+                    className="px-2.5 py-1 text-xs font-semibold bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-md border border-sky-200 flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                    <Plus size={13} /> Add Step
+                </button>
+            </div>
+
+            <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Process Title / Subtitle</label>
+                <input
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-sky-400 font-medium"
+                    value={title}
+                    onChange={(e) => onChange({ ...block, content: { ...c, title: e.target.value } })}
+                    onBlur={(e) => update({ title: e.target.value })}
+                    placeholder="e.g. From Curiosity to Scientific Law"
+                />
+            </div>
+
+            <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-gray-600">
+                        Process Steps ({steps.length})
+                    </label>
+                    <span className="text-[11px] text-gray-400">Supports markdown formatting (**bold**, $math$, etc.)</span>
+                </div>
+                {steps.map((step, idx) => (
+                    <div key={idx} className="flex items-start gap-2 p-3 bg-gray-50/70 border border-gray-200/80 rounded-xl group hover:border-sky-300 transition-colors">
+                        <div className="w-6 h-6 rounded-full bg-sky-600 text-white font-bold flex items-center justify-center shrink-0 text-xs mt-1">
+                            {idx + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <textarea
+                                rows={2}
+                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-800 outline-none focus:border-sky-400 resize-y leading-relaxed font-sans"
+                                value={step}
+                                onChange={(e) => handleStepChange(idx, e.target.value)}
+                                onBlur={handleStepBlur}
+                                placeholder={`Describe step ${idx + 1}...`}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1 shrink-0 pt-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <button
+                                type="button"
+                                disabled={idx === 0}
+                                onClick={() => moveStep(idx, -1)}
+                                className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-20 rounded hover:bg-gray-200 cursor-pointer disabled:cursor-not-allowed"
+                                title="Move Step Up"
+                            >
+                                <ChevronUp size={13} />
+                            </button>
+                            <button
+                                type="button"
+                                disabled={idx === steps.length - 1}
+                                onClick={() => moveStep(idx, 1)}
+                                className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-20 rounded hover:bg-gray-200 cursor-pointer disabled:cursor-not-allowed"
+                                title="Move Step Down"
+                            >
+                                <ChevronDown size={13} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => removeStep(idx)}
+                                className="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 cursor-pointer"
+                                title="Delete Step"
+                            >
+                                <Trash2 size={13} />
+                            </button>
+                        </div>
+                    </div>
+                ))}
+
+                {steps.length === 0 && (
+                    <div className="p-6 text-center border-2 border-dashed border-gray-200 rounded-xl">
+                        <p className="text-xs text-gray-400 mb-2">No steps in this process yet.</p>
+                        <button
+                            type="button"
+                            onClick={addStep}
+                            className="px-3 py-1.5 text-xs font-semibold bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition cursor-pointer"
+                        >
+                            + Add First Step
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

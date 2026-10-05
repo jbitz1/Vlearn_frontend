@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Flag, X, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import axios from 'axios';
 import apiClient from '../../config/apiClient';
+import BASE_URL from '../../config';
 
 const PRESET_ISSUES = [
   { id: 'youtube_unavailable', label: 'YouTube video does not exist or is unavailable' },
@@ -37,22 +39,39 @@ export default function ReportVisualizationModal({
     setIsSubmitting(true);
     setError(null);
 
-    try {
-      await apiClient.post('/api/curriculum/visualization-issues/', {
-        visualization_title: title,
-        visualization_type: type,
-        issue_type: selectedIssue,
-        description: notes.trim(),
-        lesson: lId,
-        lesson_block: bId
-      });
+    const payload = {
+      visualization_title: title,
+      visualization_type: type,
+      issue_type: selectedIssue,
+      description: notes.trim(),
+      lesson: lId,
+      lesson_block: bId
+    };
 
+    try {
+      await apiClient.post('/api/curriculum/visualization-issues/', payload);
       setIsSubmitted(true);
       setTimeout(() => {
         setIsSubmitted(false);
         onClose();
       }, 1500);
     } catch (err) {
+      if (err.response?.status === 401 || err.response?.status === 403 || !err.response) {
+        try {
+          await axios.post(`${BASE_URL}/api/curriculum/visualization-issues/`, payload, {
+            headers: { 'Content-Type': 'application/json' }
+          });
+          setIsSubmitted(true);
+          setTimeout(() => {
+            setIsSubmitted(false);
+            onClose();
+          }, 1500);
+          return;
+        } catch (fallbackErr) {
+          setError(fallbackErr.response?.data?.detail || 'Failed to submit report. Please try again.');
+          return;
+        }
+      }
       setError(err.response?.data?.detail || 'Failed to submit report. Please try again.');
     } finally {
       setIsSubmitting(false);

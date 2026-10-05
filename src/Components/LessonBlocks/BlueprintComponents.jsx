@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import remarkBreaks from 'remark-breaks';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 import BASE_URL from '../../config';
 import { ContentNormalizer } from '../../utils/ContentNormalizer';
@@ -169,8 +171,8 @@ const MD = ({ children, className = '' }) => {
   return (
     <div className={`prose prose-stone max-w-[70ch] leading-relaxed text-gray-800 font-sans ${className}`}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
+        remarkPlugins={[remarkGfm, remarkMath, remarkBreaks]}
+        rehypePlugins={[rehypeRaw, [rehypeKatex, { throwOnError: false, strict: false }]]}
         components={{
           p: ({ node, ...props }) => <p className="mb-4 sm:mb-6 text-gray-800 leading-relaxed font-sans text-base sm:text-lg md:text-xl" {...props} />,
           ul: ({ node, ...props }) => <ul className="list-disc list-outside ml-6 sm:ml-8 mb-4 sm:mb-6 space-y-2 text-gray-800 font-sans text-base sm:text-lg md:text-xl" {...props} />,
@@ -433,12 +435,36 @@ export const AnalogyBlock = ({ block }) => (
 );
 
 // ─── Common Misconception ─────────────────────────────────────────────────────
-export const CommonMisconceptionBlock = ({ block }) => (
-  <div className="my-12 bg-rose-50/60 border border-rose-200/60 rounded-3xl p-8">
-    <BlockHeader icon={AlertTriangle} label="Common Misconception" colorClass="text-rose-700" />
-    <MD className="text-gray-800 text-xl leading-relaxed font-sans max-w-[70ch]">{text(block.content)}</MD>
-  </div>
-);
+export const CommonMisconceptionBlock = ({ block }) => {
+  const c = parseContent(block?.content);
+  if (c.myth || c.reality) {
+    return (
+      <div className="my-8 sm:my-12 bg-rose-50/60 border border-rose-200/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8">
+        <BlockHeader icon={AlertTriangle} label="Common Misconception" colorClass="text-rose-700" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          {c.myth && (
+            <div className="bg-white/90 border border-red-200/60 rounded-xl p-4 shadow-2xs">
+              <span className="font-bold text-red-600 text-xs uppercase tracking-wider block mb-1">❌ Common Myth</span>
+              <MD className="text-gray-800 text-base leading-relaxed">{c.myth}</MD>
+            </div>
+          )}
+          {c.reality && (
+            <div className="bg-white/90 border border-green-200/60 rounded-xl p-4 shadow-2xs">
+              <span className="font-bold text-green-700 text-xs uppercase tracking-wider block mb-1">✅ The Reality</span>
+              <MD className="text-gray-800 text-base leading-relaxed">{c.reality}</MD>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="my-12 bg-rose-50/60 border border-rose-200/60 rounded-3xl p-8">
+      <BlockHeader icon={AlertTriangle} label="Common Misconception" colorClass="text-rose-700" />
+      <MD className="text-gray-800 text-xl leading-relaxed font-sans max-w-[70ch]">{text(block?.content)}</MD>
+    </div>
+  );
+};
 
 // ─── Common Mistake (action-oriented) ────────────────────────────────────────
 export const CommonMistakeBlock = ({ block }) => (
@@ -595,6 +621,7 @@ export const TransitionBlock = ({ block }) => (
 export const KnowledgeCheckBlock = ({ block, onInteract }) => {
   const [revealed, setRevealed] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [textInput, setTextInput] = useState('');
 
   const c = parseContent(block.content);
   const options = ContentNormalizer.parseOptions(c.options || c.options_list);
@@ -611,13 +638,17 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
     if (onInteract) onInteract(block.id);
   };
 
+  const isFillBlank = checkType === 'fill_in_the_blank' || checkType === 'fill_blank';
   const selectedIndex = selected ? selected.charCodeAt(0) - 65 : -1;
   const normalizedAnswer = typeof answer === 'string' ? answer.trim().toUpperCase() : '';
-  const isCorrect = selected !== null && (
+  const isMcqCorrect = selected !== null && (
     selected === answer || 
     selected === normalizedAnswer ||
     (selectedIndex >= 0 && (options[selectedIndex] === answer || String.fromCharCode(65 + selectedIndex) === normalizedAnswer))
   );
+  const isFillCorrect = isFillBlank && typeof answer === 'string' && textInput.trim().toLowerCase() === answer.trim().toLowerCase();
+  const isGraded = checkType === 'multiple_choice' || checkType === 'true_false' || isFillBlank;
+  const isCorrect = isFillBlank ? isFillCorrect : isMcqCorrect;
 
   return (
     <div className="my-6 sm:my-16 bg-white rounded-2xl sm:rounded-3xl shadow-xs sm:shadow-sm p-4 sm:p-6 md:p-8 border border-gray-200/80">
@@ -705,8 +736,21 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
         </div>
       )}
 
+      {/* Fill in the blank input */}
+      {isFillBlank && !revealed && (
+        <div className="mb-6 sm:mb-10">
+          <input
+            type="text"
+            value={textInput}
+            onChange={(e) => setTextInput(e.target.value)}
+            className="w-full border border-gray-300 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-base sm:text-xl text-gray-900 focus:border-custom-blue focus:ring-1 focus:ring-custom-blue transition font-sans bg-gray-50"
+            placeholder="Type the missing word or phrase…"
+          />
+        </div>
+      )}
+
       {/* Short answer / predict / explain */}
-      {(checkType === 'short_answer' || checkType === 'predict_outcome' || checkType === 'explain_in_words' || checkType === 'fill_blank') && !revealed && (
+      {(checkType === 'short_answer' || checkType === 'predict_outcome' || checkType === 'explain_in_words') && !revealed && (
         <textarea
           className="w-full border border-gray-300 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-base sm:text-xl text-gray-900 focus:border-custom-blue focus:ring-1 focus:ring-custom-blue transition resize-none mb-6 sm:mb-10 font-sans bg-gray-50"
           rows={4}
@@ -725,26 +769,26 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
         </button>
       ) : (
         <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6 animate-fade-in">
-          <div className={`p-4 sm:p-8 rounded-2xl sm:rounded-3xl flex items-start gap-4 sm:gap-5 ${isCorrect || !(checkType === 'multiple_choice' || checkType === 'true_false') ? 'bg-emerald-50/80 border border-emerald-200' : 'bg-rose-50/80 border border-rose-200'}`}>
-            {(isCorrect || !(checkType === 'multiple_choice' || checkType === 'true_false')) ? (
+          <div className={`p-4 sm:p-8 rounded-2xl sm:rounded-3xl flex items-start gap-4 sm:gap-5 ${isCorrect || !isGraded ? 'bg-emerald-50/80 border border-emerald-200' : 'bg-rose-50/80 border border-rose-200'}`}>
+            {(isCorrect || !isGraded) ? (
               <CheckCircle2 className="text-emerald-600 w-6 h-6 sm:w-8 sm:h-8 shrink-0 mt-0.5" strokeWidth={1} />
             ) : (
               <XCircle className="text-rose-600 w-6 h-6 sm:w-8 sm:h-8 shrink-0 mt-0.5" strokeWidth={1} />
             )}
             <div>
-              <p className={`text-lg sm:text-xl font-bold font-sans mb-1 sm:mb-2 ${(isCorrect || !(checkType === 'multiple_choice' || checkType === 'true_false')) ? 'text-emerald-900' : 'text-rose-900'}`}>
-                {(checkType === 'multiple_choice' || checkType === 'true_false') && isCorrect
+              <p className={`text-lg sm:text-xl font-bold font-sans mb-1 sm:mb-2 ${(isCorrect || !isGraded) ? 'text-emerald-900' : 'text-rose-900'}`}>
+                {isGraded && isCorrect
                   ? 'Correct! Well done.'
-                  : (checkType === 'multiple_choice' || checkType === 'true_false') && !isCorrect
+                  : isGraded && !isCorrect
                   ? 'Not quite.'
                   : 'Answer noted. Continue when ready.'}
               </p>
-              {!(checkType === 'multiple_choice' || checkType === 'true_false') && !isCorrect && (
-                <MD className="text-gray-800 text-base sm:text-lg font-sans">The correct answer was {answer}.</MD>
+              {isGraded && !isCorrect && answer && (
+                <MD className="text-gray-800 text-base sm:text-lg font-sans">The correct answer was {String(answer)}.</MD>
               )}
             </div>
           </div>
-          {(c.explanation || (!(checkType === 'multiple_choice' || checkType === 'true_false') && answer)) && (
+          {(c.explanation || (!isGraded && answer)) && (
               <div className="p-4 sm:p-8 bg-white border border-gray-200 rounded-2xl sm:rounded-3xl shadow-xs sm:shadow-sm">
                   <BlockHeader label="Explanation & Analysis" colorClass="text-gray-500" />
                   <MD className="text-gray-800 text-base sm:text-lg md:text-xl leading-relaxed font-sans max-w-[70ch]">{c.explanation || answer}</MD>
@@ -820,7 +864,21 @@ export const SuggestedMediaBlock = ({ block, onReportVisual }) => {
   const resolvedImageUrl = !isVideo ? (resolvedUrl || getFileUrl(c.resolved_image_url)) : getFileUrl(c.resolved_image_url);
 
   // Direct SVG XML support (from metadata, content, or fetched)
-  const inlineSvg = asset?.metadata?.svg_content || block?.metadata?.svg_content || c?.svg_content || c?.svg_markup || c?.svg || (c?.generated_code && typeof c.generated_code === 'string' && c.generated_code.includes('<svg') ? c.generated_code : null) || fetchedSvg;
+  const extractSvgCandidate = (val) => (typeof val === 'string' && val.includes('<svg') ? val : null);
+  const inlineSvg =
+    extractSvgCandidate(asset?.metadata?.generated_code) ||
+    extractSvgCandidate(asset?.metadata?.svg_content) ||
+    extractSvgCandidate(asset?.metadata?.svg_code) ||
+    extractSvgCandidate(asset?.metadata?.svg) ||
+    extractSvgCandidate(block?.metadata?.generated_code) ||
+    extractSvgCandidate(block?.metadata?.svg_content) ||
+    extractSvgCandidate(block?.content?.generated_code) ||
+    extractSvgCandidate(block?.content?.svg_content) ||
+    extractSvgCandidate(c?.generated_code) ||
+    extractSvgCandidate(c?.svg_content) ||
+    extractSvgCandidate(c?.svg_markup) ||
+    extractSvgCandidate(c?.svg) ||
+    fetchedSvg;
 
   // If we have an SVG file URL but no inline SVG yet, proactively fetch it to bypass cross-origin image header restrictions
   useEffect(() => {
@@ -854,26 +912,60 @@ export const SuggestedMediaBlock = ({ block, onReportVisual }) => {
     return <InteractiveSimulationBlock block={block} />;
   }
 
+  // Derive a clean, learner-friendly caption, preventing raw prompt commands or "AI Visual:" prefixes from leaking into view
+  const deriveCleanCaption = (fallbackType = 'Visual') => {
+    const candidates = [
+      c?.title,
+      block.title,
+      asset?.title,
+      block.metadata?.target_block_title,
+    ];
+
+    for (const cand of candidates) {
+      if (!cand || typeof cand !== 'string') continue;
+      let cleaned = cand.replace(/^AI\s+Visual:\s*/i, '').trim();
+      // Skip if it looks like an admin command or instruction prompt
+      if (/^(?:Replace|Create|Generate|Make|Draw|Add|Remove|Update|Please|Use)\s+/i.test(cleaned)) {
+        continue;
+      }
+      cleaned = cleaned.replace(/\s+(?:Visual|Diagram|Visualization|Video)\s*(?:Card|Slot)?$/i, '').trim();
+      if (cleaned.length > 0) {
+        return cleaned;
+      }
+    }
+
+    if (asset?.metadata?.alt_text && typeof asset.metadata.alt_text === 'string') {
+      const alt = asset.metadata.alt_text.trim();
+      if (alt.length > 0 && alt.length < 120 && !/^(?:Replace|Create|Generate)\s+/i.test(alt)) {
+        return alt;
+      }
+    }
+
+    return null;
+  };
+
+  const captionText = deriveCleanCaption();
+
   // 1. Render Inline SVG if available
   if (inlineSvg && !isVideo) {
     return (
       <div className="my-8 sm:my-16">
         <figure className="w-full">
           <div
-            className="w-full h-auto rounded-2xl sm:rounded-3xl shadow-md sm:shadow-lg overflow-hidden bg-white border border-slate-200/90 flex items-center justify-center p-3 sm:p-5 md:p-6 transition-all hover:shadow-xl hover:border-slate-300"
+            className="w-full h-auto rounded-2xl sm:rounded-3xl shadow-md sm:shadow-lg overflow-hidden bg-white border border-slate-200/90 flex items-center justify-center p-3 sm:p-5 md:p-6 transition-all hover:shadow-xl hover:border-slate-300 [&>svg]:max-w-full [&>svg]:h-auto"
             dangerouslySetInnerHTML={{ __html: inlineSvg }}
           />
           <div className="flex items-center justify-between mt-3 sm:mt-4 px-1 gap-3">
-            {block.title ? (
+            {captionText ? (
               <figcaption className="text-gray-700 text-sm sm:text-base font-medium font-sans">
-                {block.title.replace(/\s+(?:Visual|Diagram|Visualization|Video)\s*(?:Card|Slot)?$/i, '')}
+                {captionText}
               </figcaption>
             ) : <div />}
             {onReportVisual && (
               <button
                 type="button"
                 onClick={() => onReportVisual({
-                  title: block.title || 'Scientific Diagram',
+                  title: captionText || block.title || 'Scientific Diagram',
                   type: 'diagram',
                   lessonBlockId: block.id,
                 })}
@@ -898,7 +990,7 @@ export const SuggestedMediaBlock = ({ block, onReportVisual }) => {
           <div className="my-16 bg-white rounded-3xl shadow-sm border border-gray-200 p-8 flex items-center justify-between">
              <div>
                 <BlockHeader label={cfg.label} colorClass="text-gray-400" />
-                <p className="font-semibold text-gray-900 text-2xl font-sans mt-2">{block.title}</p>
+                <p className="font-semibold text-gray-900 text-2xl font-sans mt-2">{captionText || block.title}</p>
              </div>
              <a href={resolvedImageUrl} target="_blank" rel="noopener noreferrer" className="px-8 py-3 bg-custom-blue text-white rounded-full hover:bg-blue-700 transition text-base font-medium font-sans shadow-md">Open Link</a>
           </div>
@@ -908,7 +1000,7 @@ export const SuggestedMediaBlock = ({ block, onReportVisual }) => {
     const imageElement = (
       <img
         src={resolvedImageUrl}
-        alt={block.title || 'Lesson visual'}
+        alt={captionText || block.title || 'Lesson visual'}
         className="w-full h-auto object-cover rounded-3xl shadow-xl"
         onError={() => setImageError(true)}
       />
@@ -931,16 +1023,16 @@ export const SuggestedMediaBlock = ({ block, onReportVisual }) => {
             imageElement
           )}
           <div className="flex items-center justify-between mt-4 px-1 gap-3">
-            {block.title ? (
+            {captionText ? (
               <figcaption className="text-gray-600 text-base font-medium font-sans">
-                {block.title.replace(/\s+(?:Visual|Diagram|Visualization|Video)\s*(?:Card|Slot)?$/i, '')}
+                {captionText}
               </figcaption>
             ) : <div />}
             {onReportVisual && (
               <button
                 type="button"
                 onClick={() => onReportVisual({
-                  title: block.title || 'Lesson Image',
+                  title: captionText || block.title || 'Lesson Image',
                   type: 'image',
                   lessonBlockId: block.id,
                 })}

@@ -7,7 +7,8 @@ import apiClient from '../config/apiClient';
 import { ContentNormalizer } from '../utils/ContentNormalizer';
 import {
     ChevronLeft, ChevronRight, Clock,
-    CheckCircle, Circle, LayoutList, Flag
+    CheckCircle, Circle, LayoutList, Flag,
+    Edit, ArrowLeft
 } from 'lucide-react';
 import ReportVisualizationModal from '../Components/Common/ReportVisualizationModal';
 import { useLessonProgress } from '../Hooks/useLessonProgress';
@@ -95,8 +96,9 @@ function estimateReadingTime(blocks) {
 // in the old layout continues to work without any change.
 // The new student route can pass paginated={true}.
 // ─────────────────────────────────────────────────────────────────────────────
-export const LessonViewer = ({ lessonData, paginated = false }) => {
+export const LessonViewer = ({ lessonData, paginated = false, onExitPreview, isPreviewMode = false }) => {
     const { topicId } = useParams();
+    const navigate = useNavigate();
     const location = useLocation();
     const { user } = useContext(UserContext);
     const [lesson, setLesson] = useState(lessonData || null);
@@ -113,7 +115,7 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
         
         const searchParams = new URLSearchParams(location.search);
         const lessonIdParam = searchParams.get('lessonId');
-        const isPreview = searchParams.get('preview') === 'true';
+        const isPreview = searchParams.get('preview') === 'true' || isPreviewMode || Boolean(onExitPreview);
 
         const validTopicId = topicId && topicId !== 'undefined' ? topicId : null;
 
@@ -146,7 +148,7 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
             }
         };
         fetchLesson();
-    }, [topicId, lessonData, location.search]);
+    }, [topicId, lessonData, location.search, isPreviewMode, onExitPreview]);
 
     if (loading) {
         return (
@@ -159,9 +161,21 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
     if (error) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="bg-red-50 text-red-600 p-6 rounded-lg shadow-md max-w-md w-full">
+                <div className="bg-red-50 text-red-600 p-6 rounded-lg shadow-md max-w-md w-full text-center">
                     <h2 className="text-2xl font-bold mb-2">Unable to Load Lesson</h2>
                     <p>{error}</p>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (onExitPreview) onExitPreview();
+                            else if (window.history.length > 1) navigate(-1);
+                            else navigate('/student/home');
+                        }}
+                        className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-custom-blue rounded-lg hover:opacity-90 transition cursor-pointer"
+                    >
+                        <ArrowLeft size={14} />
+                        <span>{onExitPreview ? 'Exit Preview' : 'Go Back'}</span>
+                    </button>
                 </div>
             </div>
         );
@@ -173,21 +187,54 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
                 <div className="text-gray-400 text-center">
                     <p className="text-lg font-medium">No lesson content available.</p>
                     <p className="text-sm mt-1">This topic has not been published yet.</p>
+                    {onExitPreview && (
+                        <button
+                            type="button"
+                            onClick={onExitPreview}
+                            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-custom-blue rounded-lg hover:opacity-90 transition cursor-pointer"
+                        >
+                            <Edit size={14} />
+                            <span>Exit Preview</span>
+                        </button>
+                    )}
                 </div>
             </div>
         );
     }
 
     // ── Render ──────────────────────────────────────────────────────────────
+    const searchParams = new URLSearchParams(location.search);
+    const isPreview = searchParams.get('preview') === 'true' || isPreviewMode || Boolean(onExitPreview);
+
     if (paginated && lesson.blocks && lesson.blocks.length > 0) {
-        const searchParams = new URLSearchParams(location.search);
-        const isPreview = searchParams.get('preview') === 'true';
-        return <PaginatedViewer lesson={lesson} topicId={topicId} isPreview={isPreview} userId={user?.id} />;
+        return (
+            <PaginatedViewer 
+                lesson={lesson} 
+                topicId={topicId} 
+                isPreview={isPreview} 
+                userId={user?.id} 
+                onExitPreview={onExitPreview} 
+            />
+        );
     }
 
     // ── V1 scrolling mode (default, unchanged) ───────────────────────────────
     return (
         <div className="min-h-screen bg-white">
+            {onExitPreview && (
+                <div className="bg-gray-900 text-white px-4 py-2.5 flex items-center justify-between sticky top-0 z-50">
+                    <button
+                        type="button"
+                        onClick={onExitPreview}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-custom-blue hover:opacity-90 rounded-lg transition-colors cursor-pointer shrink-0 shadow-sm"
+                        title="Exit Preview"
+                    >
+                        <Edit size={14} />
+                        <span>Exit Preview</span>
+                    </button>
+                    <span className="text-xs font-bold text-gray-300">Content Studio Preview</span>
+                </div>
+            )}
             <div className="bg-gradient-to-r from-blue-900 to-indigo-800 text-white py-12 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-4xl mx-auto">
                     <h1 className="text-4xl font-extrabold mb-4">{lesson.title}</h1>
@@ -232,7 +279,7 @@ export const LessonViewer = ({ lessonData, paginated = false }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Paginated Viewer — one concept at a time
 // ─────────────────────────────────────────────────────────────────────────────
-function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
+function PaginatedViewer({ lesson, topicId, isPreview, userId, onExitPreview }) {
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useContext(UserContext);
@@ -243,9 +290,44 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
     const isTeacherPath = location.pathname.startsWith('/teacher');
 
     // Context-aware navigation:
-    // If opened from a student path or with ?from=student, or in student preview mode, return to student routes.
-    // If explicitly opened with ?from=teacher or on /teacher path (without from=student), return to teacher routes.
-    const isTeacherView = fromParam === 'teacher' || (isTeacherPath && fromParam !== 'student');
+    // If opened in Content Studio or with from=admin, return to admin.
+    // If opened from a teacher path or with ?from=teacher, return to teacher routes.
+    // Otherwise return to student routes.
+    const isAdminView = fromParam === 'admin' || location.pathname.startsWith('/admin') || Boolean(onExitPreview);
+    const isTeacherView = fromParam === 'teacher' || (isTeacherPath && fromParam !== 'student' && !isAdminView);
+
+    const handleExitLesson = () => {
+        if (onExitPreview) {
+            onExitPreview();
+            return;
+        }
+        if (isAdminView) {
+            if (window.opener && !window.opener.closed) {
+                window.close();
+                return;
+            }
+            if (effectiveTopicId) {
+                navigate(`/admin-dashboard/curriculum-builder`);
+            } else {
+                navigate('/admin-dashboard');
+            }
+            return;
+        }
+        if (isTeacherView) {
+            if (effectiveTopicId) {
+                navigate(`/teacher/topic/${effectiveTopicId}`);
+            } else {
+                navigate('/teacher/my-teaching');
+            }
+            return;
+        }
+        // Student view
+        if (effectiveTopicId) {
+            navigate(`/student/topic/${effectiveTopicId}`);
+        } else {
+            navigate('/student/subjects');
+        }
+    };
 
     const presentation = PresentationEngine.composeExperience(lesson, lesson.blocks || [], lesson.assets || []);
     const pages = presentation.pages;
@@ -273,12 +355,12 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
         if (effectiveTopicId && effectiveTopicId !== 'undefined') {
             apiClient.get(`/api/curriculum/topics/${effectiveTopicId}/`).then(res => {
                 setTopicData(res.data);
-                if (res.data?.subject) {
+                if (res.data?.subject && !isPreview && !onExitPreview && !isAdminView) {
                     studentCurriculumService.recordSubjectAccess(res.data.subject, userId);
                 }
             }).catch(console.error);
         }
-    }, [effectiveTopicId, userId]);
+    }, [effectiveTopicId, userId, isPreview, onExitPreview, isAdminView]);
 
     useEffect(() => {
         if (lesson?.title && effectiveTopicId) {
@@ -363,22 +445,8 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                     lessonTitle={lesson.title}
                     completedConceptsCount={totalPages}
                     estimatedStudyTime={totalReadingTime}
-                    onBackToTopic={() => {
-                        const targetTopicId = effectiveTopicId || lesson?.topic;
-                        if (targetTopicId && targetTopicId !== 'undefined') {
-                            if (isTeacherView) {
-                                navigate(`/teacher/topic/${targetTopicId}`);
-                            } else {
-                                navigate(`/student/topic/${targetTopicId}`);
-                            }
-                        } else {
-                            if (isTeacherView) {
-                                navigate('/teacher/my-teaching');
-                            } else {
-                                navigate('/student/subjects');
-                            }
-                        }
-                    }}
+                    onBackToTopic={handleExitLesson}
+                    backButtonText={onExitPreview ? "Exit Preview" : "Back to Topic"}
                     onReview={() => {
                         progress.resetProgress();
                         setPageIndex(0);
@@ -401,34 +469,72 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId }) {
                 </div>
 
                 <div className="max-w-[1536px] mx-auto px-4 sm:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-3">
-                    {/* Exit Back Button */}
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (effectiveTopicId) {
-                                navigate(isTeacherView ? `/teacher/topic/${effectiveTopicId}` : `/student/topic/${effectiveTopicId}`);
-                            } else {
-                                navigate(-1);
-                            }
-                        }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer shrink-0"
-                        title="Exit Lesson"
-                    >
-                        <ChevronLeft size={16} />
-                        <span className="hidden sm:inline">Exit Lesson</span>
-                    </button>
+                    {/* Left Exit/Back Button */}
+                    {onExitPreview ? (
+                        <button
+                            type="button"
+                            onClick={onExitPreview}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-custom-blue hover:opacity-90 rounded-lg transition-colors cursor-pointer shrink-0 shadow-sm"
+                            title="Exit Preview"
+                        >
+                            <Edit size={14} />
+                            <span>Exit Preview</span>
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={handleExitLesson}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer shrink-0"
+                            title="Exit Lesson"
+                        >
+                            <ChevronLeft size={16} />
+                            <span className="hidden sm:inline">Exit Lesson</span>
+                        </button>
+                    )}
 
                     {/* Lesson title + progress meta */}
                     <div className="flex-1 min-w-0">
-                        {topicData && (
+                        {onExitPreview ? (
                             <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1 truncate">
-                                <button onClick={() => navigate(isTeacherView ? '/teacher' : '/student/home')} className="hover:text-custom-blue transition-colors">Dashboard</button>
-                                <ChevronRight size={12} className="text-gray-300 shrink-0" />
-                                <span className="hover:text-custom-blue cursor-pointer transition-colors truncate" onClick={() => navigate(isTeacherView ? `/teacher/subject/${topicData.subject}` : `/student/subject/${topicData.subject}`)}>{topicData.subject_name}</span>
-                                <ChevronRight size={12} className="text-gray-300 shrink-0" />
-                                <span className="hover:text-custom-blue cursor-pointer transition-colors truncate" onClick={() => navigate(isTeacherView ? `/teacher/topic/${effectiveTopicId}` : `/student/topic/${effectiveTopicId}`)}>{topicData.name}</span>
+                                <span>Content Studio</span>
+                                {topicData?.subject_name && (
+                                    <>
+                                        <ChevronRight size={12} className="text-gray-300 shrink-0" />
+                                        <span className="truncate">{topicData.subject_name}</span>
+                                    </>
+                                )}
+                                {topicData?.name && (
+                                    <>
+                                        <ChevronRight size={12} className="text-gray-300 shrink-0" />
+                                        <span className="truncate">{topicData.name}</span>
+                                    </>
+                                )}
                             </div>
-                        )}
+                        ) : topicData ? (
+                            <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1 truncate">
+                                <button 
+                                    type="button"
+                                    onClick={() => navigate(isAdminView ? '/admin-dashboard' : isTeacherView ? '/teacher' : '/student/home')} 
+                                    className="hover:text-custom-blue transition-colors cursor-pointer"
+                                >
+                                    Dashboard
+                                </button>
+                                <ChevronRight size={12} className="text-gray-300 shrink-0" />
+                                <span 
+                                    className="hover:text-custom-blue cursor-pointer transition-colors truncate" 
+                                    onClick={() => navigate(isAdminView ? '/admin-dashboard/curriculum-builder' : isTeacherView ? `/teacher/subject/${topicData.subject}` : `/student/subject/${topicData.subject}`)}
+                                >
+                                    {topicData.subject_name}
+                                </span>
+                                <ChevronRight size={12} className="text-gray-300 shrink-0" />
+                                <span 
+                                    className="hover:text-custom-blue cursor-pointer transition-colors truncate" 
+                                    onClick={() => navigate(isAdminView ? '/admin-dashboard/curriculum-builder' : isTeacherView ? `/teacher/topic/${effectiveTopicId}` : `/student/topic/${effectiveTopicId}`)}
+                                >
+                                    {topicData.name}
+                                </span>
+                            </div>
+                        ) : null}
                         <h1 className="text-xs sm:text-sm font-bold text-gray-800 truncate">{lesson.title}</h1>
                         <div className="flex items-center gap-2.5 mt-0.5">
                             <span className="text-[11px] sm:text-xs text-custom-blue font-bold">

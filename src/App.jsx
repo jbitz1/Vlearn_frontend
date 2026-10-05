@@ -403,6 +403,8 @@ function App() {
                 { path: "plans/list", element: <Navigate to="/subscription" replace /> },
                 { path: "admindashboard", element: <Navigate to="/admin-dashboard" replace /> },
                 { path: "admin", element: <Navigate to="/admin-dashboard" replace /> },
+                { path: "content-studio", element: <Navigate to="/admin-dashboard/content-studio" replace /> },
+                { path: "content-studio/:learningUnitId", element: <RedirectWithParams to="/admin-dashboard/content-studio/:learningUnitId" /> },
                 studentRoutes,
                 teacherRoutes,
                 schoolRoutes,

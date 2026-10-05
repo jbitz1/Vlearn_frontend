@@ -4,99 +4,14 @@ import {
     KnowledgeCheckEditor, CalloutEditor, SummaryEditor,
     RealWorldExampleEditor, ExperimentEditor, GenericEditor,
     DefinitionEditor, MisconceptionEditor, TableEditor,
-    ImageEditor, YouTubeEditor, VideoEditor,
+    ImageEditor, YouTubeEditor, VideoEditor, StepProcessEditor,
 } from './ComponentEditors';
 import VisualizationEditor from './VisualizationEditor';
 import { MediaSlot } from './MediaSlot';
-import { RotateCcw, Trash2, Copy, ArrowUp, ArrowDown, Plus, X, Sparkles } from 'lucide-react';
+import { RotateCcw, Trash2, Copy, ArrowUp, ArrowDown, Plus, X, Sparkles, Edit2, GripVertical, Check } from 'lucide-react';
 import VisualPromptModal from './VisualPromptModal';
-
-const SUGGESTED_TYPES = new Set([
-    'suggested_diagram', 'suggested_illustration', 'suggested_image', 
-    'suggested_infographic', 'suggested_table', 'suggested_graph', 
-    'suggested_timeline', 'suggested_flowchart', 'suggested_mind_map',
-    'image_placeholder', 'diagram_placeholder', 'suggested_gif', 
-    'video_ref', 'suggested_video', 'repository_asset',
-    'suggested_simulation', 'suggested_external_link', 'simulation_placeholder',
-]);
-
-export function mapBlockTypeToAssetType(blockType) {
-    if (!blockType) return 'image';
-    const base = blockType
-        .replace(/^suggested_/, '')
-        .replace(/_placeholder$/, '')
-        .replace(/_ref$/, '');
-    switch (base) {
-        case 'diagram':
-        case 'graph':
-        case 'timeline':
-        case 'flowchart':
-        case 'mind_map':
-        case 'table':
-            return 'diagram';
-        case 'image':
-        case 'illustration':
-        case 'infographic':
-        case 'repository_asset':
-            return 'image';
-        case 'video':
-            return 'video';
-        case 'youtube':
-            return 'youtube';
-        case 'gif':
-            return 'gif';
-        case 'simulation':
-            return 'simulation';
-        case 'external_link':
-        case 'activity':
-            return 'external_link';
-        default:
-            return 'image';
-    }
-}
-
-
-const COMPONENT_CATEGORIES = {
-    'Introductions': [
-        { label: 'Learning Goal', type: 'learning_goal' },
-        { label: 'Hook', type: 'hook' },
-        { label: 'Story', type: 'story' },
-    ],
-    'Core Explanations': [
-        { label: 'Concept Explanation', type: 'concept_explanation' },
-        { label: 'Definition', type: 'definition' },
-        { label: 'Analogy', type: 'analogy' },
-        { label: 'Table', type: 'table' },
-    ],
-    'Visuals & Media': [
-        { label: 'Image (URL)', type: 'image' },
-        { label: 'YouTube Video', type: 'youtube' },
-        { label: 'Video (Hosted)', type: 'video' },
-        { label: 'AI Visualization', type: 'visualization' },
-        { label: 'Upload Image', type: 'image_placeholder', upload: true },
-        { label: 'Upload Diagram', type: 'diagram_placeholder', upload: true },
-        { label: 'Upload Video', type: 'video_ref', upload: true },
-        { label: 'Diagram Suggestion', type: 'suggested_diagram' },
-        { label: 'Simulation Suggestion', type: 'suggested_simulation' }
-    ],
-    'Real-World Context': [
-        { label: 'Worked Example', type: 'worked_example' },
-        { label: 'Real-world Example', type: 'real_world_example' },
-        { label: 'Experiment', type: 'experiment' },
-    ],
-    'Checks for Understanding': [
-        { label: 'Multiple Choice', type: 'multiple_choice' },
-        { label: 'Short Answer', type: 'short_answer' },
-        { label: 'True/False', type: 'true_false' },
-        { label: 'Fill in the Blank', type: 'fill_in_the_blank' },
-        { label: 'Reflection', type: 'reflection' },
-    ],
-    'Teacher Coaching & Summary': [
-        { label: 'Common Misconception', type: 'misconception' },
-        { label: 'Key Takeaway', type: 'key_takeaway' },
-        { label: 'Summary', type: 'summary' }
-    ]
-};
+import { isAssetPresent, getBlockMedia } from '../../../../utils/assetUtils';
+import { SUGGESTED_TYPES, mapBlockTypeToAssetType, COMPONENT_CATEGORIES, getVisibleComponentCategories } from '../../../../utils/blockTypeConstants';
 
 // Map blocks to structural sections for the workspace
 function groupBlocksIntoSections(blocks) {
@@ -181,11 +96,16 @@ function selectEditor(blockType) {
             return ExplanationEditor;
         // New structured editors
         case 'definition':
+        case 'definition_card':
             return DefinitionEditor;
         case 'misconception':
+        case 'common_mistake':
             return MisconceptionEditor;
         case 'table':
+        case 'comparison_table':
             return TableEditor;
+        case 'step_process':
+            return StepProcessEditor;
         case 'worked_example':
             return WorkedExampleEditor;
         // Rich media editors
@@ -232,16 +152,34 @@ export default function ConceptComposer({
     onRegenerate,
     onAssetUpdated,
     onMove,
+    onReorder,
+    onSaveCardTitle,
     onAddBlock,
     onAddBlockWithFile,
     highlightBlockId = null,
+    isWideMode = false,
 }) {
     const [showAddMenu, setShowAddMenu] = React.useState(false);
+    const [isEditingTitle, setIsEditingTitle] = React.useState(false);
+    const [titleInput, setTitleInput] = React.useState(concept?.pageTitle || '');
     const [visualModalState, setVisualModalState] = React.useState({
         isOpen: false,
         targetBlock: null,
         targetAsset: null,
     });
+
+    React.useEffect(() => {
+        setTitleInput(concept?.pageTitle || '');
+        setIsEditingTitle(false);
+    }, [concept?.pageNum, concept?.pageTitle]);
+
+    const handleTitleSubmit = () => {
+        setIsEditingTitle(false);
+        const trimmed = titleInput.trim();
+        if (trimmed && trimmed !== concept?.pageTitle && onSaveCardTitle) {
+            onSaveCardTitle(concept.pageNum, trimmed);
+        }
+    };
 
     const handleOpenGeneralVisualPrompt = () => {
         setVisualModalState({
@@ -266,6 +204,7 @@ export default function ConceptComposer({
             targetAsset: null,
         });
     };
+
     if (!concept) {
         return (
             <div className="flex-1 flex items-center justify-center bg-gray-50 text-gray-400">
@@ -282,9 +221,62 @@ export default function ConceptComposer({
     return (
         <div className="flex-1 flex flex-col overflow-hidden bg-white">
             {/* Concept Header */}
-            <div className="px-8 py-6 border-b border-gray-100 bg-white sticky top-0 z-10 shadow-sm">
-                <p className="text-xs font-bold text-custom-blue uppercase tracking-widest mb-2">Concept Review</p>
-                <h2 className="text-2xl font-extrabold text-gray-900">{concept.pageTitle}</h2>
+            <div className="px-8 py-5 border-b border-gray-100 bg-white sticky top-0 z-10 shadow-xs">
+                <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[11px] font-extrabold text-custom-blue uppercase tracking-wider bg-blue-50 px-2 py-0.5 rounded-md">
+                        Card {concept.pageNum}
+                    </span>
+                    <span className="text-xs text-gray-400 font-medium">Concept Review & Authoring</span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    {isEditingTitle ? (
+                        <div className="flex items-center gap-2 flex-1 max-w-xl">
+                            <input
+                                type="text"
+                                autoFocus
+                                value={titleInput}
+                                onChange={(e) => setTitleInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleTitleSubmit();
+                                    if (e.key === 'Escape') {
+                                        setTitleInput(concept.pageTitle || '');
+                                        setIsEditingTitle(false);
+                                    }
+                                }}
+                                onBlur={handleTitleSubmit}
+                                className="w-full text-2xl font-extrabold text-gray-900 border-b-2 border-custom-blue outline-none bg-transparent py-0.5"
+                                placeholder="Enter card title..."
+                            />
+                            <button
+                                type="button"
+                                onClick={handleTitleSubmit}
+                                className="px-3 py-1 text-xs font-bold text-white bg-custom-blue hover:opacity-90 rounded-md shadow-xs transition-opacity"
+                            >
+                                Done
+                            </button>
+                        </div>
+                    ) : (
+                        <div
+                            className="flex items-center gap-3 group cursor-pointer"
+                            onClick={() => setIsEditingTitle(true)}
+                            title="Click to rename this card"
+                        >
+                            <h2 className="text-2xl font-extrabold text-gray-900 group-hover:text-custom-blue transition-colors">
+                                {concept.pageTitle || `Part ${concept.pageNum}`}
+                            </h2>
+                            <button
+                                type="button"
+                                className="p-1.5 text-gray-400 hover:text-custom-blue bg-gray-100/80 hover:bg-blue-50 border border-gray-200/80 hover:border-blue-200 rounded-md transition-all flex items-center justify-center shadow-2xs shrink-0 cursor-pointer"
+                                aria-label="Rename card title"
+                                title="Click to rename card"
+                            >
+                                <Edit2 size={14} className="text-gray-400 group-hover:text-custom-blue" />
+                            </button>
+                        </div>
+                    )}
+                </div>
+
                 {concept.isV1 && (
                     <p className="text-xs text-gray-400 mt-2">
                         Legacy concept group — automatically organized for backward compatibility.
@@ -294,44 +286,39 @@ export default function ConceptComposer({
 
             {/* Components list */}
             <div className="flex-1 overflow-y-auto bg-custom-cream/30">
-                <div className="max-w-4xl mx-auto px-8 py-8 space-y-10 pb-32">
+                <div className={`${isWideMode ? 'max-w-6xl' : 'max-w-4xl'} mx-auto px-8 py-8 space-y-10 pb-32 transition-all duration-200`}>
                     
-                    {(() => {
-                        const sections = groupBlocksIntoSections(concept.blocks);
-                        
-                        return Object.entries(sections).map(([sectionName, blocks]) => {
-                            if (blocks.length === 0) return null;
-                            
-                            return (
-                                <div key={sectionName} className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 overflow-hidden">
-                                    <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-custom-terracotta"></div>
-                                        {sectionName}
-                                    </h3>
-                                    
-                                    <div className="space-y-6">
-                                        {blocks.map(block => (
-                                            <ComponentWrapper
-                                                key={block.id}
-                                                block={block}
-                                                allAssets={allAssets}
-                                                lessonId={lessonId}
-                                                onBlockChange={onBlockChange}
-                                                onSave={onSave}
-                                                onDelete={onDelete}
-                                                onDuplicate={onDuplicate}
-                                                onRegenerate={onRegenerate}
-                                                onAssetUpdated={onAssetUpdated}
-                                                onMove={onMove}
-                                                onPromptVisual={handleOpenTargetedVisualPrompt}
-                                                isHighlighted={Boolean(highlightBlockId && String(block.id) === String(highlightBlockId))}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            );
-                        });
-                    })()}
+                    {/* Sequential Component List (Direct Drag & Drop Ordering) */}
+                    <div className="space-y-6">
+                        {concept.blocks && concept.blocks.length > 0 ? (
+                            concept.blocks
+                                .slice()
+                                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                                .map((block) => (
+                                    <ComponentWrapper
+                                        key={block.id}
+                                        block={block}
+                                        allAssets={allAssets}
+                                        lessonId={lessonId}
+                                        onBlockChange={onBlockChange}
+                                        onSave={onSave}
+                                        onDelete={onDelete}
+                                        onDuplicate={onDuplicate}
+                                        onRegenerate={onRegenerate}
+                                        onAssetUpdated={onAssetUpdated}
+                                        onMove={onMove}
+                                        onReorder={onReorder}
+                                        onPromptVisual={handleOpenTargetedVisualPrompt}
+                                        isHighlighted={Boolean(highlightBlockId && String(block.id) === String(highlightBlockId))}
+                                    />
+                                ))
+                        ) : (
+                            <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-12 text-center text-gray-400">
+                                <p className="text-sm font-medium">No components on this card yet.</p>
+                                <p className="text-xs text-gray-400 mt-1">Click "Add Component" below to add content or interactive checks.</p>
+                            </div>
+                        )}
+                    </div>
                     
                     {/* Add Component & Prompt Visual Actions */}
                     <div className="pt-8 border-t border-gray-100 flex flex-wrap items-center justify-center gap-3">
@@ -347,11 +334,11 @@ export default function ConceptComposer({
                             {showAddMenu && (
                                 <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
                                     <div className="fixed inset-0" onClick={() => setShowAddMenu(false)} />
-                                    <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
+                                    <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-3xl w-full max-h-[85vh] flex flex-col overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
                                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
                                             <div>
                                                 <h3 className="text-sm font-bold text-gray-900">Add Component</h3>
-                                                <p className="text-xs text-gray-500">Choose a component type to add to this card</p>
+                                                <p className="text-xs text-gray-500">Choose a platform-compatible component to add to this card</p>
                                             </div>
                                             <button
                                                 type="button"
@@ -362,23 +349,32 @@ export default function ConceptComposer({
                                             </button>
                                         </div>
                                         <div className="p-6 overflow-y-auto max-h-[calc(85vh-130px)]">
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                                                {Object.entries(COMPONENT_CATEGORIES).map(([category, items]) => (
-                                                    <div key={category} className="space-y-2">
-                                                        <h4 className="text-[10px] font-extrabold text-custom-blue uppercase tracking-widest px-2">{category}</h4>
-                                                        <div className="space-y-1">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                {Object.entries(getVisibleComponentCategories()).map(([category, items]) => (
+                                                    <div key={category} className="space-y-2 bg-gray-50/60 p-3.5 rounded-xl border border-gray-100 flex flex-col">
+                                                        <h4 className="text-[11px] font-extrabold text-custom-blue uppercase tracking-wider px-1 mb-1">{category}</h4>
+                                                        <div className="space-y-1.5 flex-1">
                                                             {items.map((item) => {
                                                                 if (item.upload) {
                                                                     return (
                                                                         <label
                                                                             key={item.type}
-                                                                            className="block w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:bg-orange-50 hover:text-custom-terracotta rounded-lg transition-colors cursor-pointer"
+                                                                            className="group flex flex-col w-full text-left p-2 rounded-lg transition-all cursor-pointer bg-white border border-gray-100 hover:border-orange-300 hover:bg-orange-50/50 shadow-2xs"
+                                                                            title={item.description || item.label}
                                                                         >
-                                                                            {item.label}
+                                                                            <div className="flex items-center justify-between">
+                                                                                <span className="font-semibold text-xs text-gray-800 group-hover:text-custom-terracotta">{item.label}</span>
+                                                                                <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-bold tracking-wider">Upload</span>
+                                                                            </div>
+                                                                            {item.description && (
+                                                                                <span className="text-[10px] text-gray-400 group-hover:text-gray-600 line-clamp-1 mt-0.5 leading-tight">
+                                                                                    {item.description}
+                                                                                </span>
+                                                                            )}
                                                                             <input
                                                                                 type="file"
                                                                                 className="hidden"
-                                                                                accept="image/*,video/*,.gif,.pdf"
+                                                                                accept="image/*,.gif"
                                                                                 onChange={(e) => {
                                                                                     const file = e.target.files[0];
                                                                                     if (file) {
@@ -398,9 +394,15 @@ export default function ConceptComposer({
                                                                             onAddBlock(concept.pageNum, item.type, item.label);
                                                                             setShowAddMenu(false);
                                                                         }}
-                                                                        className="w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:bg-orange-50 hover:text-custom-terracotta rounded-lg transition-colors"
+                                                                        className="group flex flex-col w-full text-left p-2 rounded-lg transition-all bg-white border border-gray-100 hover:border-orange-300 hover:bg-orange-50/50 shadow-2xs"
+                                                                        title={item.description || item.label}
                                                                     >
-                                                                        {item.label}
+                                                                        <span className="font-semibold text-xs text-gray-800 group-hover:text-custom-terracotta">{item.label}</span>
+                                                                        {item.description && (
+                                                                            <span className="text-[10px] text-gray-400 group-hover:text-gray-600 line-clamp-1 mt-0.5 leading-tight">
+                                                                                {item.description}
+                                                                            </span>
+                                                                        )}
                                                                     </button>
                                                                 );
                                                             })}
@@ -464,21 +466,68 @@ function ComponentWrapper({
     onRegenerate,
     onAssetUpdated,
     onMove,
+    onReorder,
     onPromptVisual,
     isHighlighted = false,
 }) {
+    const [isDragOver, setIsDragOver] = React.useState(false);
     const isMediaBlock = SUGGESTED_TYPES.has(block.block_type);
 
-    const blockAssets = allAssets.filter((a) =>
+    let blockAssets = allAssets.filter((a) =>
         a.blocks?.includes(block.id) || a.blocks?.some?.((b) => b === block.id || b?.id === block.id)
     );
+
+    // Fallback: assets inlined directly on block object (e.g. from LessonBlockSerializer)
+    if (blockAssets.length === 0 && Array.isArray(block.assets) && block.assets.length > 0) {
+        blockAssets = block.assets;
+    }
+
+    // Fallback: direct inline media in block.content or block.metadata (ingested Wikimedia, SVG, YouTube)
+    const inlineMedia = getBlockMedia(block);
+    if (blockAssets.length === 0 && inlineMedia) {
+        blockAssets = [{
+            id: null,
+            asset_type: mapBlockTypeToAssetType(block.block_type),
+            status: 'attached',
+            title: inlineMedia.title || block.title || block.block_type.replace(/_/g, ' '),
+            description: inlineMedia.caption || extractDescription(block.content),
+            url: inlineMedia.url,
+            file: null,
+            metadata: {
+                admin_instruction: extractDescription(block.content),
+                svg_content: inlineMedia.svgCode,
+                generated_code: inlineMedia.svgCode,
+                video_id: inlineMedia.videoId,
+                simulation_key: inlineMedia.simKey,
+            },
+            blocks: [block.id],
+        }];
+    }
 
     const EditorComponent = selectEditor(block.block_type);
 
     return (
-        <div className={`relative group transition-all duration-200 ${
-            isHighlighted ? 'ring-2 ring-rose-500 rounded-2xl p-3 bg-rose-50/20 shadow-md' : ''
-        }`}>
+        <div
+            onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (!isDragOver) setIsDragOver(true);
+            }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={(e) => {
+                e.preventDefault();
+                setIsDragOver(false);
+                const sourceId = e.dataTransfer.getData('text/plain');
+                if (sourceId && onReorder) {
+                    onReorder(sourceId, block.id);
+                }
+            }}
+            className={`relative group transition-all duration-200 ${
+                isDragOver ? 'ring-2 ring-custom-blue bg-blue-50/20 rounded-2xl p-2' : ''
+            } ${
+                isHighlighted ? 'ring-2 ring-rose-500 rounded-2xl p-3 bg-rose-50/20 shadow-md' : ''
+            }`}
+        >
             {isHighlighted && (
                 <div className="mb-3 flex items-center justify-between px-3.5 py-2 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-bold shadow-xs">
                     <span className="flex items-center gap-2">
@@ -492,6 +541,17 @@ function ComponentWrapper({
             )}
             {/* Action toolbar (visible on hover) */}
             <div className="absolute -top-3 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-white border border-gray-200 shadow-sm rounded-lg p-1 z-10">
+                <div
+                    draggable
+                    onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', String(block.id));
+                        e.dataTransfer.effectAllowed = 'move';
+                    }}
+                    className="p-1.5 rounded text-gray-400 hover:text-gray-800 hover:bg-gray-100 transition-colors cursor-grab active:cursor-grabbing"
+                    title="Drag to reorder component"
+                >
+                    <GripVertical size={14} />
+                </div>
                 <button
                     onClick={() => onMove(block.id, 'up')}
                     className="p-1.5 rounded text-gray-400 hover:text-custom-blue hover:bg-blue-50 transition-colors"
@@ -559,9 +619,9 @@ function ComponentWrapper({
                             onPromptVisual={(bId, asset) => onPromptVisual && onPromptVisual(block, asset)}
                         />
                     ) : (
-                        blockAssets.map((asset) => (
+                        blockAssets.map((asset, idx) => (
                             <MediaSlot
-                                key={asset.id}
+                                key={asset.id || `${block.id}_asset_${idx}`}
                                 asset={asset}
                                 lessonId={lessonId}
                                 blockId={block.id}

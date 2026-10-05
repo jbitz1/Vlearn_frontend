@@ -36,7 +36,7 @@ export const LessonTimeline = ({ totalPages, currentPageIndex, completedConcepts
     );
 };
 
-export const LessonCompletionCard = ({ lessonTitle, completedConceptsCount, estimatedStudyTime, onBackToTopic, onReview }) => {
+export const LessonCompletionCard = ({ lessonTitle, completedConceptsCount, estimatedStudyTime, onBackToTopic, onReview, backButtonText = "Back to Topic" }) => {
     return (
         <div className="max-w-2xl mx-auto my-16 text-center animate-slide-up-fade bg-white p-10 rounded-3xl shadow-xl border border-indigo-50 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-teal-400"></div>
@@ -59,9 +59,9 @@ export const LessonCompletionCard = ({ lessonTitle, completedConceptsCount, esti
             <div className="space-y-4 max-w-sm mx-auto">
                 <button 
                     onClick={onBackToTopic}
-                    className="w-full flex items-center justify-center gap-2 px-8 py-4 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition shadow-lg"
+                    className="w-full flex items-center justify-center gap-2 px-8 py-4 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition shadow-lg cursor-pointer"
                 >
-                    <ArrowLeft size={20} /> Back to Topic
+                    <ArrowLeft size={20} /> {backButtonText}
                 </button>
                 <button 
                     onClick={onReview}

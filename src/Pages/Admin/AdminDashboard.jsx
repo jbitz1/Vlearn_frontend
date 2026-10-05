@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import apiClient from "../../config/apiClient";
 import { 
     Users, 
@@ -10,6 +10,7 @@ import {
     Cpu, 
     Sparkles, 
     ChevronRight, 
+    ChevronLeft,
     ArrowUpRight, 
     CheckCircle2, 
     Clock, 
@@ -38,6 +39,8 @@ function AdminDashboard() {
     const [issueReports, setIssueReports] = useState([]);
     const [selectedIssue, setSelectedIssue] = useState(null);
     const [issueFilter, setIssueFilter] = useState("all"); // "all", "open", "resolved"
+    const [issuePage, setIssuePage] = useState(1);
+    const ISSUES_PER_PAGE = 5;
     const [isLoading, setIsLoading] = useState(true);
 
     const getStudioLink = (issue) => {
@@ -145,11 +148,21 @@ function AdminDashboard() {
     const totalGeneratedLessons = courseOverview.reduce((acc, g) => acc + (g.units_generated || 0), 0);
     const totalPublishedLessons = courseOverview.reduce((acc, g) => acc + (g.units_published || 0), 0);
 
-    const filteredIssues = issueReports.filter(issue => {
-        if (issueFilter === "open") return issue.status !== 'resolved';
-        if (issueFilter === "resolved") return issue.status === 'resolved';
-        return true;
-    });
+    const filteredIssues = useMemo(() => {
+        return issueReports.filter(issue => {
+            if (issueFilter === "open") return issue.status !== 'resolved';
+            if (issueFilter === "resolved") return issue.status === 'resolved';
+            return true;
+        });
+    }, [issueReports, issueFilter]);
+
+    const totalIssuePages = Math.max(1, Math.ceil(filteredIssues.length / ISSUES_PER_PAGE));
+    const safePage = Math.min(issuePage, totalIssuePages);
+
+    const paginatedIssues = useMemo(() => {
+        const start = (safePage - 1) * ISSUES_PER_PAGE;
+        return filteredIssues.slice(start, start + ISSUES_PER_PAGE);
+    }, [filteredIssues, safePage]);
 
     return (
         <div className="min-h-screen bg-slate-50/60 p-4 md:p-8 space-y-8 overflow-y-auto pb-24">
@@ -159,10 +172,6 @@ function AdminDashboard() {
                     <div className="flex items-center gap-2 mb-1">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-custom-blue border border-blue-100">
                             Admin Operations
-                        </span>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
-                            Live System
                         </span>
                     </div>
                     <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
@@ -334,11 +343,11 @@ function AdminDashboard() {
                             <Flag className="w-5 h-5" />
                         </div>
                         <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                                 <h2 className="text-lg font-extrabold text-gray-900 tracking-tight">
                                     Visual Issue Reports & Teacher Feedback
                                 </h2>
-                                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-600">
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200/60 whitespace-nowrap shrink-0">
                                     {issueReports.filter(i => i.status !== 'resolved').length} Open
                                 </span>
                             </div>
@@ -351,19 +360,19 @@ function AdminDashboard() {
                     <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
                         <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
                             <button
-                                onClick={() => setIssueFilter("all")}
+                                onClick={() => { setIssueFilter("all"); setIssuePage(1); }}
                                 className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${issueFilter === 'all' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500'}`}
                             >
                                 All ({issueReports.length})
                             </button>
                             <button
-                                onClick={() => setIssueFilter("open")}
+                                onClick={() => { setIssueFilter("open"); setIssuePage(1); }}
                                 className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${issueFilter === 'open' ? 'bg-white text-rose-700 shadow-xs' : 'text-gray-500'}`}
                             >
                                 Open ({issueReports.filter(i => i.status !== 'resolved').length})
                             </button>
                             <button
-                                onClick={() => setIssueFilter("resolved")}
+                                onClick={() => { setIssueFilter("resolved"); setIssuePage(1); }}
                                 className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${issueFilter === 'resolved' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-500'}`}
                             >
                                 Resolved ({issueReports.filter(i => i.status === 'resolved').length})
@@ -401,7 +410,7 @@ function AdminDashboard() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 text-gray-700">
-                                {filteredIssues.map((issue) => (
+                                {paginatedIssues.map((issue) => (
                                     <tr key={issue.id} className="hover:bg-slate-50/70 transition-colors">
                                         <td className="p-3.5 font-bold">
                                             <span className={`inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold ${
@@ -497,6 +506,36 @@ function AdminDashboard() {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                )}
+
+                {/* Pagination Controls */}
+                {!isLoading && filteredIssues.length > ISSUES_PER_PAGE && (
+                    <div className="px-4 py-3 bg-slate-50/70 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500 rounded-b-2xl">
+                        <div>
+                            Showing <span className="font-bold text-gray-800">{(safePage - 1) * ISSUES_PER_PAGE + 1}</span> to <span className="font-bold text-gray-800">{Math.min(safePage * ISSUES_PER_PAGE, filteredIssues.length)}</span> of <span className="font-bold text-gray-800">{filteredIssues.length}</span> issues
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                onClick={() => setIssuePage(prev => Math.max(1, prev - 1))}
+                                disabled={safePage <= 1}
+                                className="p-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                title="Previous Page"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <span className="px-2 text-xs font-semibold text-gray-700">
+                                Page {safePage} of {totalIssuePages}
+                            </span>
+                            <button
+                                onClick={() => setIssuePage(prev => Math.min(totalIssuePages, prev + 1))}
+                                disabled={safePage >= totalIssuePages}
+                                className="p-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                title="Next Page"
+                            >
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

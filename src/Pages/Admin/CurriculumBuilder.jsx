@@ -251,28 +251,72 @@ export default function CurriculumBuilder() {
             setLoading(true);
             await apiClient.delete(endpointMap[type]);
             
-            // Refresh parent
+            // Refresh parent and update state optimistically
             if (type === 'curriculum') {
-                setSelectedCurriculum(null);
+                if (selectedCurriculum?.id === id) {
+                    setSelectedCurriculum(null);
+                    setSelectedGrade(null);
+                    setSelectedSubject(null);
+                    setSelectedTopic(null);
+                    setSelectedUnit(null);
+                    setGrades([]);
+                    setSubjects([]);
+                    setTopics([]);
+                    setLearningUnits([]);
+                }
+                setCurricula(prev => prev.filter(c => c.id !== id));
                 fetchData('/api/curriculum/curricula/', setCurricula);
             }
             if (type === 'grade') {
-                setSelectedGrade(null);
-                fetchData(`/api/curriculum/grades/?curriculum=${selectedCurriculum.id}`, setGrades);
+                if (selectedGrade?.id === id) {
+                    setSelectedGrade(null);
+                    setSelectedSubject(null);
+                    setSelectedTopic(null);
+                    setSelectedUnit(null);
+                    setSubjects([]);
+                    setTopics([]);
+                    setLearningUnits([]);
+                }
+                setGrades(prev => prev.filter(g => g.id !== id));
+                if (selectedCurriculum) {
+                    fetchData(`/api/curriculum/grades/?curriculum=${selectedCurriculum.id}`, setGrades);
+                }
             }
             if (type === 'subject') {
-                setSelectedSubject(null);
-                fetchData(`/api/curriculum/subjects/?grade=${selectedGrade.id}`, setSubjects);
+                if (selectedSubject?.id === id) {
+                    setSelectedSubject(null);
+                    setSelectedTopic(null);
+                    setSelectedUnit(null);
+                    setTopics([]);
+                    setLearningUnits([]);
+                }
+                setSubjects(prev => prev.filter(s => s.id !== id));
+                if (selectedGrade) {
+                    fetchData(`/api/curriculum/subjects/?grade=${selectedGrade.id}`, setSubjects);
+                }
             }
             if (type === 'topic') {
-                setSelectedTopic(null);
-                fetchData(`/api/curriculum/topics/?subject=${selectedSubject.id}`, setTopics);
+                if (selectedTopic?.id === id) {
+                    setSelectedTopic(null);
+                    setSelectedUnit(null);
+                    setLearningUnits([]);
+                }
+                setTopics(prev => prev.filter(t => t.id !== id));
+                if (selectedSubject) {
+                    fetchData(`/api/curriculum/topics/?subject=${selectedSubject.id}`, setTopics);
+                }
             }
             if (type === 'unit') {
-                setSelectedUnit(null);
-                fetchData('/api/curriculum/learning-units/', (data) => {
-                    setLearningUnits(data.filter(lu => lu.topic === selectedTopic.id || (lu.topic && lu.topic.id === selectedTopic.id)));
-                });
+                if (selectedUnit?.id === id) {
+                    setSelectedUnit(null);
+                }
+                // Optimistically remove the deleted unit from state immediately
+                setLearningUnits(prev => prev.filter(lu => lu.id !== id));
+                if (selectedTopic) {
+                    fetchData(`/api/curriculum/learning-units/?topic=${selectedTopic.id}&page_size=100`, (data) => {
+                        setLearningUnits(data.filter(lu => lu.topic === selectedTopic.id || (lu.topic && lu.topic.id === selectedTopic.id)));
+                    });
+                }
             }
         } catch (error) {
             console.error(`Error deleting ${type}:`, error);

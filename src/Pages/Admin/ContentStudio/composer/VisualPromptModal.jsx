@@ -13,7 +13,13 @@ export default function VisualPromptModal({
     existingBlocks = [],
     onSuccess,
 }) {
-    const isUpdate = Boolean(targetBlock);
+    const isMediaPlaceholder = targetBlock && [
+        'suggested_diagram', 'suggested_image', 'suggested_video', 'suggested_simulation',
+        'visualization', 'diagram', 'image', 'video', 'image_placeholder', 'diagram_placeholder',
+        'video_ref', 'simulation_placeholder'
+    ].includes(targetBlock.block_type);
+
+    const isUpdate = Boolean(targetBlock && isMediaPlaceholder);
     const [prompt, setPrompt] = useState('');
     const [visualType, setVisualType] = useState('suggested_diagram');
     const [targetBlockId, setTargetBlockId] = useState('');
@@ -30,8 +36,15 @@ export default function VisualPromptModal({
             setPrompt('');
             if (targetBlock) {
                 setTargetBlockId(String(targetBlock.id));
-                setPlacement('replace');
                 const bType = targetBlock.block_type || '';
+                const isMedia = [
+                    'suggested_diagram', 'suggested_image', 'suggested_video', 'suggested_simulation',
+                    'visualization', 'diagram', 'image', 'video', 'image_placeholder', 'diagram_placeholder',
+                    'video_ref', 'simulation_placeholder'
+                ].includes(bType);
+
+                setPlacement(isMedia ? 'replace' : 'after');
+
                 if (['suggested_video', 'video', 'youtube', 'video_ref'].includes(bType)) {
                     setVisualType('suggested_video');
                 } else if (['suggested_image', 'image', 'image_placeholder'].includes(bType)) {
@@ -69,7 +82,7 @@ export default function VisualPromptModal({
         setSuccessMsg(null);
 
         try {
-            const finalPlacement = targetBlock ? 'replace' : placement;
+            const finalPlacement = isUpdate ? 'replace' : placement;
             const finalBlockId = targetBlock ? targetBlock.id : (targetBlockId ? parseInt(targetBlockId, 10) : null);
 
             const res = await apiClient.post(`/api/curriculum/lessons/${lessonId}/generate-visual/`, {
@@ -166,12 +179,12 @@ export default function VisualPromptModal({
                         </div>
                         <div>
                             <h3 className="text-base font-extrabold text-gray-900">
-                                {isUpdate ? 'Update Component Visualization' : 'Generate Targeted Visualization'}
+                                {isUpdate ? 'Update Component Visualization' : (targetBlock ? `Generate Visual for ${targetBlock.title || 'Card'}` : 'Generate Targeted Visualization')}
                             </h3>
                             <p className="text-xs text-gray-500">
                                 {isUpdate 
                                     ? 'Provide specific instructions to refine this card without altering the rest of the lesson'
-                                    : 'Insert a new AI-generated visual directly into the lesson hierarchy'
+                                    : (targetBlock ? 'AI will analyze this specific card and generate a matching educational visual' : 'Insert a new AI-generated visual directly into the lesson hierarchy')
                                 }
                             </p>
                         </div>

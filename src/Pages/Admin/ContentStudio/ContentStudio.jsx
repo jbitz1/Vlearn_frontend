@@ -1,16 +1,20 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router';
 import apiClient from '../../../config/apiClient';
 import { LessonViewer } from '../../LessonViewer';
 import ConceptNavigator from './composer/ConceptNavigator';
-import ConceptComposer, { mapBlockTypeToAssetType } from './composer/ConceptComposer';
+import ConceptComposer from './composer/ConceptComposer';
 import QualityBar from './composer/QualityBar';
 import PublishGate from './composer/PublishGate';
 import AIReviewPanel from './composer/AIReviewPanel';
+import { isAssetPresent, getBlockMedia } from '../../../utils/assetUtils';
+import { SUGGESTED_TYPES, mapBlockTypeToAssetType } from '../../../utils/blockTypeConstants';
+import { extractText } from '../../../utils/contentUtils';
 import { useGeneration } from '../../../Context/GenerationContext';
 import {
     ArrowLeft, Eye, Edit, CheckCircle, AlertCircle, X,
-    Loader2, Sparkles, RotateCcw, PenTool, Save
+    Loader2, Sparkles, RotateCcw, PenTool, Save,
+    PanelLeft, PanelRight, ChevronRight, Check
 } from 'lucide-react';
 
 export default function ContentStudio() {
@@ -26,6 +30,40 @@ export default function ContentStudio() {
     const [blocks, setBlocks] = useState([]);
     const [assets, setAssets] = useState([]);
     const [activeConceptId, setActiveConceptId] = useState(null);
+
+    // ── Persistence & panel state ─────────────────────────────────────────────
+    const [saveStatus, setSaveStatus] = useState('saved'); // 'saved' | 'saving' | 'unsaved'
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [isNavigatorCollapsed, setIsNavigatorCollapsed] = useState(false);
+    const [isCoachCollapsed, setIsCoachCollapsed] = useState(false);
+    const [coachWidth, setCoachWidth] = useState(380);
+    const isDraggingCoachRef = useRef(false);
+
+    const startResizeCoach = useCallback((e) => {
+        e.preventDefault();
+        isDraggingCoachRef.current = true;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+
+        const onMouseMove = (moveEvent) => {
+            if (!isDraggingCoachRef.current) return;
+            const newWidth = window.innerWidth - moveEvent.clientX;
+            const minWidth = 320;
+            const maxWidth = Math.max(minWidth, Math.round(window.innerWidth * 0.65));
+            setCoachWidth(Math.min(maxWidth, Math.max(minWidth, newWidth)));
+        };
+
+        const onMouseUp = () => {
+            isDraggingCoachRef.current = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    }, []);
 
     // ── UI state ──────────────────────────────────────────────────────────────
     const [isPreview, setIsPreview] = useState(false);
@@ -83,14 +121,14 @@ export default function ContentStudio() {
     // ─────────────────────────────────────────────────────────────────────────
 
     const fetchBlocks = useCallback(async (lessonId) => {
-        const response = await apiClient.get(`/api/curriculum/lesson-blocks/?lesson=${lessonId}`);
+        const response = await apiClient.get(`/api/curriculum/lesson-blocks/?lesson=${lessonId}&page_size=1000`);
         const sorted = (response.data.results || response.data || []).sort((a, b) => a.order - b.order);
         setBlocks(sorted);
     }, []);
 
     const fetchAssets = useCallback(async (lessonId) => {
         try {
-            const response = await apiClient.get(`/api/curriculum/lesson-assets/?lesson=${lessonId}`);
+            const response = await apiClient.get(`/api/curriculum/lesson-assets/?lesson=${lessonId}&page_size=1000`);
             setAssets(response.data.results || response.data || []);
         } catch {
             setAssets([]); // non-critical for V1 lessons
@@ -236,13 +274,49 @@ export default function ContentStudio() {
     // ─────────────────────────────────────────────────────────────────────────
 
     const saveBlock = async (block) => {
+        setSaveStatus('saving');
         try {
             await apiClient.patch(`/api/curriculum/lesson-blocks/${block.id}/`, {
                 content: block.content,
                 title: block.title,
+                page_title: block.page_title,
+                order: block.order,
+                component_order: block.component_order ?? block.order,
             });
+            setSaveStatus('saved');
+            setHasUnsavedChanges(false);
         } catch {
+            setSaveStatus('unsaved');
             showNotification('error', 'Failed to save. Please try again.');
+        }
+    };
+
+    const handleSaveCardTitle = async (pageNum, newTitle) => {
+        let blocksInPage = blocks.filter(b => b.page_number === pageNum);
+        // Fallback for V1 lessons where blocks have null page_number
+        if (blocksInPage.length === 0 && activeConcept) {
+            const activeIds = new Set((activeConcept.blocks || []).map(b => b.id));
+            blocksInPage = blocks.filter(b => activeIds.has(b.id));
+        }
+        if (blocksInPage.length === 0) return;
+
+        setSaveStatus('saving');
+        const targetIds = new Set(blocksInPage.map(b => b.id));
+        // Optimistic local state update
+        setBlocks(prev => prev.map(b => targetIds.has(b.id) ? { ...b, page_title: newTitle } : b));
+
+        try {
+            await Promise.all(
+                blocksInPage.map(b =>
+                    apiClient.patch(`/api/curriculum/lesson-blocks/${b.id}/`, { page_title: newTitle })
+                )
+            );
+            setSaveStatus('saved');
+            showNotification('success', 'Card title updated.');
+        } catch {
+            setSaveStatus('unsaved');
+            showNotification('error', 'Failed to update card title on server.');
+            // Do NOT overwrite local state with stale fetchBlocks; preserves in-flight edits
         }
     };
 
@@ -407,42 +481,141 @@ export default function ContentStudio() {
         if (!lesson) return;
         try {
             await apiClient.patch(`/api/curriculum/lessons/${lesson.id}/`, { status: 'draft' });
-            showNotification('success', 'Draft saved.');
-            fetchAll();
+            setLesson(prev => ({ ...prev, status: 'draft' }));
+            showNotification('success', 'Draft status saved.');
         } catch {
             showNotification('error', 'Failed to save draft.');
         }
     };
 
+    const handleSaveChanges = useCallback(async () => {
+        if (!lesson) return;
+        setSaveStatus('saving');
+        try {
+            await Promise.all(
+                blocks.map(b =>
+                    apiClient.patch(`/api/curriculum/lesson-blocks/${b.id}/`, {
+                        content: b.content,
+                        title: b.title,
+                        page_title: b.page_title,
+                        order: b.order,
+                        component_order: b.component_order ?? b.order,
+                    })
+                )
+            );
+            setSaveStatus('saved');
+            setHasUnsavedChanges(false);
+            showNotification('success', 'All changes saved.');
+        } catch {
+            setSaveStatus('unsaved');
+            showNotification('error', 'Failed to save changes.');
+        }
+    }, [lesson, blocks]);
+
     // ─────────────────────────────────────────────────────────────────────────
-    // Optimistic block update
+    // Optimistic block update & listeners
     // ─────────────────────────────────────────────────────────────────────────
 
     const handleBlockChange = (updatedBlock) => {
+        setHasUnsavedChanges(true);
+        setSaveStatus('unsaved');
         setBlocks((prev) => prev.map((b) => (b.id === updatedBlock.id ? updatedBlock : b)));
     };
 
-    const handleMoveBlock = async (blockId, direction) => {
-        const idx = blocks.findIndex(b => b.id === blockId);
-        if (idx < 0) return;
-        if (direction === 'up' && idx === 0) return;
-        if (direction === 'down' && idx === blocks.length - 1) return;
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasUnsavedChanges]);
 
-        const newBlocks = [...blocks];
-        const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
-        
-        // Swap orders
-        const tempOrder = newBlocks[idx].order;
-        newBlocks[idx].order = newBlocks[targetIdx].order;
-        newBlocks[targetIdx].order = tempOrder;
-        
-        // Swap in array
-        const temp = newBlocks[idx];
-        newBlocks[idx] = newBlocks[targetIdx];
-        newBlocks[targetIdx] = temp;
-        
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                handleSaveChanges();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [handleSaveChanges]);
+
+    const handleMoveBlock = async (blockId, direction) => {
+        const block = blocks.find(b => b.id === blockId);
+        if (!block) return;
+        const pageNum = block.page_number;
+
+        // Scope reorder strictly within the active card/page
+        const pageBlocks = blocks
+            .filter(b => b.page_number === pageNum)
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        const pageIdx = pageBlocks.findIndex(b => b.id === blockId);
+        if (pageIdx < 0) return;
+        if (direction === 'up' && pageIdx === 0) return;
+        if (direction === 'down' && pageIdx === pageBlocks.length - 1) return;
+
+        const targetIdx = direction === 'up' ? pageIdx - 1 : pageIdx + 1;
+        const targetBlock = pageBlocks[targetIdx];
+
+        const newBlocks = blocks.map(b => {
+            if (b.id === block.id) return { ...b, order: targetBlock.order, component_order: targetBlock.order };
+            if (b.id === targetBlock.id) return { ...b, order: block.order, component_order: block.order };
+            return b;
+        }).sort((a, b) => (a.order || 0) - (b.order || 0));
+
         setBlocks(newBlocks);
-        
+
+        try {
+            await apiClient.post('/api/curriculum/lesson-blocks/reorder/', {
+                ordering: newBlocks.map((b, i) => ({ id: b.id, order: i }))
+            });
+        } catch {
+            showNotification('error', 'Failed to reorder blocks.');
+            fetchBlocks(lesson.id);
+        }
+    };
+
+    const handleReorderBlocks = async (sourceBlockId, targetBlockId) => {
+        const sourceBlock = blocks.find(b => String(b.id) === String(sourceBlockId));
+        const targetBlock = blocks.find(b => String(b.id) === String(targetBlockId));
+        if (!sourceBlock || !targetBlock || sourceBlock.id === targetBlock.id) return;
+
+        const pageNum = sourceBlock.page_number;
+        if (pageNum !== targetBlock.page_number) return;
+
+        const pageBlocks = blocks
+            .filter(b => b.page_number === pageNum)
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        const sourceIdx = pageBlocks.findIndex(b => b.id === sourceBlock.id);
+        const targetIdx = pageBlocks.findIndex(b => b.id === targetBlock.id);
+        if (sourceIdx < 0 || targetIdx < 0) return;
+
+        const reordered = [...pageBlocks];
+        const [moved] = reordered.splice(sourceIdx, 1);
+        reordered.splice(targetIdx, 0, moved);
+
+        const slotOrders = pageBlocks.map(b => b.order);
+        const updatedPageBlocksMap = new Map();
+        reordered.forEach((b, idx) => {
+            updatedPageBlocksMap.set(b.id, slotOrders[idx]);
+        });
+
+        const newBlocks = blocks.map(b => {
+            if (updatedPageBlocksMap.has(b.id)) {
+                const newOrder = updatedPageBlocksMap.get(b.id);
+                return { ...b, order: newOrder, component_order: newOrder };
+            }
+            return b;
+        }).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        setBlocks(newBlocks);
+
         try {
             await apiClient.post('/api/curriculum/lesson-blocks/reorder/', {
                 ordering: newBlocks.map((b, i) => ({ id: b.id, order: i }))
@@ -624,6 +797,137 @@ export default function ContentStudio() {
                 </div>
             )}
 
+            {/* ── Top Studio Header Bar ────────────────────────────────────────── */}
+            {!isPreview && (
+                <div className="bg-white border-b border-gray-200 px-4 py-2.5 flex items-center justify-between text-xs shadow-sm z-30">
+                    {/* Left: Navigator toggle, Back, Breadcrumbs */}
+                    <div className="flex items-center gap-3 min-w-0">
+                        <button
+                            onClick={() => setIsNavigatorCollapsed(!isNavigatorCollapsed)}
+                            title={isNavigatorCollapsed ? "Expand Blueprint Navigator" : "Collapse Blueprint Navigator"}
+                            className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition shrink-0"
+                        >
+                            <PanelLeft size={16} className={isNavigatorCollapsed ? "text-gray-400" : "text-custom-blue"} />
+                        </button>
+
+                        <button
+                            onClick={() => navigate('/admin-dashboard/curriculum-builder')}
+                            className="text-gray-500 hover:text-gray-800 flex items-center gap-1 font-medium transition-colors shrink-0"
+                        >
+                            <ArrowLeft size={14} /> Back
+                        </button>
+
+                        <div className="h-4 w-px bg-gray-200 shrink-0" />
+
+                        {/* Breadcrumbs */}
+                        <div className="flex items-center gap-1.5 text-gray-500 font-medium truncate">
+                            {lesson?.grade_name && (
+                                <>
+                                    <span className="truncate">{lesson.grade_name}</span>
+                                    <ChevronRight size={12} className="text-gray-400 shrink-0" />
+                                </>
+                            )}
+                            <button
+                                onClick={() => navigate('/admin-dashboard/curriculum-builder')}
+                                className="hover:text-custom-blue truncate transition-colors text-left"
+                            >
+                                {lesson?.subject_name || 'Curriculum'}
+                            </button>
+                            {lesson?.topic_name && (
+                                <>
+                                    <ChevronRight size={12} className="text-gray-400 shrink-0" />
+                                    <span className="truncate">{lesson.topic_name}</span>
+                                </>
+                            )}
+                            {(lesson?.learning_unit_name || lesson?.title) && (
+                                <>
+                                    <ChevronRight size={12} className="text-gray-400 shrink-0" />
+                                    <span className="font-semibold text-gray-800 truncate">
+                                        {lesson?.learning_unit_name || lesson?.title}
+                                    </span>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Right: Save Action, Regenerate, Preview, Coach Toggle */}
+                    <div className="flex items-center gap-2 shrink-0">
+                        {/* Consolidated Save Button */}
+                        <button
+                            onClick={handleSaveChanges}
+                            disabled={saveStatus === 'saving' || !hasUnsavedChanges}
+                            title={
+                                saveStatus === 'saving'
+                                    ? 'Saving changes...'
+                                    : hasUnsavedChanges
+                                    ? 'Save all changes (Ctrl+S / Cmd+S)'
+                                    : 'All changes saved to cloud'
+                            }
+                            className={`px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                                saveStatus === 'saving'
+                                    ? 'bg-blue-50 border-blue-200 text-blue-700 cursor-wait'
+                                    : hasUnsavedChanges
+                                    ? 'bg-custom-blue border-custom-blue text-white shadow-sm hover:opacity-95 cursor-pointer ring-2 ring-blue-400/20'
+                                    : 'bg-emerald-50 border-emerald-200 text-emerald-700 cursor-default'
+                            }`}
+                        >
+                            {saveStatus === 'saving' ? (
+                                <>
+                                    <Loader2 size={13} className="animate-spin text-blue-600" />
+                                    <span>Saving...</span>
+                                </>
+                            ) : hasUnsavedChanges ? (
+                                <>
+                                    <Save size={13} />
+                                    <span>Save Changes</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Check size={13} className="text-emerald-600" />
+                                    <span>Saved</span>
+                                </>
+                            )}
+                        </button>
+
+                        {/* Regenerate button */}
+                        <button
+                            onClick={() => setShowRegenerateConfirm(true)}
+                            disabled={isThisUnitGenerating}
+                            title={isThisUnitGenerating ? "Generation in progress" : "Regenerate full lesson"}
+                            className="px-2.5 py-1.5 flex items-center gap-1 rounded-lg text-xs font-semibold transition-all bg-orange-50 text-custom-orange hover:bg-orange-100 disabled:opacity-40"
+                        >
+                            {isThisUnitGenerating ? (
+                                <Loader2 size={12} className="animate-spin" />
+                            ) : (
+                                <RotateCcw size={12} />
+                            )}
+                            <span className="hidden sm:inline">{isThisUnitGenerating ? 'Generating...' : 'Regenerate'}</span>
+                        </button>
+
+                        {/* Preview button */}
+                        <button
+                            onClick={() => setIsPreview(!isPreview)}
+                            className={`px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                isPreview
+                                    ? 'bg-custom-blue text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                            <Eye size={13} /> {isPreview ? 'Exit Preview' : 'Preview'}
+                        </button>
+
+                        {/* Toggle Coach Panel */}
+                        <button
+                            onClick={() => setIsCoachCollapsed(!isCoachCollapsed)}
+                            title={isCoachCollapsed ? "Expand Instructional Coach" : "Collapse Instructional Coach"}
+                            className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition"
+                        >
+                            <PanelRight size={16} className={isCoachCollapsed ? "text-gray-400" : "text-custom-blue"} />
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* ── Top Panel: QualityBar (Health Dashboard) ────────────────────────────────── */}
             {!isPreview && (
                 <QualityBar
@@ -639,46 +943,8 @@ export default function ContentStudio() {
             <div className="flex flex-1 overflow-hidden">
                 
                 {/* ── LEFT: Concept Navigator (Blueprint) ────────────────────────────────── */}
-                {!isPreview && (
-                    <div className="w-80 flex-shrink-0 bg-white hidden md:flex flex-col z-10 relative shadow-[4px_0_15px_-5px_rgba(0,0,0,0.05)]">
-                        {/* Back + preview toggle + regenerate */}
-                        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50">
-                            <button
-                                onClick={() => navigate('/admin-dashboard/curriculum-builder')}
-                                className="text-gray-500 hover:text-gray-800 flex items-center gap-1 text-xs font-medium transition-colors"
-                            >
-                                <ArrowLeft size={14} /> Back to Curriculum
-                            </button>
-                            <div className="flex items-center gap-1.5">
-                                <button
-                                    onClick={() => setShowRegenerateConfirm(true)}
-                                    disabled={isThisUnitGenerating}
-                                    title={isThisUnitGenerating ? "Generation in progress" : "Regenerate full lesson"}
-                                    className="px-2.5 py-1.5 flex items-center gap-1 rounded-lg text-xs font-semibold transition-all bg-orange-50 text-custom-orange hover:bg-orange-100 disabled:opacity-40"
-                                >
-                                    {isThisUnitGenerating ? (
-                                        <Loader2 size={12} className="animate-spin" />
-                                    ) : (
-                                        <RotateCcw size={12} />
-                                    )}
-                                    {isThisUnitGenerating ? 'Generating...' : 'Regenerate'}
-                                </button>
-                                <button
-                                    onClick={handleSaveDraft}
-                                    disabled={!lesson}
-                                    title="Save current state as draft"
-                                    className="px-2.5 py-1.5 flex items-center gap-1 rounded-lg text-xs font-semibold transition-all bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-40"
-                                >
-                                    <Save size={12} /> Save Draft
-                                </button>
-                                <button
-                                    onClick={() => setIsPreview(!isPreview)}
-                                    className="px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-xs font-semibold transition-all bg-gray-200 text-gray-600 hover:bg-gray-300"
-                                >
-                                    <Eye size={13} /> Preview
-                                </button>
-                            </div>
-                        </div>
+                {!isPreview && !isNavigatorCollapsed && (
+                    <div className="w-80 flex-shrink-0 bg-white hidden md:flex flex-col z-10 relative shadow-[4px_0_15px_-5px_rgba(0,0,0,0.05)] border-r border-gray-200">
                         <div className="flex-1 overflow-hidden">
                             <ConceptNavigator
                                 concepts={concepts}
@@ -697,44 +963,65 @@ export default function ContentStudio() {
                 <div className="flex-1 flex flex-col overflow-hidden relative z-0 bg-gray-50">
                     {isPreview ? (
                         <div className="flex-1 overflow-y-auto bg-gray-100 flex flex-col relative">
-                            {/* Editor back button overlay */}
-                            <div className="absolute top-4 right-4 z-50">
-                                <button
-                                    onClick={() => setIsPreview(false)}
-                                    className="px-4 py-2 bg-custom-blue text-white rounded-lg text-sm font-bold shadow-lg hover:opacity-90 flex items-center gap-2"
-                                >
-                                    <Edit size={14} /> Exit Preview
-                                </button>
-                            </div>
-                            <LessonViewer lessonData={lessonDataForPreview} paginated={true} />
+                            <LessonViewer 
+                                lessonData={lessonDataForPreview} 
+                                paginated={true} 
+                                isPreviewMode={true}
+                                onExitPreview={() => setIsPreview(false)}
+                            />
                         </div>
                     ) : (
-                            <ConceptComposer
-                                concept={activeConcept}
-                                allAssets={assets}
-                                lessonId={lesson?.id}
-                                lessonTitle={lesson?.title}
-                                onBlockChange={handleBlockChange}
-                                onSave={saveBlock}
-                                onDelete={deleteBlock}
-                                onDuplicate={duplicateBlock}
-                                onAddBlock={addBlock}
-                                onAddBlockWithFile={addBlockWithFile}
-                                onRegenerate={handleRegenerateBlock}
-                                onAssetUpdated={() => {
-                                    fetchAssets(lesson?.id);
-                                    fetchBlocks(lesson?.id);
-                                }}
-                                onMove={handleMoveBlock}
-                                highlightBlockId={targetBlockId}
-                            />
+                        <ConceptComposer
+                            concept={activeConcept}
+                            allAssets={assets}
+                            lessonId={lesson?.id}
+                            lessonTitle={lesson?.title}
+                            onBlockChange={handleBlockChange}
+                            onSave={saveBlock}
+                            onDelete={deleteBlock}
+                            onDuplicate={duplicateBlock}
+                            onAddBlock={addBlock}
+                            onAddBlockWithFile={addBlockWithFile}
+                            onRegenerate={handleRegenerateBlock}
+                            onAssetUpdated={() => {
+                                fetchAssets(lesson?.id);
+                                fetchBlocks(lesson?.id);
+                            }}
+                            onMove={handleMoveBlock}
+                            onReorder={handleReorderBlocks}
+                            onSaveCardTitle={handleSaveCardTitle}
+                            isWideMode={isNavigatorCollapsed || isCoachCollapsed}
+                            highlightBlockId={targetBlockId}
+                        />
                     )}
                 </div>
 
-                {/* ── RIGHT: AI Review Panel ────────────────────────────────── */}
-                {!isPreview && (
-                    <div className="hidden lg:block shrink-0">
-                        <AIReviewPanel lesson={lesson} blocks={blocks} assets={assets} />
+                {/* ── RIGHT: AI Review Panel & Live Card Preview ────────────────────────────── */}
+                {!isPreview && !isCoachCollapsed && (
+                    <div
+                        className="hidden lg:flex shrink-0 relative bg-white border-l border-gray-200"
+                        style={{ width: `${coachWidth}px` }}
+                    >
+                        {/* Drag resize handle on left border */}
+                        <div
+                            onMouseDown={startResizeCoach}
+                            className="absolute -left-1.5 top-0 bottom-0 w-3 cursor-col-resize z-20 group flex items-center justify-center hover:bg-custom-blue/10 active:bg-custom-blue/20 transition-colors"
+                            title="Drag to resize preview & coach panel"
+                        >
+                            <div className="w-1 h-8 rounded-full bg-gray-300 group-hover:bg-custom-blue group-active:bg-custom-blue transition-colors" />
+                        </div>
+
+                        <div className="flex-1 w-full h-full overflow-hidden">
+                            <AIReviewPanel
+                                lesson={lesson}
+                                blocks={blocks}
+                                assets={assets}
+                                concepts={concepts}
+                                activeConcept={activeConcept}
+                                coachWidth={coachWidth}
+                                onToggleWide={() => setCoachWidth(coachWidth > 450 ? 380 : Math.round(window.innerWidth * 0.48))}
+                            />
+                        </div>
                     </div>
                 )}
 
@@ -800,21 +1087,6 @@ function EmptyState({ icon, title, subtitle }) {
     );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Logic: Intelligent Concept Grouping
-// ─────────────────────────────────────────────────────────────────────────────
-export function extractText(content) {
-    if (!content) return '';
-    if (typeof content === 'string') {
-        try {
-            const parsed = JSON.parse(content);
-            return parsed?.text || parsed?.content || parsed?.question || content;
-        } catch {
-            return content;
-        }
-    }
-    return content.text || content.content || content.question || '';
-}
 
 function cleanConceptTitle(raw, fallback) {
     if (!raw) return fallback;
@@ -872,7 +1144,7 @@ function groupBlocksIntoConcepts(blocks = [], assets = []) {
             const firstWithPageTitle = p.blocks.find((b) => b.page_title && b.page_title.trim());
             return firstWithPageTitle ? firstWithPageTitle.page_title.trim() : null;
         }).filter(Boolean);
-        const isRedundantPageTitle = rawPageTitles.length > 0 && new Set(rawPageTitles).size <= 1;
+        const isRedundantPageTitle = rawPageTitles.length > 1 && new Set(rawPageTitles).size <= 1;
 
         pages.forEach((page) => {
             const primaryBlock = page.blocks.find((b) => !MEDIA_TYPES.has((b.block_type || '').toLowerCase())) || page.blocks[0];
@@ -977,8 +1249,22 @@ function groupBlocksIntoConcepts(blocks = [], assets = []) {
         
         concept.repoUsage = concept.assets.filter(a => a.source_type === 'knowledge_repository').length;
         
-        const pendingAssets = concept.assets.filter(a => a.status === 'pending');
-        if (pendingAssets.length > 0) {
+        // Accurate media presence check:
+        // 1. Assets linked to concept that lack any media
+        const pendingAssets = concept.assets.filter(a => !isAssetPresent(a));
+
+        // 2. Visual blocks in concept that lack both an attached asset and inline media
+        const visualBlocksLackingMedia = concept.blocks.filter(b => {
+            const isMedia = SUGGESTED_TYPES.has(b.block_type);
+            if (!isMedia) return false;
+            const hasLinkedAsset = concept.assets.some(a => 
+                (a.blocks?.includes(b.id) || a.blocks?.some?.(x => x === b.id || x?.id === b.id)) && isAssetPresent(a)
+            );
+            if (hasLinkedAsset) return false;
+            return !getBlockMedia(b);
+        });
+
+        if (pendingAssets.length > 0 || visualBlocksLackingMedia.length > 0) {
             concept.status = 'Missing Media';
             concept.statusColor = 'text-amber-600 bg-amber-50';
         } else if (concept.blocks.length === 0) {

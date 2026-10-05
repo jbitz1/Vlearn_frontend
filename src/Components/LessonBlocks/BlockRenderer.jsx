@@ -50,12 +50,14 @@ export const BlockRenderer = ({ block, onInteract, onReportVisual }) => {
     case 'concept_explanation':  
     case 'hook':
     case 'story':                return <ConceptExplanationBlock  block={block} />;
+    case 'definition':
     case 'definition_card':      
     case 'definitions':
     case 'key_terms':
     case 'vocabulary':           return <DefinitionCardBlock      block={block} />;
     case 'worked_example':       return <WorkedExampleBlock       block={block} />;
     case 'analogy':              return <AnalogyBlock             block={block} />;
+    case 'misconception':
     case 'common_misconception': return <CommonMisconceptionBlock block={block} />;
     case 'common_mistake':       return <CommonMistakeBlock       block={block} />;
     case 'callout':              return <CalloutBlock             block={block} />;
@@ -74,6 +76,7 @@ export const BlockRenderer = ({ block, onInteract, onReportVisual }) => {
     case 'before_you_continue':  return <BeforeYouContinueBlock   block={block} />;
     case 'summary':              return <SummaryBlock             block={block} />;
     case 'transition':           return <TransitionBlock          block={block} />;
+    case 'table':
     case 'comparison_table':     return <ComparisonTableBlock     block={block} />;
     case 'step_process':         return <StepProcessBlock         block={block} />;
     case 'assessment':

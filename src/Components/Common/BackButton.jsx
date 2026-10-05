@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router';
 import { ChevronLeft } from 'lucide-react';
 
-export default function BackButton({ to, fallback = '/', label = 'Back', className = '' }) {
+export default function BackButton({ to, fallback = '/', fallbackUrl, label = 'Back', className = '' }) {
   const navigate = useNavigate();
 
   const handleClick = () => {
@@ -11,7 +11,7 @@ export default function BackButton({ to, fallback = '/', label = 'Back', classNa
     } else if (window.history.length > 1) {
       navigate(-1);
     } else {
-      navigate(fallback);
+      navigate(fallbackUrl || fallback || '/');
     }
   };
 
