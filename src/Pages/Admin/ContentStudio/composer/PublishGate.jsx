@@ -1,8 +1,9 @@
 import React from 'react';
 import { CheckCircle, AlertTriangle, XCircle, X, Send } from 'lucide-react';
 
-export default function PublishGate({ blocks, assets, concepts, qualityReport, onConfirm, onCancel }) {
-    const checks = computeChecks(blocks, assets, concepts, qualityReport);
+export default function PublishGate({ blocks = [], assets = [], concepts = [], qualityReport, onConfirm, onCancel, lesson }) {
+    const isRevisionQuiz = lesson?.immutable_metadata?.lesson_type === 'revision_quiz';
+    const checks = computeChecks(blocks, assets, concepts, qualityReport, isRevisionQuiz);
     const nonOkCount = checks.filter((c) => c.severity !== 'ok').length;
     const score = qualityReport?.quality?.score;
 
@@ -91,7 +92,68 @@ const SEVERITY_META = {
     error:   { icon: XCircle,       color: 'text-red-600',     bg: 'bg-red-50' },
 };
 
-function computeChecks(blocks, assets, concepts, qualityReport) {
+function computeChecks(blocks, assets, concepts, qualityReport, isRevisionQuiz = false) {
+    if (isRevisionQuiz) {
+        const checks = [];
+        const questionBlocks = blocks.filter((b) =>
+            ['knowledge_check', 'revision_questions'].includes(b.block_type)
+        );
+
+        if (questionBlocks.length === 0) {
+            checks.push({
+                severity: 'error',
+                label: 'No quiz questions defined',
+                detail: 'A revision quiz must contain at least one question block.',
+            });
+            return checks;
+        } else {
+            checks.push({
+                severity: 'ok',
+                label: `${questionBlocks.length} revision question${questionBlocks.length > 1 ? 's' : ''} defined`,
+            });
+        }
+
+        const incomplete = questionBlocks.filter((b) => {
+            const content = b.content || {};
+            const qPrompt = content.question || b.title || '';
+            const ans = content.correct_answer || content.answer || content.correct;
+            return !qPrompt.trim() || !ans;
+        });
+
+        if (incomplete.length > 0) {
+            checks.push({
+                severity: 'warning',
+                label: `${incomplete.length} question${incomplete.length > 1 ? 's' : ''} missing prompt or solution`,
+                detail: 'Ensure every question has a clear prompt and marked correct answer.',
+            });
+        } else {
+            checks.push({
+                severity: 'ok',
+                label: 'All questions have prompts and answer keys',
+            });
+        }
+
+        const missingExp = questionBlocks.filter((b) => {
+            const content = b.content || {};
+            return !content.explanation || !content.explanation.trim();
+        });
+
+        if (missingExp.length > 0) {
+            checks.push({
+                severity: 'warning',
+                label: `${missingExp.length} question${missingExp.length > 1 ? 's' : ''} lack explanations`,
+                detail: 'Adding pedagogical explanations helps students understand why an answer is right or wrong.',
+            });
+        } else {
+            checks.push({
+                severity: 'ok',
+                label: 'All questions include pedagogical explanations',
+            });
+        }
+
+        return checks;
+    }
+
     if (qualityReport && qualityReport.validation && qualityReport.validation.checks) {
         return qualityReport.validation.checks;
     }

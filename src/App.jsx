@@ -52,6 +52,7 @@ import SubjectWorkspace from "./Pages/User/SubjectWorkspace";
 import TopicWorkspace from "./Pages/User/TopicWorkspace";
 import NotFound from "./Pages/NotFound";
 import CurriculumBuilder from "./Pages/Admin/CurriculumBuilder";
+import RevisionQuizManager from "./Pages/Admin/RevisionQuizManager";
 import IngestionSandbox from "./Pages/Admin/IngestionSandbox";
 import ReportedIssues from "./Pages/Admin/ReportedIssues";
 import RequireRole from "./component-library/account-management/authentication/RequireRole";
@@ -270,6 +271,10 @@ function App() {
             {
                 path: "curriculum-builder",
                 element: <CurriculumBuilder />
+            },
+            {
+                path: "revision-quizzes",
+                element: <RevisionQuizManager />
             },
             {
                 path: "ingestion-sandbox",

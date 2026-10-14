@@ -8,9 +8,11 @@ import { ContentNormalizer } from '../utils/ContentNormalizer';
 import {
     ChevronLeft, ChevronRight, Clock,
     CheckCircle, Circle, LayoutList, Flag,
-    Edit, ArrowLeft
+    Edit, ArrowLeft, Send, ShieldCheck,
+    CheckCircle2, XCircle, AlertTriangle, Loader2
 } from 'lucide-react';
 import ReportVisualizationModal from '../Components/Common/ReportVisualizationModal';
+import { ExamScriptReport } from '../Components/LessonBlocks/ExamScriptReport';
 import { useLessonProgress } from '../Hooks/useLessonProgress';
 import { LessonTimeline, LessonCompletionCard } from '../Components/LessonBlocks/LessonProgressComponents';
 import { PresentationEngine } from '../services/presentation/PresentationEngine';
@@ -206,7 +208,10 @@ export const LessonViewer = ({ lessonData, paginated = false, onExitPreview, isP
     const searchParams = new URLSearchParams(location.search);
     const isPreview = searchParams.get('preview') === 'true' || isPreviewMode || Boolean(onExitPreview);
 
-    if (paginated && lesson.blocks && lesson.blocks.length > 0) {
+    const isRevisionQuiz = (lesson?.immutable_metadata?.lesson_type === 'revision_quiz') ||
+        Boolean(lesson?.blocks?.some(b => b.block_type === 'overview' && (b.content?.quiz_mode || b.metadata?.quiz_mode)));
+
+    if ((paginated || isRevisionQuiz) && lesson.blocks && lesson.blocks.length > 0) {
         return (
             <PaginatedViewer 
                 lesson={lesson} 
@@ -296,7 +301,86 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId, onExitPreview }) 
     const isAdminView = fromParam === 'admin' || location.pathname.startsWith('/admin') || Boolean(onExitPreview);
     const isTeacherView = fromParam === 'teacher' || (isTeacherPath && fromParam !== 'student' && !isAdminView);
 
+    // ── Exam Paper & Framework Detection ────────────────────────────────────
+    const isRevisionQuiz = (lesson?.immutable_metadata?.lesson_type === 'revision_quiz') ||
+        Boolean(lesson?.blocks?.some(b => b.block_type === 'overview' && (b.content?.quiz_mode || b.metadata?.quiz_mode)));
+    const quizOverviewBlock = lesson?.blocks?.find(b => b.block_type === 'overview' && (b.content?.quiz_mode || b.metadata?.is_quiz_intro));
+    const quizMode = lesson?.immutable_metadata?.quiz_mode || quizOverviewBlock?.content?.quiz_mode || quizOverviewBlock?.metadata?.quiz_mode || 'practice';
+    const isFullPaper = isRevisionQuiz && quizMode === 'full_paper';
+    const assessmentFramework = lesson?.immutable_metadata?.assessment_framework || quizOverviewBlock?.content?.assessment_framework || 'kcse';
+    const isCBC = assessmentFramework === 'cbc';
+
+    const questionBlocks = (lesson?.blocks || []).filter(b => 
+        b.block_type === 'knowledge_check' || 
+        b.block_type === 'revision_questions' ||
+        b.block_type === 'kcse_structured' ||
+        b.block_type === 'cbc_scenario_structured'
+    );
+    const totalQuestions = questionBlocks.length;
+    const timeLimitMins = quizOverviewBlock?.content?.time_limit_mins || Math.max(5, (totalQuestions || 5) * 2);
+
+    // ── Exam Answers & Submission State ───────────────────────────────────────
+    const examStorageKey = `vlearn_exam_paper_${lesson?.id}`;
+    const [paperAnswers, setPaperAnswers] = useState(() => {
+        if (!isFullPaper) return {};
+        try {
+            const saved = localStorage.getItem(examStorageKey);
+            return saved ? JSON.parse(saved) : {};
+        } catch {
+            return {};
+        }
+    });
+
+    useEffect(() => {
+        if (isFullPaper && lesson?.id && Object.keys(paperAnswers).length > 0 && !isExamSubmitted) {
+            try {
+                localStorage.setItem(examStorageKey, JSON.stringify(paperAnswers));
+            } catch (e) {
+                console.error('Failed to save exam paper draft', e);
+            }
+        }
+    }, [paperAnswers, isFullPaper, lesson?.id, examStorageKey, isExamSubmitted]);
+
+    const [isExamSubmitted, setIsExamSubmitted] = useState(false);
+    const [isSubmittingExam, setIsSubmittingExam] = useState(false);
+    const [examResults, setExamResults] = useState(null);
+    const [submitError, setSubmitError] = useState(null);
+    const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+
+    // ── Exam Countdown Timer ──────────────────────────────────────────────────
+    const timerStorageKey = `vlearn_exam_timer_${lesson?.id}`;
+    const [timeRemaining, setTimeRemaining] = useState(() => {
+        if (!isFullPaper) return 0;
+        const totalSecs = timeLimitMins * 60;
+        try {
+            const savedStart = sessionStorage.getItem(timerStorageKey);
+            if (savedStart) {
+                const elapsed = Math.floor((Date.now() - parseInt(savedStart, 10)) / 1000);
+                return Math.max(0, totalSecs - elapsed);
+            }
+        } catch {}
+        return totalSecs;
+    });
+    const [timerActive, setTimerActive] = useState(false);
+
+    const answeredCount = questionBlocks.filter((qb) => {
+        const val = paperAnswers[qb.id];
+        return val !== undefined && val !== null && String(val).trim().length > 0;
+    }).length;
+    const unansweredCount = totalQuestions - answeredCount;
+
+    const formatTimeRemaining = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
     const handleExitLesson = () => {
+        if (isFullPaper && !isExamSubmitted && answeredCount > 0) {
+            if (!window.confirm("You have an active examination in progress. Your draft answers will be preserved in this browser. Do you wish to exit now?")) {
+                return;
+            }
+        }
         if (onExitPreview) {
             onExitPreview();
             return;
@@ -351,6 +435,73 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId, onExitPreview }) 
     const [topicData, setTopicData] = useState(null);
     const [reportingVisual, setReportingVisual] = useState(null);
 
+    // Start exam timer once student moves beyond overview (pageIndex > 0)
+    useEffect(() => {
+        if (isFullPaper && pageIndex > 0 && !isExamSubmitted) {
+            setTimerActive(true);
+            try {
+                if (!sessionStorage.getItem(timerStorageKey)) {
+                    sessionStorage.setItem(timerStorageKey, Date.now().toString());
+                }
+            } catch {}
+        }
+    }, [isFullPaper, pageIndex, isExamSubmitted, timerStorageKey]);
+
+    useEffect(() => {
+        if (!timerActive || isExamSubmitted || timeRemaining <= 0) return;
+        const interval = setInterval(() => {
+            setTimeRemaining((prev) => {
+                if (prev <= 1) {
+                    clearInterval(interval);
+                    setShowSubmitConfirm(true);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [timerActive, isExamSubmitted, timeRemaining]);
+
+    const handleSubmitExamPaper = async () => {
+        if (isSubmittingExam) return;
+        setIsSubmittingExam(true);
+        setSubmitError(null);
+        try {
+            const res = await apiClient.post('/api/curriculum/revision-quizzes/grade_paper/', {
+                lesson_id: lesson.id,
+                responses: paperAnswers,
+            });
+            setExamResults(res.data);
+            setIsExamSubmitted(true);
+            setShowSubmitConfirm(false);
+            try {
+                localStorage.removeItem(examStorageKey);
+                sessionStorage.removeItem(timerStorageKey);
+            } catch {}
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (err) {
+            console.error('Error batch grading full paper:', err);
+            const msg = err?.response?.data?.error || 'Failed to submit examination paper for grading. Please try again.';
+            setSubmitError(msg);
+        } finally {
+            setIsSubmittingExam(false);
+        }
+    };
+
+    const handleRetakeExam = () => {
+        try {
+            localStorage.removeItem(examStorageKey);
+            sessionStorage.removeItem(timerStorageKey);
+        } catch {}
+        setPaperAnswers({});
+        setIsExamSubmitted(false);
+        setExamResults(null);
+        setSubmitError(null);
+        setTimeRemaining(timeLimitMins * 60);
+        setTimerActive(false);
+        navigateTo(0);
+    };
+
     useEffect(() => {
         if (effectiveTopicId && effectiveTopicId !== 'undefined') {
             apiClient.get(`/api/curriculum/topics/${effectiveTopicId}/`).then(res => {
@@ -404,6 +555,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId, onExitPreview }) 
         b.block_type === 'knowledge_check' || b.block_type === 'revision_questions'
     ) || [];
     const isGated = knowledgeCheckBlocks.some(b => !interactedBlocks.has(b.id));
+    const effectiveIsGated = (isFullPaper && !isExamSubmitted) ? false : isGated;
 
     const handleInteract = useCallback((blockId) => {
         setInteractedBlocks((prev) => new Set([...prev, blockId]));
@@ -419,10 +571,14 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId, onExitPreview }) 
             }
 
             if (e.key === 'ArrowRight' || e.key === 'Right') {
-                if (isGated) return; // Guardrail: require answering knowledge checks before advancing
+                if (effectiveIsGated) return;
                 e.preventDefault();
                 if (pageIndex === totalPages - 1) {
-                    handleComplete();
+                    if (isFullPaper && !isExamSubmitted) {
+                        setShowSubmitConfirm(true);
+                    } else {
+                        handleComplete();
+                    }
                 } else {
                     goNext();
                 }
@@ -436,7 +592,31 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId, onExitPreview }) 
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [pageIndex, totalPages, isGated, goNext, goPrev, handleComplete]);
+    }, [pageIndex, totalPages, effectiveIsGated, isFullPaper, isExamSubmitted, goNext, goPrev, handleComplete]);
+
+    // ── Custom Event Navigation (e.g. Start Quiz CTA) ─────────────────────────
+    useEffect(() => {
+        const handleNextEvent = () => {
+            if (pageIndex < totalPages - 1) {
+                goNext();
+            }
+        };
+        window.addEventListener('vlearn:next_page', handleNextEvent);
+        return () => window.removeEventListener('vlearn:next_page', handleNextEvent);
+    }, [pageIndex, totalPages, goNext]);
+
+    if (isExamSubmitted && examResults) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex flex-col">
+                <ExamScriptReport 
+                    examResults={examResults}
+                    lesson={lesson}
+                    onRetake={handleRetakeExam}
+                    onExit={handleExitLesson}
+                />
+            </div>
+        );
+    }
 
     if (isCompleted) {
         return (
@@ -536,16 +716,52 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId, onExitPreview }) 
                             </div>
                         ) : null}
                         <h1 className="text-xs sm:text-sm font-bold text-gray-800 truncate">{lesson.title}</h1>
-                        <div className="flex items-center gap-2.5 mt-0.5">
-                            <span className="text-[11px] sm:text-xs text-custom-blue font-bold">
-                                {completionPercentage}% complete
-                            </span>
-                            <span className="text-[11px] sm:text-xs text-gray-400 flex items-center gap-1">
-                                <Clock size={11} />
-                                ~{Math.max(0, totalReadingTime - Math.round(totalReadingTime * completionPercentage / 100))} min left
-                            </span>
-                        </div>
+                        {isFullPaper && !isExamSubmitted ? (
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                                    isCBC ? 'bg-cyan-50 text-cyan-800 border-cyan-200' : 'bg-blue-50 text-custom-blue border-blue-200'
+                                }`}>
+                                    {isCBC ? 'CBC Assessment' : 'KNEC KCSE Paper'}
+                                </span>
+                                <span className={`text-[10px] sm:text-[11px] font-bold flex items-center gap-1 px-2 py-0.5 rounded-full border ${
+                                    timeRemaining <= 120
+                                        ? 'bg-rose-50 text-rose-700 border-rose-300 animate-pulse'
+                                        : timeRemaining <= 300
+                                        ? 'bg-amber-50 text-amber-700 border-amber-300'
+                                        : 'bg-gray-100 text-gray-700 border-gray-200'
+                                }`}>
+                                    <Clock size={11} />
+                                    Time Left: {formatTimeRemaining(timeRemaining)}
+                                </span>
+                                <span className="text-[10px] sm:text-[11px] text-gray-500 font-semibold hidden md:inline">
+                                    {answeredCount} / {totalQuestions} Answered
+                                </span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2.5 mt-0.5">
+                                <span className="text-[11px] sm:text-xs text-custom-blue font-bold">
+                                    {completionPercentage}% complete
+                                </span>
+                                <span className="text-[11px] sm:text-xs text-gray-400 flex items-center gap-1">
+                                    <Clock size={11} />
+                                    ~{Math.max(0, totalReadingTime - Math.round(totalReadingTime * completionPercentage / 100))} min left
+                                </span>
+                            </div>
+                        )}
                     </div>
+
+                    {/* Full Exam Submit Button in Top Bar */}
+                    {isFullPaper && !isExamSubmitted && (
+                        <button
+                            type="button"
+                            onClick={() => setShowSubmitConfirm(true)}
+                            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer shrink-0"
+                            title="Submit Exam Paper"
+                        >
+                            <Send size={13} />
+                            <span>Submit Paper</span>
+                        </button>
+                    )}
 
                     {/* Report Visual / Lesson Issue */}
                     <button
@@ -577,6 +793,58 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId, onExitPreview }) 
                     </button>
                 </div>
             </div>
+
+            {/* ── Question Palette Ribbon for Full Paper Exam ──────────────── */}
+            {isFullPaper && !isExamSubmitted && pageIndex > 0 && (
+                <div className="bg-slate-50/95 backdrop-blur border-b border-gray-200/80 px-4 sm:px-8 py-2 sticky top-[57px] sm:top-[65px] z-10 shadow-2xs">
+                    <div className="max-w-[1536px] mx-auto flex items-center justify-between gap-3 flex-wrap">
+                        <div className="flex items-center gap-1.5 overflow-x-auto py-1 max-w-full">
+                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0 mr-1.5 font-sans">
+                                Questions:
+                            </span>
+                            {questionBlocks.map((qb, qIdx) => {
+                                const targetPageIdx = pages.findIndex((p) => p.blocks?.some((b) => b.id === qb.id));
+                                const isCurrent = targetPageIdx === pageIndex;
+                                const hasAnswer = paperAnswers[qb.id] !== undefined && paperAnswers[qb.id] !== null && String(paperAnswers[qb.id]).trim().length > 0;
+
+                                let pillStyle = "bg-white border-gray-200 text-gray-700 hover:bg-gray-100";
+                                if (isCurrent) {
+                                    pillStyle = "bg-custom-blue text-white border-custom-blue ring-2 ring-blue-200 font-bold shadow-xs";
+                                } else if (hasAnswer) {
+                                    pillStyle = "bg-emerald-50 text-emerald-800 border-emerald-300 font-bold";
+                                }
+
+                                return (
+                                    <button
+                                        key={qb.id || qIdx}
+                                        type="button"
+                                        onClick={() => targetPageIdx >= 0 && navigateTo(targetPageIdx)}
+                                        className={`min-w-[34px] h-7 px-2 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer shrink-0 font-sans ${pillStyle}`}
+                                        title={`Question ${qIdx + 1}${hasAnswer ? ' (Answered)' : ' (Not Answered)'}`}
+                                    >
+                                        <span>Q{qIdx + 1}</span>
+                                        {hasAnswer && !isCurrent && <CheckCircle2 size={11} className="text-emerald-600" />}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <div className="flex items-center gap-2.5 text-xs font-semibold text-gray-600 shrink-0">
+                            <span className="bg-white border border-gray-200 px-2.5 py-1 rounded-full text-[11px] font-sans">
+                                <span className="font-bold text-custom-blue">{answeredCount}</span> of {totalQuestions} answered
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setShowSubmitConfirm(true)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition shadow-xs cursor-pointer font-sans"
+                            >
+                                <Send size={12} />
+                                <span>Submit Exam</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── Table of Contents overlay ─────────────────────────────── */}
             {showContents && (
@@ -660,10 +928,10 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId, onExitPreview }) 
                         <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-8 lg:px-12 py-6 sm:py-10">
                             <div className="mb-6 sm:mb-8 border-b border-gray-200/60 pb-4 sm:pb-6">
                                 <div className="flex items-center gap-2 mb-2.5 flex-wrap">
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-custom-blue bg-blue-50 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full uppercase tracking-widest border border-blue-200/60">
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-custom-blue bg-blue-50 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full uppercase tracking-widest border border-blue-200/60 font-sans">
                                         Part {pageIndex + 1} of {totalPages}
                                     </span>
-                                    <span className="text-xs text-gray-400 flex items-center gap-1.5 font-medium">
+                                    <span className="text-xs text-gray-400 flex items-center gap-1.5 font-medium font-sans">
                                         <Clock size={12} /> ~{readingTime} min read
                                     </span>
                                 </div>
@@ -682,6 +950,12 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId, onExitPreview }) 
                                             block={block} 
                                             onInteract={handleInteract}
                                             onReportVisual={setReportingVisual}
+                                            examMode={isFullPaper && !isExamSubmitted}
+                                            studentAnswer={paperAnswers[block.id]}
+                                            onAnswerChange={(bId, val) => {
+                                                setPaperAnswers(prev => ({ ...prev, [bId]: val }));
+                                                handleInteract(bId);
+                                            }}
                                         />
                                     )}
                                 />
@@ -706,7 +980,7 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId, onExitPreview }) 
                     <button
                         onClick={goPrev}
                         disabled={pageIndex === 0}
-                        className={`flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2.5 min-h-[44px] rounded-xl font-semibold text-sm transition-all cursor-pointer ${
+                        className={`flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2.5 min-h-[44px] rounded-xl font-semibold text-sm transition-all cursor-pointer font-sans ${
                             pageIndex === 0
                                 ? 'text-gray-300 cursor-not-allowed'
                                 : 'text-gray-600 hover:bg-gray-100'
@@ -715,30 +989,122 @@ function PaginatedViewer({ lesson, topicId, isPreview, userId, onExitPreview }) 
                         <ChevronLeft size={18} /> Previous
                     </button>
 
-                    {/* Completion message on last page */}
+                    {/* Completion / Submission action */}
                     {pageIndex === totalPages - 1 ? (
                         <button
-                            onClick={handleComplete}
-                            disabled={isGated}
-                            className={`flex items-center justify-center gap-1.5 px-5 sm:px-6 py-2.5 min-h-[44px] rounded-xl font-bold text-sm transition-all shadow-sm cursor-pointer ${
-                                isGated ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                            onClick={isFullPaper && !isExamSubmitted ? () => setShowSubmitConfirm(true) : handleComplete}
+                            disabled={effectiveIsGated}
+                            className={`flex items-center justify-center gap-1.5 px-5 sm:px-6 py-2.5 min-h-[44px] rounded-xl font-bold text-sm transition-all shadow-sm cursor-pointer font-sans ${
+                                effectiveIsGated ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700'
                             }`}
                         >
-                            <CheckCircle size={16} /> Complete Lesson
+                            {isFullPaper && !isExamSubmitted ? (
+                                <>
+                                    <Send size={16} /> Submit Exam Paper
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle size={16} /> Complete Lesson
+                                </>
+                            )}
                         </button>
                     ) : (
                         <button
                             onClick={goNext}
-                            disabled={isGated}
-                            className={`flex items-center justify-center gap-1.5 px-5 sm:px-6 py-2.5 min-h-[44px] rounded-xl font-bold text-sm transition-all shadow-sm cursor-pointer ${
-                                isGated ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-custom-blue text-white hover:bg-blue-700'
+                            disabled={effectiveIsGated}
+                            className={`flex items-center justify-center gap-1.5 px-5 sm:px-6 py-2.5 min-h-[44px] rounded-xl font-bold text-sm transition-all shadow-sm cursor-pointer font-sans ${
+                                effectiveIsGated ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-custom-blue text-white hover:bg-blue-700'
                             }`}
                         >
-                            Continue <ChevronRight size={18} />
+                            {isFullPaper && !isExamSubmitted ? 'Next Question' : 'Continue'} <ChevronRight size={18} />
                         </button>
                     )}
                 </div>
             </div>
+
+            {/* ── Full Exam Paper Submit Confirmation Modal ──────────────── */}
+            {showSubmitConfirm && (
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 sm:p-8 space-y-6 animate-scale-in">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-custom-blue flex items-center justify-center shrink-0 border border-blue-100">
+                                <ShieldCheck className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900 font-sans">
+                                    Submit Examination Paper?
+                                </h3>
+                                <p className="text-xs text-gray-500 font-sans">
+                                    {isCBC ? 'CBC Junior / Senior Secondary Assessment' : 'KNEC KCSE Examination Paper'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Answer completion summary */}
+                        <div className="grid grid-cols-2 gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-200/80 font-sans">
+                            <div>
+                                <p className="text-xs text-gray-500 font-semibold uppercase">Questions Answered</p>
+                                <p className="text-2xl font-black text-emerald-600 mt-0.5">{answeredCount} of {totalQuestions}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 font-semibold uppercase">Unanswered</p>
+                                <p className={`text-2xl font-black mt-0.5 ${unansweredCount > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+                                    {unansweredCount}
+                                </p>
+                            </div>
+                        </div>
+
+                        {unansweredCount > 0 && (
+                            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2.5 text-xs text-amber-800 font-sans">
+                                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                <span>
+                                    You have <span className="font-bold">{unansweredCount} unanswered questions</span>. Any unattempted questions will receive 0 marks from the examiner.
+                                </span>
+                            </div>
+                        )}
+
+                        {submitError && (
+                            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-2.5 text-xs text-rose-800 font-sans">
+                                <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                                <span>{submitError}</span>
+                            </div>
+                        )}
+
+                        <p className="text-xs text-gray-600 leading-relaxed font-sans">
+                            Once submitted, your responses will be evaluated strictly by the AI Chief Examiner according to official Kenya national examination rubrics.
+                        </p>
+
+                        <div className="flex items-center justify-end gap-3 pt-2 font-sans">
+                            <button
+                                type="button"
+                                disabled={isSubmittingExam}
+                                onClick={() => setShowSubmitConfirm(false)}
+                                className="px-5 py-2.5 text-xs sm:text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition cursor-pointer"
+                            >
+                                Back to Paper
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isSubmittingExam}
+                                onClick={handleSubmitExamPaper}
+                                className="px-6 py-2.5 text-xs sm:text-sm font-bold text-white bg-custom-blue hover:bg-blue-700 rounded-xl transition flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
+                            >
+                                {isSubmittingExam ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <span>Grading Script...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Send className="w-4 h-4" />
+                                        <span>Confirm & Submit</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Report Visualization Modal */}
             <ReportVisualizationModal

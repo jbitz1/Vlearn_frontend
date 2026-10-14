@@ -643,9 +643,9 @@ export function WorkedExampleEditor({ block, onChange, onSave }) {
 // ──────────────────────────────────────────────────────────
 export function KnowledgeCheckEditor({ block, onChange, onSave }) {
     const content = parseContent(block.content);
-    const checkType = content.check_type || (['multiple_choice', 'true_false', 'fill_in_the_blank', 'short_answer'].includes(block.block_type) ? block.block_type : 'short_answer');
+    const checkType = content.check_type || (['multiple_choice', 'true_false', 'fill_in_the_blank', 'short_answer', 'kcse_structured'].includes(block.block_type) ? block.block_type : 'short_answer');
     const question = content.question || content.text || '';
-    const answer = content.answer || content.expected_answer || '';
+    const answer = content.answer || content.expected_answer || content.correct_answer || '';
     const hint = content.hint || '';
     const options = content.options || ['', '', '', ''];
 
@@ -684,6 +684,7 @@ export function KnowledgeCheckEditor({ block, onChange, onSave }) {
                     <option value="multiple_choice">Multiple Choice</option>
                     <option value="true_false">True / False</option>
                     <option value="fill_in_the_blank">Fill in the Blank</option>
+                    <option value="kcse_structured">KCSE Theory & Structured (AI Graded)</option>
                 </select>
             </div>
 
@@ -703,6 +704,57 @@ export function KnowledgeCheckEditor({ block, onChange, onSave }) {
                     </p>
                 )}
             </div>
+
+            {checkType === 'kcse_structured' && (
+                <div className="space-y-3 p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Max Marks</label>
+                            <input
+                                type="number"
+                                min={1}
+                                max={10}
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-violet-400 bg-white"
+                                value={content.max_marks || 2}
+                                onChange={(e) => onChange({ ...block, content: { ...content, max_marks: parseInt(e.target.value, 10) || 1 } })}
+                                onBlur={() => update({ max_marks: content.max_marks || 2 })}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Subtopic to Review</label>
+                            <input
+                                type="text"
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-violet-400 bg-white"
+                                value={content.subtopic_to_review || ''}
+                                onChange={(e) => onChange({ ...block, content: { ...content, subtopic_to_review: e.target.value } })}
+                                onBlur={() => update({ subtopic_to_review: content.subtopic_to_review })}
+                                placeholder="e.g. Types of Radioactivity"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Marking Scheme / Scoring Criteria</label>
+                        <textarea
+                            rows={2}
+                            className="w-full border border-gray-200 rounded-lg p-2.5 text-xs text-gray-700 outline-none focus:border-violet-400 bg-white resize-none"
+                            value={content.marking_scheme || ''}
+                            onChange={(e) => onChange({ ...block, content: { ...content, marking_scheme: e.target.value } })}
+                            onBlur={() => update({ marking_scheme: content.marking_scheme })}
+                            placeholder="e.g. 1 mark for stating alpha decay decreases mass by 4; 1 mark for atomic number deduction."
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">KNEC Model Answer</label>
+                        <MarkdownEditor
+                            value={typeof answer === 'string' ? answer : (content.correct_answer || '')}
+                            onChange={(val) => onChange({ ...block, content: { ...content, answer: val, correct_answer: val } })}
+                            onBlur={() => update({ answer: content.answer, correct_answer: content.correct_answer })}
+                            placeholder="Complete model answer to award full marks..."
+                            minHeight={80}
+                        />
+                    </div>
+                </div>
+            )}
 
             {checkType === 'fill_in_the_blank' && (
                 <div className="space-y-3 p-4 bg-violet-50/50 border border-violet-100 rounded-xl">
@@ -757,8 +809,8 @@ export function KnowledgeCheckEditor({ block, onChange, onSave }) {
                     <label className="text-xs font-semibold text-gray-600">Correct Answer:</label>
                     <select
                         className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-violet-400 bg-white"
-                        value={answer === true ? 'true' : answer === false ? 'false' : 'true'}
-                        onChange={(e) => update({ answer: e.target.value === 'true' })}
+                        value={answer === true || answer === 'True' || answer === 'true' ? 'true' : 'false'}
+                        onChange={(e) => update({ answer: e.target.value === 'true' ? 'True' : 'False' })}
                     >
                         <option value="true">True</option>
                         <option value="false">False</option>
@@ -779,7 +831,7 @@ export function KnowledgeCheckEditor({ block, onChange, onSave }) {
                 </div>
             )}
 
-            {checkType !== 'short_answer' && (
+            {checkType !== 'short_answer' && checkType !== 'kcse_structured' && (
                 <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5">Explanation (Shown after answering)</label>
                     <MarkdownEditor
@@ -803,6 +855,20 @@ export function KnowledgeCheckEditor({ block, onChange, onSave }) {
                     placeholder="A hint to help students who are stuck..."
                 />
             </div>
+
+            {checkType !== 'kcse_structured' && (
+                <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Recommended Subtopic to Review (optional)</label>
+                    <input
+                        type="text"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-violet-400"
+                        value={content.subtopic_to_review || ''}
+                        onChange={(e) => onChange({ ...block, content: { ...content, subtopic_to_review: e.target.value } })}
+                        onBlur={() => update({ subtopic_to_review: content.subtopic_to_review })}
+                        placeholder="Specific subtopic students should revisit if they get this wrong..."
+                    />
+                </div>
+            )}
         </div>
     );
 }

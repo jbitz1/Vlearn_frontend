@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { ChevronLeft, BookOpen, Clock, Play, CheckCircle2, RotateCcw, Cpu, Video, X } from 'lucide-react';
+import { ChevronLeft, BookOpen, Clock, Play, CheckCircle2, RotateCcw, Cpu, Video, X, CheckSquare } from 'lucide-react';
 import studentCurriculumService from '../../services/studentCurriculumService';
 import UserContext from '../../Context/UserContext';
 import ProgressCircle from '../../Components/Common/ProgressCircle';
@@ -15,6 +15,7 @@ export const TopicWorkspace = () => {
   const [lessons, setLessons] = useState([]);
   const [simulations, setSimulations] = useState([]);
   const [experiments, setExperiments] = useState([]);
+  const [revisionQuizzes, setRevisionQuizzes] = useState([]);
   const [selectedSimulation, setSelectedSimulation] = useState(null);
   const [selectedExperiment, setSelectedExperiment] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,15 +40,17 @@ export const TopicWorkspace = () => {
 
       const topicName = fetchedTopic?.name || '';
 
-      const [fetchedLessons, fetchedSims, fetchedExps] = await Promise.all([
+      const [fetchedLessons, fetchedSims, fetchedExps, fetchedRevisionQuizzes] = await Promise.all([
         studentCurriculumService.getLessonsForTopic(topicId),
         studentCurriculumService.getSimulations(subjectName, topicName),
-        studentCurriculumService.getExperiments(subjectName, topicName)
+        studentCurriculumService.getExperiments(subjectName, topicName),
+        studentCurriculumService.getRevisionQuizzes({ topicId })
       ]);
 
       setLessons(fetchedLessons);
       setSimulations(fetchedSims);
       setExperiments(fetchedExps);
+      setRevisionQuizzes(fetchedRevisionQuizzes);
 
       // Pass the actual total lesson count so progress % is correct (e.g. 1/5 = 20%, not 100%)
       const localProgress = studentCurriculumService.getTopicProgress(topicId, user?.id, fetchedLessons.length);
@@ -205,6 +208,63 @@ export const TopicWorkspace = () => {
           </div>
         )}
       </div>
+      {/* Topic-Specific Revision Quizzes Section */}
+      {revisionQuizzes.length > 0 && (
+        <div className="space-y-3 sm:space-y-4 pt-2 sm:pt-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                <CheckSquare className="w-5 h-5" />
+              </div>
+              <h2 className="text-lg sm:text-xl font-extrabold text-gray-900">Revision Quizzes ({revisionQuizzes.length})</h2>
+            </div>
+            <span className="text-[10px] sm:text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
+              Practice Assessments
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {revisionQuizzes.map((quiz) => {
+              const diff = (quiz.difficulty || 'intermediate').toLowerCase();
+              const diffClass = diff === 'beginner'
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : diff === 'advanced'
+                ? 'bg-purple-50 text-purple-700 border-purple-200'
+                : 'bg-blue-50 text-custom-blue border-blue-200';
+
+              return (
+                <div
+                  key={quiz.id}
+                  className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs sm:shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`text-[10px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border ${diffClass} uppercase`}>
+                        {diff}
+                      </span>
+                      <span className="text-[11px] sm:text-xs font-semibold text-gray-400">
+                        {quiz.question_count || 5} Questions
+                      </span>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">{quiz.title}</h3>
+                    <p className="text-gray-500 text-xs sm:text-sm mt-1 line-clamp-2">
+                      Grounded topic assessment to evaluate comprehension and practice key skills.
+                    </p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-gray-100">
+                    <button
+                      onClick={() => navigate(`/student/lesson-viewer/?lessonId=${quiz.id}&from=student`)}
+                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl sm:rounded-2xl transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs min-h-[44px]"
+                    >
+                      <Play className="w-4 h-4 fill-current" /> Start Revision Quiz
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Topic-Specific Interactive Simulations Section (Only rendered if relevant to this topic) */}
       {simulations.length > 0 && (

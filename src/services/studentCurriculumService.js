@@ -469,6 +469,21 @@ export const studentCurriculumService = {
     } catch (err) {
       console.error('Failed to clear progress from localStorage:', err);
     }
+  },
+
+  async getRevisionQuizzes({ subjectId, topicId, difficulty } = {}) {
+    try {
+      const params = new URLSearchParams();
+      if (subjectId) params.append('subject', subjectId);
+      if (topicId) params.append('topic', topicId);
+      if (difficulty && difficulty !== 'all') params.append('difficulty', difficulty);
+      const url = `/api/curriculum/revision-quizzes/?${params.toString()}`;
+      const response = await apiClient.get(url);
+      return response.data.results || response.data || [];
+    } catch (err) {
+      console.error('Failed to fetch revision quizzes:', err);
+      return [];
+    }
   }
 };
 

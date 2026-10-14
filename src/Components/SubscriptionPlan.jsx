@@ -207,7 +207,8 @@ const SubscriptionPlan = () => {
                             key={plan.id}
                             className={`relative flex flex-col rounded-3xl border border-gray-200 bg-white p-8 shadow-sm ${plan.popular ? 'border-custom-blue ring-2 ring-custom-blue' : ''}`}
                         >
-                            {plan.popular && (
+                            {/* Hidden for now: Most Popular badge */}
+                            {false && plan.popular && (
                                 <div className="absolute -top-5 left-0 right-0 mx-auto w-32 rounded-full bg-custom-blue px-3 py-2 text-center text-sm font-semibold text-white">
                                     Most Popular
                                 </div>

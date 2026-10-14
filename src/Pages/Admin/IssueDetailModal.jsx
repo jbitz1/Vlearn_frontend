@@ -23,6 +23,7 @@ export default function IssueDetailModal({
     issue,
     onClose,
     onResolve,
+    onUnresolve,
     getStudioLink,
 }) {
     if (!issue) return null;
@@ -49,6 +50,17 @@ export default function IssueDetailModal({
         setSubmitting(true);
         try {
             await onResolve(issue.id, notes.trim());
+            onClose();
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleMarkUnresolved = async () => {
+        if (!onUnresolve) return;
+        setSubmitting(true);
+        try {
+            await onUnresolve(issue.id);
             onClose();
         } finally {
             setSubmitting(false);
@@ -234,7 +246,7 @@ export default function IssueDetailModal({
                     </button>
 
                     <div className="flex flex-wrap items-center gap-2.5 ml-auto">
-                        {!isResolved && (
+                        {!isResolved ? (
                             <button
                                 type="button"
                                 onClick={() => handleMarkResolved(true)}
@@ -244,6 +256,18 @@ export default function IssueDetailModal({
                                 {submitting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
                                 Mark as Resolved
                             </button>
+                        ) : (
+                            onUnresolve && (
+                                <button
+                                    type="button"
+                                    onClick={handleMarkUnresolved}
+                                    disabled={submitting}
+                                    className="px-4 py-2 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                                >
+                                    {submitting ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
+                                    Mark as Unresolved
+                                </button>
+                            )
                         )}
 
                         {simLink && (

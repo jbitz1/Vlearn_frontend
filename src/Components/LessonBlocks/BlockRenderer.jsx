@@ -25,6 +25,8 @@ import {
   SuggestedMediaBlock,
   ComparisonTableBlock,
   StepProcessBlock,
+  QuizOverviewCard,
+  KCSEStructuredBlock,
 } from './BlueprintComponents';
 import { ContentNormalizer } from '../../utils/ContentNormalizer';
 
@@ -39,7 +41,14 @@ import {
 } from './TextBlocks';
 import { ImagePlaceholderBlock, VideoRefBlock, SimulationPlaceholderBlock } from './MediaBlocks';
 
-export const BlockRenderer = ({ block, onInteract, onReportVisual }) => {
+export const BlockRenderer = ({
+  block,
+  onInteract,
+  onReportVisual,
+  examMode = false,
+  studentAnswer = null,
+  onAnswerChange = null,
+}) => {
   if (!block || !block.block_type) return null;
 
   switch (block.block_type) {
@@ -79,12 +88,49 @@ export const BlockRenderer = ({ block, onInteract, onReportVisual }) => {
     case 'table':
     case 'comparison_table':     return <ComparisonTableBlock     block={block} />;
     case 'step_process':         return <StepProcessBlock         block={block} />;
+    case 'kcse_structured':
+    case 'cbc_scenario_structured':
+      return (
+        <KCSEStructuredBlock
+          block={block}
+          onInteract={onInteract}
+          examMode={examMode}
+          studentAnswer={studentAnswer}
+          onAnswerChange={onAnswerChange}
+        />
+      );
     case 'assessment':
     case 'knowledge_check':
     case 'multiple_choice':
     case 'true_false':
     case 'fill_in_the_blank':
-    case 'short_answer':         return <KnowledgeCheckBlock      block={block} onInteract={onInteract} />;
+    case 'short_answer': {
+      const c = typeof block.content === 'object' && block.content !== null ? block.content : {};
+      if (
+        c.check_type === 'kcse_structured' ||
+        c.check_type === 'cbc_scenario_structured' ||
+        block.component_type === 'kcse_structured'
+      ) {
+        return (
+          <KCSEStructuredBlock
+            block={block}
+            onInteract={onInteract}
+            examMode={examMode}
+            studentAnswer={studentAnswer}
+            onAnswerChange={onAnswerChange}
+          />
+        );
+      }
+      return (
+        <KnowledgeCheckBlock
+          block={block}
+          onInteract={onInteract}
+          examMode={examMode}
+          studentAnswer={studentAnswer}
+          onAnswerChange={onAnswerChange}
+        />
+      );
+    }
 
     // Suggested media (pending or resolved)
     case 'diagram':
@@ -113,10 +159,19 @@ export const BlockRenderer = ({ block, onInteract, onReportVisual }) => {
     case 'simulation_placeholder':
       return <SuggestedMediaBlock block={block} onReportVisual={onReportVisual} />;
 
-    // ── Legacy V1 block types — completely unchanged ───────────────────────
+    // ── Legacy V1 block types / Overview resolution ─────────────────────────
     case 'overview':
-    case 'introduction':
+    case 'introduction': {
+      const isQuizIntro = block.metadata?.is_quiz_intro || (
+        typeof block.content === 'object' && block.content !== null && (
+          block.content.question_count !== undefined || block.content.time_limit_mins !== undefined
+        )
+      );
+      if (isQuizIntro) {
+        return <QuizOverviewCard block={block} onInteract={onInteract} />;
+      }
       return <OverviewBlock block={block} />;
+    }
     case 'objectives':
       return <ObjectiveBlock block={block} />;
     case 'core_explanation':
@@ -131,6 +186,8 @@ export const BlockRenderer = ({ block, onInteract, onReportVisual }) => {
     case 'text':
     default: {
       const compType = block.component_type || block.metadata?.component_type;
+      if (compType === 'kcse_structured') return <KCSEStructuredBlock block={block} onInteract={onInteract} />;
+      if (compType === 'quiz_overview' || block.metadata?.is_quiz_intro) return <QuizOverviewCard block={block} onInteract={onInteract} />;
       if (compType === 'learning_goal') return <LearningGoalBlock block={block} />;
       if (compType === 'definition_card' || compType === 'definition') return <DefinitionCardBlock block={block} />;
       if (compType === 'worked_example') return <WorkedExampleBlock block={block} />;

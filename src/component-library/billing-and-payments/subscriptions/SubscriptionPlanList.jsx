@@ -43,7 +43,8 @@ const SubscriptionPlanList = ({ onSelect }) => {
                                 >
                                     {plan.name}
                                 </h3>
-                                {plan.details?.most_popular ? (
+                                {/* Hidden for now: Most popular badge */}
+                                {false && plan.details?.most_popular ? (
                                     <p className="rounded-full bg-primary-palette-600/10 px-2.5 py-1 text-xs/5 font-semibold text-primary-palette-600">
                                         Most popular
                                     </p>

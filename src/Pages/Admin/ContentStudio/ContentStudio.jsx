@@ -75,9 +75,10 @@ export default function ContentStudio() {
     const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
 
     // ── Generation state from global context ──────────────────────────────────
+    const effectiveLearningUnitId = learningUnitId || lesson?.learning_unit;
     const { startGeneration, isGeneratingUnit, getJobForUnit, setIsMonitorOpen } = useGeneration();
-    const isThisUnitGenerating = isGeneratingUnit(learningUnitId);
-    const activeUnitJob = getJobForUnit(learningUnitId);
+    const isThisUnitGenerating = effectiveLearningUnitId ? isGeneratingUnit(effectiveLearningUnitId) : false;
+    const activeUnitJob = effectiveLearningUnitId ? getJobForUnit(effectiveLearningUnitId) : null;
 
     // ── Notification ──────────────────────────────────────────────────────────
     const [notification, setNotification] = useState(null);
@@ -139,17 +140,23 @@ export default function ContentStudio() {
         setIsLoading(true);
         try {
             let current = null;
-            if (learningUnitId) {
+            if (queryLessonId) {
+                try {
+                    const lessonRes = await apiClient.get(
+                        `/api/curriculum/lessons/${queryLessonId}/`
+                    );
+                    current = lessonRes.data;
+                } catch (e) {
+                    console.warn(`Failed to fetch lesson by queryLessonId ${queryLessonId}`, e);
+                }
+            }
+
+            if (!current && learningUnitId) {
                 const lessonRes = await apiClient.get(
                     `/api/curriculum/lessons/?learning_unit=${learningUnitId}`
                 );
                 const lessons = lessonRes.data.results || lessonRes.data || [];
                 if (lessons.length > 0) current = lessons[0];
-            } else if (queryLessonId) {
-                const lessonRes = await apiClient.get(
-                    `/api/curriculum/lessons/${queryLessonId}/`
-                );
-                current = lessonRes.data;
             }
 
             if (current) {
@@ -191,7 +198,7 @@ export default function ContentStudio() {
     // ── Listen for background generation completion ──────────────────────────
     useEffect(() => {
         const handleLessonGenerated = (e) => {
-            if (String(e.detail?.learningUnitId) === String(learningUnitId)) {
+            if (effectiveLearningUnitId && String(e.detail?.learningUnitId) === String(effectiveLearningUnitId)) {
                 fetchAll();
                 showNotification('success', 'Lesson generated! Updated content loaded.');
             }
@@ -200,7 +207,7 @@ export default function ContentStudio() {
         return () => {
             window.removeEventListener('vlearn:lesson-generated', handleLessonGenerated);
         };
-    }, [learningUnitId, fetchAll]);
+    }, [effectiveLearningUnitId, fetchAll]);
 
     // ─────────────────────────────────────────────────────────────────────────
     // Generation
@@ -847,6 +854,11 @@ export default function ContentStudio() {
                                     </span>
                                 </>
                             )}
+                            {lesson?.immutable_metadata?.lesson_type === 'revision_quiz' && (
+                                <span className="ml-2 px-2 py-0.5 text-[10px] font-bold rounded-full bg-purple-100 text-purple-700 uppercase tracking-wider border border-purple-200 shrink-0">
+                                    Revision Quiz ({lesson?.immutable_metadata?.difficulty || 'Practice'})
+                                </span>
+                            )}
                         </div>
                     </div>
 
@@ -1034,6 +1046,7 @@ export default function ContentStudio() {
                     assets={assets}
                     concepts={concepts}
                     qualityReport={lesson?.quality_report}
+                    lesson={lesson}
                     onConfirm={handlePublish}
                     onCancel={() => setShowPublishGate(false)}
                 />

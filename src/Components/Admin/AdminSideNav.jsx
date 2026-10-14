@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router";
 import {
-    Menu, GraduationCap, ChartNoAxesCombined, Library, LayoutDashboard, UserCog, X, FolderTree, Flag, Layers
+    Menu, GraduationCap, ChartNoAxesCombined, Library, LayoutDashboard, UserCog, X, FolderTree, Flag, Layers, CheckSquare
 } from 'lucide-react';
 import { useState, useContext, useRef, useEffect } from 'react';
 
@@ -81,6 +81,7 @@ const SideNav = () => {
         { icon: Library, text: 'Course management', path: '/admin-dashboard/course-management' },
         { icon: FolderTree, text: "Curriculum Builder", path: '/admin-dashboard/curriculum-builder' },
         { icon: Layers, text: "Content Studio", path: '/admin-dashboard/content-studio' },
+        { icon: CheckSquare, text: "Revision Quizzes", path: '/admin-dashboard/revision-quizzes' },
         { icon: Flag, text: "Reported Issues", path: '/admin-dashboard/reported-issues', badge: openIssuesCount },
         { icon: ChartNoAxesCombined, text: "Analytics and reports", path: '/admin-dashboard/analytics' },
         { icon: UserCog, text: "User management", path: '/admin-dashboard/user-management' },

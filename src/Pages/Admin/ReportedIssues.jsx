@@ -23,7 +23,8 @@ import {
     Video,
     HelpCircle,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    RotateCcw
 } from 'lucide-react';
 import apiClient from '../../config/apiClient';
 import IssueDetailModal from './IssueDetailModal';
@@ -87,6 +88,33 @@ export default function ReportedIssues() {
         } catch (err) {
             console.error('Failed to resolve issue:', err);
             alert('Failed to mark issue as resolved.');
+        }
+    };
+
+    const handleUnresolveIssue = async (issueId) => {
+        try {
+            await apiClient.post(`/api/curriculum/visualization-issues/${issueId}/unresolve/`);
+            setIssues(prev => prev.map(issue =>
+                issue.id === issueId
+                    ? {
+                        ...issue,
+                        status: 'open',
+                        resolved_at: null,
+                        resolution_notes: ''
+                    }
+                    : issue
+            ));
+            if (selectedIssue && selectedIssue.id === issueId) {
+                setSelectedIssue(prev => ({
+                    ...prev,
+                    status: 'open',
+                    resolved_at: null,
+                    resolution_notes: ''
+                }));
+            }
+        } catch (err) {
+            console.error('Failed to reopen issue:', err);
+            alert('Failed to mark issue as unresolved.');
         }
     };
 
@@ -633,8 +661,8 @@ export default function ReportedIssues() {
                                                     </Link>
                                                 )}
 
-                                                {/* Quick Resolve Button */}
-                                                {!isResolved && (
+                                                {/* Quick Resolve / Reopen Button */}
+                                                {!isResolved ? (
                                                     <button
                                                         onClick={() => handleResolveIssue(issue.id)}
                                                         className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] border border-emerald-200 transition-colors cursor-pointer"
@@ -642,6 +670,15 @@ export default function ReportedIssues() {
                                                     >
                                                         <Check className="w-3 h-3" />
                                                         Resolve
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleUnresolveIssue(issue.id)}
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-[11px] border border-amber-200 transition-colors cursor-pointer"
+                                                        title="Reopen this issue (mark as unresolved)"
+                                                    >
+                                                        <RotateCcw className="w-3 h-3" />
+                                                        Reopen
                                                     </button>
                                                 )}
                                             </td>
@@ -732,6 +769,7 @@ export default function ReportedIssues() {
                 issue={selectedIssue}
                 onClose={() => setSelectedIssue(null)}
                 onResolve={handleResolveIssue}
+                onUnresolve={handleUnresolveIssue}
                 getStudioLink={getRemediationLink}
             />
         </div>

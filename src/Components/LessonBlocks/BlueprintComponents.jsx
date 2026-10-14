@@ -10,8 +10,9 @@ import BASE_URL from '../../config';
 import { ContentNormalizer } from '../../utils/ContentNormalizer';
 import { normalizePhetUrl } from '../../utils/phetUrlHelper';
 import LessonSimulationLauncherCard from './LessonSimulationLauncherCard';
+import apiClient from '../../config/apiClient';
 import {
-  Target, Book, PenTool, Lightbulb, AlertTriangle, XCircle, Zap, Star, BrainCircuit, Globe, Hand, FlaskConical, Sparkles, CheckCircle2, PlayCircle, BarChart, Image as ImageIcon, MonitorPlay, Link2, BookOpen, Check, X, Clock, Flag
+  Target, Book, PenTool, Lightbulb, AlertTriangle, XCircle, Zap, Star, BrainCircuit, Globe, Hand, FlaskConical, Sparkles, CheckCircle2, PlayCircle, BarChart, Image as ImageIcon, MonitorPlay, Link2, BookOpen, Check, X, Clock, Flag, Award, HelpCircle, ArrowRight, Loader2, RefreshCw, ChevronDown, ChevronUp, FileText
 } from 'lucide-react';
 
 // ─── Content extraction helper ───────────────────────────────────────────────
@@ -161,7 +162,7 @@ const normalizeMarkdownText = (rawStr) => {
   return ensureMathDelimiters(text);
 };
 
-const MD = ({ children, className = '' }) => {
+export const MD = ({ children, className = '' }) => {
   const rawContent = Array.isArray(children)
     ? children.map(child => (typeof child === 'string' ? child : String(child ?? ''))).join('')
     : (typeof children === 'string' ? children : String(children ?? ''));
@@ -617,8 +618,142 @@ export const TransitionBlock = ({ block }) => (
   </div>
 );
 
+// ─── Quiz Overview Card ───────────────────────────────────────────────────────
+export const QuizOverviewCard = ({ block, onInteract }) => {
+  const c = parseContent(block.content);
+  const title = c.title || block.title || 'Revision Assessment';
+  const difficulty = (c.difficulty || block.metadata?.difficulty || 'intermediate').toLowerCase();
+  const description = c.description || 'Test and strengthen your conceptual understanding with curriculum-aligned questions and examiner solutions.';
+  const instructions = c.instructions || 'Read each question carefully and provide your best answer.';
+  const questionCount = c.question_count || block.metadata?.question_count || 5;
+  const timeLimit = c.time_limit_mins || Math.max(5, questionCount * 2);
+  const isFullPaper = (c.quiz_mode === 'full_paper' || block.metadata?.quiz_mode === 'full_paper');
+  const framework = (c.assessment_framework || block.metadata?.assessment_framework || 'kcse').toUpperCase();
+
+  const difficultyColors = {
+    beginner: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    intermediate: 'bg-amber-50 text-amber-700 border-amber-200',
+    advanced: 'bg-purple-50 text-purple-700 border-purple-200',
+  };
+  const diffBadgeClass = difficultyColors[difficulty] || difficultyColors.intermediate;
+
+  const handleStart = () => {
+    if (onInteract) onInteract(block.id);
+    window.dispatchEvent(new CustomEvent('vlearn:next_page'));
+  };
+
+  return (
+    <div className="my-6 sm:my-12 bg-white rounded-3xl border border-gray-200/90 shadow-sm overflow-hidden max-w-4xl mx-auto">
+      {/* Top Banner accent */}
+      <div className={`h-2.5 ${isFullPaper ? 'bg-gradient-to-r from-indigo-600 via-custom-blue to-cyan-500' : 'bg-gradient-to-r from-custom-blue via-indigo-500 to-cyan-500'}`} />
+
+      <div className="p-6 sm:p-10 md:p-12">
+        {/* Badges row */}
+        <div className="flex items-center gap-2.5 flex-wrap mb-4">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-custom-blue border border-blue-200/70 uppercase tracking-wider font-sans">
+            <Award className="w-3.5 h-3.5" /> {isFullPaper ? `${framework} Examination Paper` : `${framework} Revision Quiz`}
+          </span>
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border capitalize font-sans ${diffBadgeClass}`}>
+            {difficulty} Level
+          </span>
+          {isFullPaper && (
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase bg-emerald-50 text-emerald-800 border border-emerald-200 font-sans">
+              Full Paper Mode
+            </span>
+          )}
+        </div>
+
+        {/* Title & Description */}
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 font-sans tracking-tight leading-tight mb-4">
+          {title}
+        </h1>
+        <p className="text-base sm:text-lg text-gray-600 font-sans leading-relaxed max-w-[72ch] mb-8">
+          {description}
+        </p>
+
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8">
+          <div className="bg-gray-50/80 border border-gray-200/70 rounded-2xl p-4 sm:p-5 flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-blue-100/70 text-custom-blue flex items-center justify-center shrink-0">
+              <HelpCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider font-sans">Questions</p>
+              <p className="text-lg font-bold text-gray-900 font-sans">{questionCount} Total</p>
+            </div>
+          </div>
+
+          <div className="bg-gray-50/80 border border-gray-200/70 rounded-2xl p-4 sm:p-5 flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-100/70 text-amber-600 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider font-sans">Allocated Time</p>
+              <p className="text-lg font-bold text-gray-900 font-sans">{timeLimit} Mins</p>
+            </div>
+          </div>
+
+          <div className="bg-gray-50/80 border border-gray-200/70 rounded-2xl p-4 sm:p-5 flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100/70 text-emerald-600 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider font-sans">Marking</p>
+              <p className="text-lg font-bold text-gray-900 font-sans">{isFullPaper ? 'Delayed Batch AI' : 'Instant Feedback'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Instructions Container */}
+        <div className="bg-blue-50/40 border border-blue-100 rounded-2xl p-5 sm:p-6 mb-8">
+          <div className="flex items-center gap-2 mb-2 text-custom-blue font-bold text-sm uppercase tracking-wider font-sans">
+            <Sparkles className="w-4 h-4" /> Examination Guidelines
+          </div>
+          <p className="text-sm sm:text-base text-gray-700 font-sans leading-relaxed mb-3">
+            {instructions}
+          </p>
+          <ul className="text-xs sm:text-sm text-gray-600 font-sans space-y-1.5 list-disc pl-5">
+            {isFullPaper ? (
+              <>
+                <li>Complete all questions across the paper at your own pace before submitting.</li>
+                <li>Your answers are saved automatically as you navigate forward and backward.</li>
+                <li>Submit the entire paper at the end for rigorous KNEC/CBC examiner marking and feedback.</li>
+              </>
+            ) : (
+              <>
+                <li>Take your time to think through each question thoroughly.</li>
+                <li>For structured questions, state key scientific principles and reasoning clearly.</li>
+                <li>Instant explanations and recommended subtopics will guide your revision.</li>
+              </>
+            )}
+          </ul>
+        </div>
+
+        {/* Action Button */}
+        <div className="flex items-center justify-start">
+          <button
+            type="button"
+            onClick={handleStart}
+            className="w-full sm:w-auto px-8 py-4 bg-custom-blue text-white font-bold rounded-2xl hover:bg-blue-700 transition flex items-center justify-center gap-3 shadow-md hover:shadow-lg text-base sm:text-lg cursor-pointer font-sans"
+          >
+            {isFullPaper ? 'Begin Examination Paper' : 'Start Revision Quiz'}
+            <ArrowRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Knowledge Check ──────────────────────────────────────────────────────────
-export const KnowledgeCheckBlock = ({ block, onInteract }) => {
+export const KnowledgeCheckBlock = ({
+  block,
+  onInteract,
+  examMode = false,
+  studentAnswer = null,
+  onAnswerChange = null,
+}) => {
+  const controlledAnswer = studentAnswer;
   const [revealed, setRevealed] = useState(false);
   const [selected, setSelected] = useState(null);
   const [textInput, setTextInput] = useState('');
@@ -628,6 +763,22 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
   const checkType = c.check_type || (options.length > 0 ? 'multiple_choice' : 'short_answer');
   const question = c.question || c.content || text(block.content);
   const answer = c.answer || c.correct_answer || c.correct;
+
+  const effectiveSelected = (controlledAnswer !== null && controlledAnswer !== undefined)
+    ? controlledAnswer
+    : selected;
+
+  const handleSelectOption = (optVal) => {
+    setSelected(optVal);
+    if (onAnswerChange) onAnswerChange(block.id, optVal);
+    if (onInteract) onInteract(block.id);
+  };
+
+  const handleTextChange = (val) => {
+    setTextInput(val);
+    if (onAnswerChange) onAnswerChange(block.id, val);
+    if (onInteract) onInteract(block.id);
+  };
 
   const handleSubmit = (e) => {
     if (e) {
@@ -639,30 +790,74 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
   };
 
   const isFillBlank = checkType === 'fill_in_the_blank' || checkType === 'fill_blank';
-  const selectedIndex = selected ? selected.charCodeAt(0) - 65 : -1;
+  const isTrueFalse = checkType === 'true_false';
+  const isMultipleChoice = checkType === 'multiple_choice' || (!isTrueFalse && !isFillBlank && options.length > 0);
+
+  const selectedIndex = effectiveSelected && typeof effectiveSelected === 'string' && effectiveSelected.length === 1 ? effectiveSelected.charCodeAt(0) - 65 : -1;
   const normalizedAnswer = typeof answer === 'string' ? answer.trim().toUpperCase() : '';
-  const isMcqCorrect = selected !== null && (
-    selected === answer || 
-    selected === normalizedAnswer ||
+
+  const isMcqCorrect = effectiveSelected !== null && (
+    effectiveSelected === answer || 
+    effectiveSelected === normalizedAnswer ||
     (selectedIndex >= 0 && (options[selectedIndex] === answer || String.fromCharCode(65 + selectedIndex) === normalizedAnswer))
   );
+
+  const normalizedBoolAnswer = typeof answer === 'boolean'
+    ? answer
+    : (typeof answer === 'string' ? (answer.trim().toLowerCase() === 'true' ? true : (answer.trim().toLowerCase() === 'false' ? false : null)) : null);
+
+  const isTfCorrect = isTrueFalse && effectiveSelected !== null && (
+    effectiveSelected === answer ||
+    (normalizedBoolAnswer !== null && (effectiveSelected === normalizedBoolAnswer || String(effectiveSelected).toLowerCase() === String(normalizedBoolAnswer))) ||
+    (typeof effectiveSelected === 'string' && effectiveSelected.toLowerCase() === String(answer).toLowerCase())
+  );
+
   const isFillCorrect = isFillBlank && typeof answer === 'string' && textInput.trim().toLowerCase() === answer.trim().toLowerCase();
-  const isGraded = checkType === 'multiple_choice' || checkType === 'true_false' || isFillBlank;
-  const isCorrect = isFillBlank ? isFillCorrect : isMcqCorrect;
+  const isGraded = isMultipleChoice || isTrueFalse || isFillBlank;
+  const isCorrect = isFillBlank ? isFillCorrect : (isTrueFalse ? isTfCorrect : isMcqCorrect);
 
   return (
     <div className="my-6 sm:my-16 bg-white rounded-2xl sm:rounded-3xl shadow-xs sm:shadow-sm p-4 sm:p-6 md:p-8 border border-gray-200/80">
       <BlockHeader label="Check Your Understanding" colorClass="text-custom-blue" />
+
+      {/* Situational Scenario Stimulus */}
+      {c.scenario_stimulus && (
+        <div className="mb-6 p-4 sm:p-5 bg-gradient-to-r from-cyan-50/70 to-blue-50/70 border border-cyan-200/80 rounded-2xl">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-cyan-800 mb-2 font-sans">
+            <Globe className="w-4 h-4 text-custom-blue" />
+            <span>Situational Context & Stimulus</span>
+          </div>
+          <p className="text-sm sm:text-base text-gray-800 font-sans leading-relaxed">
+            {c.scenario_stimulus}
+          </p>
+        </div>
+      )}
+
+      {/* Inline SVG Diagram Stimulus */}
+      {c.diagram_svg && (
+        <div className="mb-6 bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col items-center">
+          <div
+            className="w-full max-w-lg overflow-x-auto flex justify-center [&>svg]:max-w-full [&>svg]:h-auto"
+            dangerouslySetInnerHTML={{ __html: c.diagram_svg }}
+          />
+          {c.diagram_caption && (
+            <p className="text-xs sm:text-sm font-semibold text-gray-600 mt-2 text-center font-sans">
+              {c.diagram_caption}
+            </p>
+          )}
+        </div>
+      )}
+
       <MD className="text-gray-900 font-semibold text-lg sm:text-xl md:text-2xl mb-6 sm:mb-10 font-sans max-w-[70ch] leading-snug">{question}</MD>
 
-      {/* Multiple choice */}
-      {options.length > 0 && (
+      {/* Multiple choice - Render only if NOT true_false */}
+      {isMultipleChoice && options.length > 0 && (
         <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-10">
           {options.map((opt, i) => {
             const label = String.fromCharCode(65 + i);
-            const isSelected = selected === label;
-            const isRight = revealed && (label === answer || label === normalizedAnswer || opt === answer);
-            const isWrong = revealed && isSelected && !isRight;
+            const isSelected = effectiveSelected === label;
+            const isRight = !examMode && revealed && (label === answer || label === normalizedAnswer || opt === answer);
+            const isWrong = !examMode && revealed && isSelected && !isRight;
             
             let cardClasses = 'bg-white border-gray-200 text-gray-800 hover:border-custom-blue hover:bg-blue-50/30';
             let iconElement = <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-gray-300 shrink-0 mt-0.5" />;
@@ -674,7 +869,7 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
               cardClasses = 'bg-rose-50/80 border-rose-300 text-rose-900';
               iconElement = <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600 shrink-0" strokeWidth={1.5} />;
             } else if (isSelected) {
-              cardClasses = 'bg-blue-50/60 border-custom-blue text-gray-900 shadow-[0_0_0_1px_#02a0bf]';
+              cardClasses = 'bg-blue-50/80 border-custom-blue text-gray-900 ring-2 ring-blue-100 shadow-sm';
               iconElement = <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-custom-blue shrink-0 flex items-center justify-center mt-0.5"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-custom-blue" /></div>;
             }
 
@@ -682,7 +877,7 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
               <button
                 key={i}
                 type="button"
-                onClick={() => !revealed && setSelected(label)}
+                onClick={() => (!revealed || examMode) && handleSelectOption(label)}
                 className={`w-full text-left px-4 py-3.5 sm:px-6 sm:py-5 rounded-2xl sm:rounded-3xl border transition-all flex items-start gap-3 sm:gap-5 min-h-[44px] sm:min-h-[4rem] cursor-pointer ${cardClasses}`}
               >
                 {iconElement}
@@ -699,13 +894,17 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
       )}
 
       {/* True / False */}
-      {checkType === 'true_false' && (
+      {isTrueFalse && (
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-10">
           {['True', 'False'].map((opt) => {
             const val = opt === 'True';
-            const isSelected = selected === val;
-            const isRight = revealed && val === answer;
-            const isWrong = revealed && isSelected && val !== answer;
+            const isSelected = effectiveSelected === val || effectiveSelected === opt;
+            const isRight = !examMode && revealed && (
+              val === answer ||
+              opt === answer ||
+              (normalizedBoolAnswer !== null && val === normalizedBoolAnswer)
+            );
+            const isWrong = !examMode && revealed && isSelected && !isRight;
             
             let cardClasses = 'bg-white border-gray-200 text-gray-800 hover:border-custom-blue hover:bg-blue-50/30';
             let iconElement = <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-gray-300 shrink-0" />;
@@ -717,7 +916,7 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
               cardClasses = 'bg-rose-50/80 border-rose-300 text-rose-900';
               iconElement = <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600 shrink-0" strokeWidth={1.5} />;
             } else if (isSelected) {
-              cardClasses = 'bg-blue-50/60 border-custom-blue text-gray-900 shadow-[0_0_0_1px_#02a0bf]';
+              cardClasses = 'bg-blue-50/80 border-custom-blue text-gray-900 ring-2 ring-blue-100 shadow-sm';
               iconElement = <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-custom-blue shrink-0 flex items-center justify-center"><div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-custom-blue" /></div>;
             }
 
@@ -725,7 +924,7 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
               <button
                 key={opt}
                 type="button"
-                onClick={() => !revealed && setSelected(val)}
+                onClick={() => (!revealed || examMode) && handleSelectOption(val)}
                 className={`flex-1 flex justify-center items-center gap-3 py-4 sm:py-6 rounded-2xl sm:rounded-3xl border font-bold text-lg sm:text-xl font-sans transition-all min-h-[44px] sm:min-h-[4rem] cursor-pointer ${cardClasses}`}
               >
                 {iconElement}
@@ -737,12 +936,12 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
       )}
 
       {/* Fill in the blank input */}
-      {isFillBlank && !revealed && (
+      {isFillBlank && (!revealed || examMode) && (
         <div className="mb-6 sm:mb-10">
           <input
             type="text"
             value={textInput}
-            onChange={(e) => setTextInput(e.target.value)}
+            onChange={(e) => handleTextChange(e.target.value)}
             className="w-full border border-gray-300 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-base sm:text-xl text-gray-900 focus:border-custom-blue focus:ring-1 focus:ring-custom-blue transition font-sans bg-gray-50"
             placeholder="Type the missing word or phrase…"
           />
@@ -750,15 +949,30 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
       )}
 
       {/* Short answer / predict / explain */}
-      {(checkType === 'short_answer' || checkType === 'predict_outcome' || checkType === 'explain_in_words') && !revealed && (
+      {(checkType === 'short_answer' || checkType === 'predict_outcome' || checkType === 'explain_in_words') && (!revealed || examMode) && (
         <textarea
           className="w-full border border-gray-300 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-base sm:text-xl text-gray-900 focus:border-custom-blue focus:ring-1 focus:ring-custom-blue transition resize-none mb-6 sm:mb-10 font-sans bg-gray-50"
           rows={4}
+          value={textInput}
+          onChange={(e) => handleTextChange(e.target.value)}
           placeholder="Write your answer here…"
         />
       )}
 
-      {!revealed ? (
+      {examMode ? (
+        <div className="pt-2 flex items-center justify-between flex-wrap gap-2">
+          {effectiveSelected !== null && effectiveSelected !== undefined ? (
+            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200 font-sans">
+              <Check className="w-3.5 h-3.5" />
+              <span>Selection recorded ({String(effectiveSelected)}). Answer saved for final submission.</span>
+            </div>
+          ) : (
+            <span className="text-xs font-semibold text-gray-400 font-sans italic">
+              Select an option above to record your response.
+            </span>
+          )}
+        </div>
+      ) : !revealed ? (
         <button
           type="button"
           onClick={handleSubmit}
@@ -788,12 +1002,371 @@ export const KnowledgeCheckBlock = ({ block, onInteract }) => {
               )}
             </div>
           </div>
+
           {(c.explanation || (!isGraded && answer)) && (
-              <div className="p-4 sm:p-8 bg-white border border-gray-200 rounded-2xl sm:rounded-3xl shadow-xs sm:shadow-sm">
-                  <BlockHeader label="Explanation & Analysis" colorClass="text-gray-500" />
-                  <MD className="text-gray-800 text-base sm:text-lg md:text-xl leading-relaxed font-sans max-w-[70ch]">{c.explanation || answer}</MD>
-              </div>
+            <div className="p-4 sm:p-8 bg-white border border-gray-200 rounded-2xl sm:rounded-3xl shadow-xs sm:shadow-sm">
+              <BlockHeader label="Explanation & Analysis" colorClass="text-gray-500" />
+              <MD className="text-gray-800 text-base sm:text-lg md:text-xl leading-relaxed font-sans max-w-[70ch]">{c.explanation || answer}</MD>
+            </div>
           )}
+
+          {/* Deep Explanation & Topic Review recommendation */}
+          {isGraded && !isCorrect && c.subtopic_to_review && (
+            <div className="p-4 sm:p-6 bg-gradient-to-r from-blue-50/90 to-indigo-50/90 border border-blue-200 rounded-2xl sm:rounded-3xl flex items-start gap-4 shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-custom-blue/10 flex items-center justify-center shrink-0 text-custom-blue mt-0.5">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-bold text-custom-blue uppercase tracking-wider mb-1 font-sans">
+                  Recommended Revision Focus
+                </h4>
+                <p className="text-sm sm:text-base text-gray-800 font-sans leading-relaxed">
+                  To master this concept, revisit the lesson and materials on{' '}
+                  <span className="font-bold text-gray-900">{c.subtopic_to_review}</span>.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {isGraded && !isCorrect && c.hint && (
+            <div className="p-3.5 sm:p-4 bg-amber-50/80 border border-amber-200 rounded-2xl flex items-start gap-3">
+              <Lightbulb className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="text-xs sm:text-sm text-amber-900 font-sans">
+                <span className="font-bold">Key Concept Clue:</span> {c.hint}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── KCSE Theory & Structured Block (AI Graded) ──────────────────────────────
+export const KCSEStructuredBlock = ({
+  block,
+  onInteract,
+  examMode = false,
+  studentAnswer = null,
+  onAnswerChange = null,
+}) => {
+  const c = parseContent(block.content);
+  const question = c.question || c.content || text(block.content);
+  const maxMarks = c.max_marks || 2;
+  const hint = c.hint || '';
+  const subtopic = c.subtopic_to_review || '';
+  const isCBC = (c.assessment_framework === 'cbc' || c.check_type === 'cbc_scenario_structured');
+  const headerLabel = isCBC ? 'CBC Inquiry Task' : 'KCSE Theory & Structured Question';
+
+  const [localAnswer, setLocalAnswer] = useState('');
+  const [isGrading, setIsGrading] = useState(false);
+  const [gradingResult, setGradingResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [showHint, setShowHint] = useState(false);
+  const [showModelAnswer, setShowModelAnswer] = useState(false);
+
+  const effectiveAnswer = (studentAnswer !== null && studentAnswer !== undefined)
+    ? studentAnswer
+    : localAnswer;
+
+  const handleGrade = async () => {
+    if (!effectiveAnswer.trim() || isGrading) return;
+    setIsGrading(true);
+    setError(null);
+    try {
+      const res = await apiClient.post('/api/curriculum/revision-quizzes/grade_answer/', {
+        block_id: block.id,
+        student_answer: effectiveAnswer.trim(),
+      });
+      setGradingResult(res.data);
+      if (onInteract) onInteract(block.id);
+    } catch (err) {
+      console.error('KCSE grading failed:', err);
+      const msg = err?.response?.data?.error || 'Unable to grade answer at this time. Please try again.';
+      setError(msg);
+    } finally {
+      setIsGrading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setGradingResult(null);
+    setError(null);
+    setShowModelAnswer(false);
+  };
+
+  const marksAwarded = gradingResult?.marks_awarded ?? 0;
+  const totalMarks = gradingResult?.max_marks ?? maxMarks;
+  const isFullMarks = marksAwarded === totalMarks;
+  const isZeroMarks = marksAwarded === 0;
+
+  let scoreCardClass = 'bg-amber-50/80 border-amber-200 text-amber-900';
+  let scoreBadgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
+  if (isFullMarks) {
+    scoreCardClass = 'bg-emerald-50/80 border-emerald-200 text-emerald-900';
+    scoreBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+  } else if (isZeroMarks) {
+    scoreCardClass = 'bg-rose-50/80 border-rose-200 text-rose-900';
+    scoreBadgeClass = 'bg-rose-100 text-rose-800 border-rose-300';
+  }
+
+  return (
+    <div className="my-6 sm:my-16 bg-white rounded-2xl sm:rounded-3xl shadow-xs sm:shadow-sm p-4 sm:p-6 md:p-8 border border-gray-200/80">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <BlockHeader label={headerLabel} colorClass={isCBC ? "text-cyan-700" : "text-custom-blue"} />
+          {c.competency_tested && (
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-50 text-cyan-800 border border-cyan-200 font-sans">
+              Competency: {c.competency_tested}
+            </span>
+          )}
+        </div>
+        <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 font-sans">
+          {maxMarks} {maxMarks === 1 ? 'Mark' : 'Marks'}
+        </span>
+      </div>
+
+      {/* Situational Scenario Stimulus */}
+      {c.scenario_stimulus && (
+        <div className="mb-6 p-4 sm:p-5 bg-gradient-to-r from-cyan-50/70 to-blue-50/70 border border-cyan-200/80 rounded-2xl">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-cyan-800 mb-2 font-sans">
+            <Globe className="w-4 h-4 text-custom-blue" />
+            <span>Situational Context & Real-World Scenario</span>
+          </div>
+          <p className="text-sm sm:text-base text-gray-800 font-sans leading-relaxed">
+            {c.scenario_stimulus}
+          </p>
+        </div>
+      )}
+
+      {/* Inline SVG Diagram Stimulus */}
+      {c.diagram_svg && (
+        <div className="mb-6 bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col items-center">
+          <div
+            className="w-full max-w-lg overflow-x-auto flex justify-center [&>svg]:max-w-full [&>svg]:h-auto"
+            dangerouslySetInnerHTML={{ __html: c.diagram_svg }}
+          />
+          {c.diagram_caption && (
+            <p className="text-xs sm:text-sm font-semibold text-gray-600 mt-2 text-center font-sans">
+              {c.diagram_caption}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Question Prompt */}
+      <MD className="text-gray-900 font-semibold text-lg sm:text-xl md:text-2xl mb-6 sm:mb-8 font-sans max-w-[70ch] leading-snug">
+        {question}
+      </MD>
+
+      {/* Optional Hint Toggle */}
+      {hint && !gradingResult && !examMode && (
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => setShowHint(!showHint)}
+            className="text-xs sm:text-sm font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1.5 transition font-sans cursor-pointer"
+          >
+            <Lightbulb className="w-4 h-4" />
+            {showHint ? 'Hide Clue' : 'Need a Clue?'}
+          </button>
+          {showHint && (
+            <div className="mt-2 p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl text-xs sm:text-sm text-amber-900 font-sans">
+              <span className="font-bold">Clue:</span> {hint}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Student Answer Textarea */}
+      <div className="mb-6">
+        <label className="block text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wider mb-2 font-sans">
+          Your Written Response
+        </label>
+        <textarea
+          rows={5}
+          value={effectiveAnswer}
+          onChange={(e) => {
+            setLocalAnswer(e.target.value);
+            if (onAnswerChange) onAnswerChange(block.id, e.target.value);
+            if (onInteract) onInteract(block.id);
+          }}
+          disabled={isGrading || Boolean(gradingResult)}
+          placeholder="State your reasoning, scientific terminology, and working steps clearly..."
+          className="w-full border border-gray-300 rounded-2xl p-4 sm:p-5 text-base sm:text-lg text-gray-900 focus:border-custom-blue focus:ring-1 focus:ring-custom-blue transition resize-y font-sans bg-gray-50 disabled:bg-gray-100 disabled:text-gray-700"
+        />
+        <div className="flex justify-between items-center mt-1.5 text-xs text-gray-400 font-sans">
+          <span>Be concise and use standard scientific definitions.</span>
+          <span>{effectiveAnswer.trim() ? `${effectiveAnswer.trim().split(/\s+/).length} words` : '0 words'}</span>
+        </div>
+      </div>
+
+      {/* Error alert */}
+      {error && (
+        <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-sm flex items-center gap-3 font-sans">
+          <XCircle className="w-5 h-5 shrink-0 text-rose-600" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Exam Mode Saved Status Indicator */}
+      {examMode ? (
+        <div className="pt-2 flex items-center justify-between flex-wrap gap-2">
+          {effectiveAnswer.trim() ? (
+            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200 font-sans">
+              <Check className="w-3.5 h-3.5" />
+              <span>Written response saved. It will be evaluated when you submit your complete exam paper.</span>
+            </div>
+          ) : (
+            <span className="text-xs font-semibold text-gray-400 font-sans italic">
+              Type your response above. It is saved automatically as you navigate.
+            </span>
+          )}
+        </div>
+      ) : !gradingResult ? (
+        <button
+          type="button"
+          onClick={handleGrade}
+          disabled={isGrading || !effectiveAnswer.trim()}
+          className="px-6 py-3.5 sm:px-8 sm:py-4 bg-custom-blue text-white rounded-full text-sm sm:text-base font-bold transition font-sans hover:bg-blue-700 flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto min-h-[44px]"
+        >
+          {isGrading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Evaluating against KNEC/CBC Scheme...
+            </>
+          ) : (
+            <>
+              Submit for AI Marking
+              <Check className="w-5 h-5" strokeWidth={2} />
+            </>
+          )}
+        </button>
+      ) : (
+        /* Graded Examiner Feedback Area */
+        <div className="space-y-6 animate-fade-in">
+          {/* Score & Verdict Card */}
+          <div className={`p-5 sm:p-7 rounded-2xl sm:rounded-3xl border ${scoreCardClass}`}>
+            <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+              <div className="flex items-center gap-2.5">
+                {isFullMarks ? (
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                ) : isZeroMarks ? (
+                  <XCircle className="w-6 h-6 text-rose-600" />
+                ) : (
+                  <AlertTriangle className="w-6 h-6 text-amber-600" />
+                )}
+                <h3 className="text-lg sm:text-xl font-bold font-sans">
+                  {isFullMarks ? 'Full Marks Awarded!' : isZeroMarks ? 'No Marks Awarded' : 'Partial Credit Awarded'}
+                </h3>
+              </div>
+              <span className={`px-4 py-1.5 rounded-full text-base font-black border font-sans ${scoreBadgeClass}`}>
+                {marksAwarded} / {totalMarks} Marks
+              </span>
+            </div>
+
+            <p className="text-sm sm:text-base font-sans leading-relaxed text-inherit">
+              {gradingResult.feedback}
+            </p>
+          </div>
+
+          {/* Points Earned vs Points Missed */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Points Earned */}
+            <div className="p-4 sm:p-6 bg-emerald-50/50 border border-emerald-200/80 rounded-2xl">
+              <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm uppercase tracking-wider mb-3 font-sans">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Key Points Earned
+              </div>
+              {gradingResult.points_earned?.length > 0 ? (
+                <ul className="space-y-2">
+                  {gradingResult.points_earned.map((pt, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-emerald-950 font-sans">
+                      <span className="text-emerald-500 font-bold">•</span>
+                      <span>{pt}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs sm:text-sm text-emerald-800/80 italic font-sans">No scoring points detected in response.</p>
+              )}
+            </div>
+
+            {/* Points Missed */}
+            <div className="p-4 sm:p-6 bg-rose-50/50 border border-rose-200/80 rounded-2xl">
+              <div className="flex items-center gap-2 text-rose-800 font-bold text-sm uppercase tracking-wider mb-3 font-sans">
+                <XCircle className="w-4 h-4 text-rose-600" /> Points Missed / Required
+              </div>
+              {gradingResult.points_missed?.length > 0 ? (
+                <ul className="space-y-2">
+                  {gradingResult.points_missed.map((pt, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-rose-950 font-sans">
+                      <span className="text-rose-500 font-bold">•</span>
+                      <span>{pt}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs sm:text-sm text-emerald-800/80 italic font-sans">Complete answer! All criteria fulfilled.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Model KNEC Marking Scheme / Answer */}
+          {(gradingResult.model_answer || c.correct_answer || c.explanation) && (
+            <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-xs">
+              <button
+                type="button"
+                onClick={() => setShowModelAnswer(!showModelAnswer)}
+                className="w-full px-5 py-4 bg-gray-50 hover:bg-gray-100/80 transition flex items-center justify-between font-bold text-sm text-gray-800 font-sans cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-custom-blue" />
+                  View Model Answer & Marking Scheme
+                </span>
+                {showModelAnswer ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+              {showModelAnswer && (
+                <div className="p-5 sm:p-6 border-t border-gray-200">
+                  <MD className="text-sm sm:text-base text-gray-800 leading-relaxed font-sans max-w-[70ch]">
+                    {gradingResult.model_answer || c.correct_answer || c.explanation}
+                  </MD>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Recommended Subtopic to Review */}
+          {(gradingResult.subtopic_to_review || subtopic) && (
+            <div className="p-4 sm:p-6 bg-gradient-to-r from-blue-50/90 to-indigo-50/90 border border-blue-200 rounded-2xl flex items-start gap-4 shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-custom-blue/10 flex items-center justify-center shrink-0 text-custom-blue mt-0.5">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-bold text-custom-blue uppercase tracking-wider mb-1 font-sans">
+                  Recommended Revision Focus
+                </h4>
+                <p className="text-sm sm:text-base text-gray-800 font-sans leading-relaxed">
+                  To strengthen your mastery of this concept, revisit the lesson and materials on{' '}
+                  <span className="font-bold text-gray-900">
+                    {gradingResult.subtopic_to_review || subtopic}
+                  </span>.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Retry Option */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={handleReset}
+              className="text-xs sm:text-sm font-semibold text-custom-blue hover:text-blue-700 flex items-center gap-1.5 transition font-sans cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Re-attempt Question
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -928,6 +1501,9 @@ export const SuggestedMediaBlock = ({ block, onReportVisual }) => {
       if (/^(?:Replace|Create|Generate|Make|Draw|Add|Remove|Update|Please|Use)\s+/i.test(cleaned)) {
         continue;
       }
+      if (/find and replace/i.test(cleaned)) {
+        continue;
+      }
       cleaned = cleaned.replace(/\s+(?:Visual|Diagram|Visualization|Video)\s*(?:Card|Slot)?$/i, '').trim();
       if (cleaned.length > 0) {
         return cleaned;
@@ -936,7 +1512,7 @@ export const SuggestedMediaBlock = ({ block, onReportVisual }) => {
 
     if (asset?.metadata?.alt_text && typeof asset.metadata.alt_text === 'string') {
       const alt = asset.metadata.alt_text.trim();
-      if (alt.length > 0 && alt.length < 120 && !/^(?:Replace|Create|Generate)\s+/i.test(alt)) {
+      if (alt.length > 0 && alt.length < 120 && !/^(?:Replace|Create|Generate)\s+/i.test(alt) && !/find and replace/i.test(alt)) {
         return alt;
       }
     }
@@ -946,8 +1522,10 @@ export const SuggestedMediaBlock = ({ block, onReportVisual }) => {
 
   const captionText = deriveCleanCaption();
 
-  // 1. Render Inline SVG if available
-  if (inlineSvg && !isVideo) {
+  // 1. Render Inline SVG if available (unless block is configured for an image and has a valid resolved image)
+  const isImageBlock = ['suggested_image', 'image', 'image_placeholder'].includes(block.block_type) || asset?.asset_type === 'image' || asset?.source_type === 'wikimedia';
+  const hasValidImage = Boolean(resolvedImageUrl && !resolvedImageUrl.endsWith('.svg') && !imageError);
+  if (inlineSvg && !isVideo && !(isImageBlock && hasValidImage)) {
     return (
       <div className="my-8 sm:my-16">
         <figure className="w-full">

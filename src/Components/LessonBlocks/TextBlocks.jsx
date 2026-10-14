@@ -185,7 +185,7 @@ const MD = ({ children, className = '' }) => {
 const getMarkdownText = (content) => {
     if (typeof content === 'string') return content;
     if (typeof content === 'object' && content !== null) {
-        return content.text || content.content || content.procedure || JSON.stringify(content);
+        return content.text || content.content || content.procedure || content.description || content.title || '';
     }
     return String(content || '');
 };

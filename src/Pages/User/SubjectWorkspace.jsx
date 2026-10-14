@@ -2,7 +2,7 @@ import { useState, useEffect, useContext, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { 
   ChevronLeft, BookOpen, Video, Cpu, Play, 
-  HelpCircle, ArrowRight, ExternalLink 
+  HelpCircle, ArrowRight, ExternalLink, CheckSquare, Sparkles 
 } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import FullscreenSimulationModal from '../../Components/Simulations/FullscreenSimulationModal';
@@ -20,6 +20,7 @@ export const SubjectWorkspace = () => {
   const [experiments, setExperiments] = useState([]);
   const [simulations, setSimulations] = useState([]);
   const [quizAttempts, setQuizAttempts] = useState([]);
+  const [revisionQuizzes, setRevisionQuizzes] = useState([]);
   const [activeTab, setActiveTab] = useState('topics');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -36,17 +37,19 @@ export const SubjectWorkspace = () => {
 
       const subjectName = subjectData?.name || '';
 
-      const [fetchedTopics, fetchedExperiments, fetchedSims, fetchedQuizzes] = await Promise.all([
+      const [fetchedTopics, fetchedExperiments, fetchedSims, fetchedQuizzes, fetchedRevisionQuizzes] = await Promise.all([
         studentCurriculumService.getTopicsForSubject(subjectId),
         studentCurriculumService.getExperiments(subjectName),
         studentCurriculumService.getSimulations(subjectName),
-        studentCurriculumService.getQuizAttempts()
+        studentCurriculumService.getQuizAttempts(),
+        studentCurriculumService.getRevisionQuizzes({ subjectId })
       ]);
 
       setTopics(fetchedTopics);
       setExperiments(fetchedExperiments);
       setSimulations(fetchedSims);
       setQuizAttempts(fetchedQuizzes);
+      setRevisionQuizzes(fetchedRevisionQuizzes);
       setIsLoading(false);
     };
 
@@ -237,7 +240,7 @@ export const SubjectWorkspace = () => {
                 { id: 'topics', label: 'Topics', icon: BookOpen, count: topics.length, show: true },
                 { id: 'experiments', label: 'Experiments', icon: Video, count: experiments.length, show: experiments.length > 0 },
                 { id: 'simulations', label: 'Simulations', icon: Cpu, count: matchedSimulationsCount, show: matchedSimulationsCount > 0 || ['biology', 'physics', 'chemistry', 'mathematics'].some(s => (subject?.name || '').toLowerCase().includes(s)) },
-                { id: 'practice', label: 'Practice', icon: HelpCircle, count: quizAttempts.length, show: true },
+                { id: 'practice', label: 'Revision Quizzes', icon: CheckSquare, count: revisionQuizzes.length, show: true },
               ].filter(tab => tab.show).map((tab) => (
                 <button
                   key={tab.id}
@@ -427,15 +430,79 @@ export const SubjectWorkspace = () => {
                 </div>
               )}
 
-              {/* TAB 4: PRACTICE (Quizzes & Revisions) */}
+              {/* TAB 4: REVISION QUIZZES & PRACTICE */}
               {activeTab === 'practice' && (
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs sm:shadow-sm">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 sm:mb-4">Subject Practice Activities</h3>
-                    <p className="text-gray-500 text-xs sm:text-sm mb-4 sm:mb-6">
-                      Complete topic quizzes and practice activities to reinforce your understanding.
-                    </p>
-                    {quizAttempts.length > 0 ? (
+                <div className="space-y-6">
+                  {/* Revision Quizzes Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-base sm:text-lg font-bold text-gray-900">Curriculum Revision Quizzes</h3>
+                        <p className="text-gray-500 text-xs sm:text-sm mt-0.5">
+                          Practice assessments tailored to each topic's core competencies and misconceptions.
+                        </p>
+                      </div>
+                      <span className="text-xs font-bold px-3 py-1 bg-blue-50 text-custom-blue rounded-full">
+                        {revisionQuizzes.length} Available
+                      </span>
+                    </div>
+
+                    {revisionQuizzes.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {revisionQuizzes.map((quiz) => {
+                          const diff = (quiz.difficulty || 'intermediate').toLowerCase();
+                          const diffClass = diff === 'beginner'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : diff === 'advanced'
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : 'bg-blue-50 text-custom-blue border-blue-200';
+
+                          return (
+                            <div
+                              key={quiz.id}
+                              className="bg-white border border-gray-100 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                            >
+                              <div className="space-y-2.5">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className={`px-2.5 py-0.5 text-[11px] font-bold rounded-full border ${diffClass} capitalize`}>
+                                    {diff}
+                                  </span>
+                                  <span className="text-[11px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                                    {quiz.question_count || 5} Questions
+                                  </span>
+                                </div>
+                                <h4 className="text-sm sm:text-base font-bold text-gray-900 line-clamp-2">
+                                  {quiz.title}
+                                </h4>
+                                <div className="text-xs text-gray-500 font-medium truncate flex items-center gap-1.5">
+                                  <BookOpen className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+                                  <span className="truncate">{quiz.topic_name || 'Topic Assessment'}</span>
+                                </div>
+                              </div>
+
+                              <div className="mt-4 pt-3 border-t border-gray-100">
+                                <button
+                                  onClick={() => navigate(`/student/lesson-viewer/?lessonId=${quiz.id}&from=student`)}
+                                  className="w-full py-2.5 bg-custom-blue hover:bg-blue-600 text-white font-bold text-xs sm:text-sm rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs min-h-[44px]"
+                                >
+                                  <Play className="w-4 h-4 fill-current" /> Start Revision Quiz
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="bg-white rounded-2xl p-8 text-center text-gray-500 border border-gray-100 shadow-xs">
+                        No revision quizzes published for this subject yet. Check back soon!
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Past Assessment Attempts */}
+                  {quizAttempts.length > 0 && (
+                    <div className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs sm:shadow-sm">
+                      <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 sm:mb-4">Recent Quiz Performance</h3>
                       <div className="space-y-3">
                         {quizAttempts.slice(0, 5).map((attempt) => (
                           <div key={attempt.id} className="bg-gray-50 rounded-xl sm:rounded-2xl p-3.5 sm:p-4 flex items-center justify-between flex-wrap gap-2.5">
@@ -453,10 +520,8 @@ export const SubjectWorkspace = () => {
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <div className="text-xs sm:text-sm text-gray-500">No practice attempts recorded for this subject.</div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
