@@ -352,8 +352,13 @@ export default function CurriculumBuilder() {
 
     const handleReprocessPack = async (packId) => {
         try {
-            const res = await apiClient.post(`/api/curriculum/knowledge-packs/${packId}/reprocess/`);
+            const res = await apiClient.post(`/api/curriculum/knowledge-packs/${packId}/reprocess/`, {
+                mode: uploadMode
+            });
             setActivePack(res.data);
+            if (selectedSubject) {
+                fetchData(`/api/curriculum/knowledge-packs/?subject=${selectedSubject.id}`, setSubjectPacks);
+            }
         } catch (err) {
             console.error("Failed to reprocess pack:", err);
             alert("Failed to reprocess textbook.");
@@ -574,9 +579,17 @@ export default function CurriculumBuilder() {
 
                         {activePack ? (
                             activePack.status === 'processing' ? (
-                                <div className="w-full flex items-center justify-center gap-2 text-xs bg-blue-50 text-blue-600 py-1.5 rounded border border-blue-200">
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                    Processing Textbook...
+                                <div className="w-full flex flex-col gap-1.5 p-2 bg-blue-50 text-blue-700 rounded border border-blue-200 text-xs">
+                                    <div className="flex items-center justify-center gap-2 font-medium">
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        Processing Textbook...
+                                    </div>
+                                    <button
+                                        onClick={() => handleReprocessPack(activePack.id)}
+                                        className="w-full py-1 text-[11px] bg-white hover:bg-blue-100 text-blue-700 border border-blue-300 rounded font-medium transition-colors"
+                                    >
+                                        Restart Extraction ({uploadMode === 'ai_ingestion' ? '✨ AI Ingestion' : '📚 Normal'})
+                                    </button>
                                 </div>
                             ) : activePack.status === 'review' ? (
                                 <button 
