@@ -230,7 +230,13 @@ export function User() {
                           <div className="text-[11px] sm:text-xs text-gray-500 font-semibold truncate">{m.topicName || 'Curriculum Lesson'}</div>
                         </div>
                         <button
-                          onClick={() => navigate(`/student/lesson-viewer/${m.topicId}?from=student`)}
+                          onClick={() => {
+                            const hasLessonId = m.lessonId && m.lessonId !== 'undefined' && m.lessonId !== 'null';
+                            const hasTopicId = m.topicId && m.topicId !== 'undefined' && m.topicId !== 'null';
+                            const topicPath = hasTopicId ? m.topicId : '';
+                            const query = hasLessonId ? `?lessonId=${encodeURIComponent(m.lessonId)}&from=student` : '?from=student';
+                            navigate(`/student/lesson-viewer/${topicPath}${query}`);
+                          }}
                           className="px-3.5 py-2 bg-blue-50 text-custom-blue font-extrabold text-xs rounded-xl hover:bg-custom-blue hover:text-white transition-colors shrink-0 min-h-[36px] flex items-center"
                         >
                           Continue →

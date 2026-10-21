@@ -199,7 +199,13 @@ export function Dashboard() {
                   return (
                     <div
                       key={module.lessonId || module.storageKey}
-                      onClick={() => navigate(`/student/lesson-viewer/${module.topicId}?from=student`)}
+                      onClick={() => {
+                        const hasLessonId = module.lessonId && module.lessonId !== 'undefined' && module.lessonId !== 'null';
+                        const hasTopicId = module.topicId && module.topicId !== 'undefined' && module.topicId !== 'null';
+                        const topicPath = hasTopicId ? module.topicId : '';
+                        const query = hasLessonId ? `?lessonId=${encodeURIComponent(module.lessonId)}&from=student` : '?from=student';
+                        navigate(`/student/lesson-viewer/${topicPath}${query}`);
+                      }}
                       className="bg-white border border-gray-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs sm:shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
                     >
                       <div>
